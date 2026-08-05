@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运维工具箱 - 登录</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            overflow: hidden; height: 100vh;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background:
+                radial-gradient(ellipse at 15% 20%, rgba(254, 215, 170, 0.5) 0%, transparent 50%),
+                radial-gradient(ellipse at 85% 80%, rgba(186, 230, 253, 0.4) 0%, transparent 55%),
+                radial-gradient(ellipse at 80% 20%, rgba(196, 181, 253, 0.35) 0%, transparent 50%),
+                radial-gradient(ellipse at 20% 80%, rgba(190, 242, 200, 0.4) 0%, transparent 55%),
+                #fafbfc;
+        }
+        #bg-canvas { position: fixed; inset: 0; z-index: 1; cursor: crosshair; }
+        .grid-overlay {
+            position: fixed; inset: 0; z-index: 2;
+            background-image:
+                linear-gradient(rgba(99,102,241,0.05) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(99,102,241,0.05) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none;
+        }
+        .login-card {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 360px; z-index: 10;
+            background: #ffffff;
+            border-radius: 20px;
+            padding: 36px 32px;
+            box-shadow: 0 12px 40px rgba(0,0,0,0.08), 0 4px 12px rgba(0,0,0,0.04);
+        }
+        .brand { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+        .brand-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            border-radius: 10px;
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 4px 12px rgba(249,115,22,0.3);
+        }
+        .brand-title { color: #1f2937; font-size: 18px; font-weight: 700; }
+        .brand-subtitle { color: #9ca3af; font-size: 12px; }
+        .login-title { color: #1f2937; font-size: 22px; font-weight: 600; margin-bottom: 4px; }
+        .login-sub { color: #6b7280; font-size: 13px; margin-bottom: 24px; }
+        .form-group { margin-bottom: 14px; }
+        .form-label { color: #374151; font-size: 12px; margin-bottom: 6px; display: block; }
+        .form-control {
+            width: 100%; padding: 11px 14px;
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 10px;
+            color: #1f2937; font-size: 14px;
+            outline: none; transition: all 0.2s;
+        }
+        .form-control:focus {
+            background: #ffffff;
+            border-color: #f59e0b;
+            box-shadow: 0 0 0 3px rgba(245,158,11,0.15);
+        }
+        .form-control::placeholder { color: #d1d5db; }
+        .error-msg { color: #ef4444; font-size: 12px; margin-bottom: 12px; display: none; }
+        .btn-login {
+            width: 100%; padding: 12px;
+            background: linear-gradient(135deg, #f59e0b, #f97316);
+            border: none; border-radius: 10px;
+            color: #fff; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+            margin-top: 4px;
+        }
+        .btn-login:hover { transform: translateY(-1px); box-shadow: 0 8px 20px rgba(249,115,22,0.35); }
+        .btn-login:active { transform: translateY(0); }
+        .btn-login:disabled { opacity: 0.6; cursor: not-allowed; }
+        .footer-tip {
+            position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+            color: rgba(0,0,0,0.3); font-size: 11px; z-index: 10;
+            text-align: center;
+        }
+        .footer-tip kbd {
+            display: inline-block; padding: 1px 6px;
+            background: rgba(0,0,0,0.05); border-radius: 4px;
+            color: rgba(0,0,0,0.6); font-size: 10px;
+            margin: 0 2px;
+        }
+        .controls {
+            position: fixed; top: 16px; right: 16px; z-index: 11;
+            display: flex; gap: 8px;
+            background: rgba(255,255,255,0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 12px;
+            padding: 6px;
+        }
+        .ctrl-btn {
+            background: rgba(255,255,255,0.5);
+            border: 1px solid rgba(0,0,0,0.06);
+            border-radius: 8px;
+            padding: 6px 12px;
+            color: #374151; font-size: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            display: flex; align-items: center; gap: 6px;
+        }
+        .ctrl-btn:hover { background: rgba(0,0,0,0.04); }
+        .ctrl-btn.active { background: linear-gradient(135deg, #f59e0b, #f97316); border-color: transparent; color: #fff; }
+        .ctrl-btn svg { width: 14px; height: 14px; }
+    </style>
+</head>
+<body>
+    <canvas id="bg-canvas"></canvas>
+    <div class="grid-overlay"></div>
+
+    <!-- 控制按钮 -->
+    <div class="controls">
+        <button class="ctrl-btn" id="btnPause" onclick="togglePause()" title="按 P 暂停/继续">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            <span id="btnPauseText">暂停</span>
+        </button>
+        <button class="ctrl-btn" id="btnGravity" onclick="toggleGravity()" title="按 G 切换重力">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3"/></svg>
+            重力
+        </button>
+        <button class="ctrl-btn" id="btnRefresh" onclick="resetIcons()" title="按 R 刷新">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+            刷新
+        </button>
+        <button class="ctrl-btn" id="btnAdd" onclick="addIcons(5)" title="添加 5 个图标">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+        </button>
+    </div>
+
+    <div class="login-card" id="loginCard">
+        <div class="brand">
+            <div class="brand-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+            </div>
+            <div>
+                <div class="brand-title">运维工具箱</div>
+                <div class="brand-subtitle">OPERATION · CI/CD · AI</div>
+            </div>
+        </div>
+        <div class="login-title">欢迎回来</div>
+        <div class="login-sub">登录以管理你的运维资产</div>
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label class="form-label">账号</label>
+                <input id="username" type="text" required autofocus
+                    placeholder="请输入用户名"
+                    class="form-control">
+            </div>
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <div style="position: relative;">
+                    <input id="password" type="password" required
+                        placeholder="请输入密码"
+                        class="form-control" style="padding-right: 36px;">
+                    <button type="button" id="togglePwd" onclick="togglePassword()"
+                        title="显示/隐藏密码"
+                        style="position: absolute; right: 8px; top: 50%; transform: translateY(-50%); padding: 0; margin: 0; line-height: 0; background: transparent; border: none; cursor: pointer; opacity: 0.55;">
+                        <svg id="eyeIcon" width="16" height="16" fill="none" stroke="#6b7280" stroke-width="1.8" viewBox="0 0 24 24" style="display: block;">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            <p id="errorMsg" class="error-msg"></p>
+            <button type="submit" id="btnLogin" class="btn-login">登 录</button>
+        </form>
+    </div>
+    <div class="footer-tip">
+        <kbd>拖动</kbd> 移动图标 · <kbd>P</kbd> 暂停 · <kbd>G</kbd> 重力 · <kbd>R</kbd> 刷新 · <kbd>空格</kbd> 方向
+    </div>
+
+    <script>
+        // ==================== Canvas + 物理引擎 ====================
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        const loginCard = document.getElementById('loginCard');
+        let W, H;
+        function resize() {
+            W = canvas.width = window.innerWidth;
+            H = canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // 物理参数（活泼漂浮模式）
+        let gravityStrength = 0.14;
+        let friction = 0.985;
+        let windStrength = 0.06;
+        let gravityEnabled = false;        // ★ 默认关闭
+        let gravityAngle = Math.PI / 2;
+        let paused = false;                // ★ 暂停标志
+        const minSpeed = 1.0;
+
+        // 图标池
+        const iconSources = [
+            '/static/icons/ai-cloud.png',
+            '/static/icons/security.png',
+            '/static/icons/cube.png',
+            '/static/icons/knowledge.png',
+            '/static/icons/delivery.png',
+            '/static/icons/robot.png',
+            '/static/icons/ai-flower.png',
+        ];
+        const iconImages = iconSources.map(src => {
+            const img = new Image();
+            img.src = src;
+            return img;
+        });
+
+        // ==================== 颜色调色板（粒子碰撞喷溅用）====================
+        const splatColors = [
+            '#ef4444', '#f59e0b', '#facc15', '#84cc16', '#10b981',
+            '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899',
+        ];
+
+        // 喷溅粒子（撞击四周时产生）
+        class SplatParticle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = 3 + Math.random() * 6;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.size = 3 + Math.random() * 5;
+                this.life = 1;
+                this.decay = 0.018 + Math.random() * 0.015;
+                this.color = splatColors[Math.floor(Math.random() * splatColors.length)];
+            }
+            update() {
+                this.vy += 0.25;     // 受重力下落（仅喷溅粒子）
+                this.vx *= 0.96;
+                this.x += this.vx;
+                this.y += this.vy;
+                this.life -= this.decay;
+            }
+            draw() {
+                if (this.life <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.shadowColor = this.color;
+                ctx.shadowBlur = 12;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // 鼠标轨迹粒子
+        class TrailParticle {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 3;
+                this.vy = (Math.random() - 0.5) * 3;
+                this.size = 2 + Math.random() * 3;
+                this.life = 1;
+                this.decay = 0.015 + Math.random() * 0.02;
+                this.color = `hsl(${Math.random() * 360}, 80%, 60%)`;
+            }
+            update() {
+                this.x += this.vx; this.y += this.vy;
+                this.life -= this.decay;
+                this.vx *= 0.96; this.vy *= 0.96;
+            }
+            draw() {
+                if (this.life <= 0) return;
+                ctx.save();
+                ctx.globalAlpha = this.life;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size * this.life, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // ★ 背景环境小颗粒（参考网站的彩色小点）
+        class AmbientDot {
+            constructor(x, y) {
+                this.x = x; this.y = y;
+                this.baseX = x; this.baseY = y;
+                this.size = 1.5 + Math.random() * 2.5;
+                this.color = splatColors[Math.floor(Math.random() * splatColors.length)];
+                this.phase = Math.random() * Math.PI * 2;
+                this.freq = 0.3 + Math.random() * 0.5;
+                this.amp = 8 + Math.random() * 12;
+            }
+            update(t) {
+                this.x = this.baseX + Math.cos(t * this.freq + this.phase) * this.amp;
+                this.y = this.baseY + Math.sin(t * this.freq * 0.7 + this.phase) * this.amp;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = 0.7;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        // ==================== 图标 ====================
+        class Icon {
+            constructor(x, y, img) {
+                this.x = x; this.y = y;
+                this.vx = (Math.random() - 0.5) * 4;
+                this.vy = (Math.random() - 0.5) * 4;
+                this.size = 58 + Math.random() * 20;   // 更大：58 ～ 78px
+                this.img = img;
+                this.rotation = Math.random() * Math.PI * 2;
+                this.rotSpeed = (Math.random() - 0.5) * 0.04;
+                this.alpha = 0;
+                this.targetAlpha = 0.95;
+                this.dragging = false;
+                this.glow = `hsl(${Math.floor(Math.random() * 360)}, 70%, 60%)`;
+            }
+            update() {
+                if (this.dragging || paused) return;
+
+                if (gravityEnabled) {
+                    this.vx += Math.cos(gravityAngle) * gravityStrength;
+                    this.vy += Math.sin(gravityAngle) * gravityStrength;
+                }
+                // 风力扰动（保持活力）
+                this.vx += (Math.random() - 0.5) * windStrength;
+                this.vy += (Math.random() - 0.5) * windStrength;
+
+                this.vx *= friction;
+                this.vy *= friction;
+
+                // 最低速度（防止静止堆积）
+                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
+                if (speed < minSpeed) {
+                    const angle = Math.random() * Math.PI * 2;
+                    this.vx += Math.cos(angle) * minSpeed * 0.6;
+                    this.vy += Math.sin(angle) * minSpeed * 0.6;
+                }
+
+                this.x += this.vx;
+                this.y += this.vy;
+                this.rotation += this.rotSpeed;
+                this.alpha += (this.targetAlpha - this.alpha) * 0.05;
+            }
+            draw() {
+                if (this.alpha < 0.01) return;
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.rotate(this.rotation);
+                ctx.globalAlpha = this.alpha;
+
+                ctx.shadowColor = this.glow;
+                ctx.shadowBlur = this.dragging ? 30 : 12;
+
+                if (this.img.complete && this.img.naturalWidth > 0) {
+                    ctx.save();
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size/2, 0, Math.PI * 2);
+                    ctx.clip();
+                    ctx.drawImage(this.img, -this.size/2, -this.size/2, this.size, this.size);
+                    ctx.restore();
+                }
+
+                if (this.dragging) {
+                    ctx.globalAlpha = 1;
+                    ctx.strokeStyle = '#f59e0b';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, this.size/2, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+                ctx.restore();
+            }
+        }
+
+        // ==================== 碰撞 + 喷溅 ====================
+        function spawnSplash(x, y, count = 12) {
+            for (let i = 0; i < count; i++) {
+                splashes.push(new SplatParticle(x, y));
+            }
+        }
+
+        function collideWithWalls(i) {
+            if (paused || i.dragging) return;
+            const r = i.size / 2;
+            let hit = false, hx = i.x, hy = i.y;
+            if (i.x < r) { i.x = r; i.vx = Math.abs(i.vx) * 0.92 + 0.4; hit = true; hx = r; hy = i.y; }
+            if (i.x > W - r) { i.x = W - r; i.vx = -Math.abs(i.vx) * 0.92 - 0.4; hit = true; hx = W - r; hy = i.y; }
+            if (i.y < r) { i.y = r; i.vy = Math.abs(i.vy) * 0.92 + 0.4; hit = true; hx = i.x; hy = r; }
+            if (i.y > H - r) { i.y = H - r; i.vy = -Math.abs(i.vy) * 0.92 - 0.4; hit = true; hx = i.x; hy = H - r; }
+
+            // 只在重力开启时撞击四周才喷溅
+            if (hit && gravityEnabled) {
+                spawnSplash(hx, hy, 10 + Math.floor(Math.random() * 8));
+            }
+        }
+
+        function collideWithLoginCard(i) {
+            if (paused || i.dragging) return;
+            const r = i.size / 2;
+            const rect = loginCard.getBoundingClientRect();
+            const insideX = i.x >= rect.left && i.x <= rect.right;
+            const insideY = i.y >= rect.top && i.y <= rect.bottom;
+
+            if (insideX && insideY) {
+                const distLeft = i.x - rect.left, distRight = rect.right - i.x;
+                const distTop = i.y - rect.top, distBottom = rect.bottom - i.y;
+                const minD = Math.min(distLeft, distRight, distTop, distBottom);
+                let hx = i.x, hy = i.y;
+                if (minD === distLeft)      { i.x = rect.left - r - 1; if (i.vx > 0) i.vx = -i.vx * 0.92 - 0.4; hx = rect.left; hy = i.y; }
+                else if (minD === distRight) { i.x = rect.right + r + 1; if (i.vx < 0) i.vx = -i.vx * 0.92 + 0.4; hx = rect.right; hy = i.y; }
+                else if (minD === distTop)   { i.y = rect.top - r - 1; if (i.vy > 0) i.vy = -i.vy * 0.92 - 0.4; hx = i.x; hy = rect.top; }
+                else                          { i.y = rect.bottom + r + 1; if (i.vy < 0) i.vy = -i.vy * 0.92 + 0.4; hx = i.x; hy = rect.bottom; }
+
+                if (gravityEnabled) spawnSplash(hx, hy, 8 + Math.floor(Math.random() * 6));
+                return;
+            }
+
+            const closestX = Math.max(rect.left, Math.min(i.x, rect.right));
+            const closestY = Math.max(rect.top,  Math.min(i.y, rect.bottom));
+            const dx = i.x - closestX;
+            const dy = i.y - closestY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            if (dist < r) {
+                const overlap = r - dist + 1;
+                let nx, ny;
+                if (dist < 0.01) { nx = 1; ny = 0; }
+                else { nx = dx / dist; ny = dy / dist; }
+                i.x += nx * overlap;
+                i.y += ny * overlap;
+                const dot = i.vx * nx + i.vy * ny;
+                if (dot < 0) {
+                    i.vx -= (1 + 0.92) * dot * nx;
+                    i.vy -= (1 + 0.92) * dot * ny;
+                    if (gravityEnabled) spawnSplash(i.x, i.y, 8 + Math.floor(Math.random() * 6));
+                }
+            }
+        }
+
+        function collideIcons(a, b) {
+            const dx = b.x - a.x;
+            const dy = b.y - a.y;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const minDist = (a.size + b.size) / 2;
+            if (dist < minDist && dist > 0.01) {
+                const overlap = (minDist - dist) / 2;
+                const nx = dx / dist, ny = dy / dist;
+                a.x -= nx * overlap; a.y -= ny * overlap;
+                b.x += nx * overlap; b.y += ny * overlap;
+                const dot = (a.vx - b.vx) * nx + (a.vy - b.vy) * ny;
+                if (dot < 0) {
+                    const e = 0.92;
+                    const impulse = dot * e;
+                    a.vx -= impulse * nx; a.vy -= impulse * ny;
+                    b.vx += impulse * nx; b.vy += impulse * ny;
+                }
+            }
+        }
+
+        // ==================== 初始化 ====================
+        let icons = [];
+        let ambientDots = [];
+        const splashes = [];
+        const trail = [];
+
+        function randomFreePosition() {
+            const rect = loginCard.getBoundingClientRect();
+            for (let i = 0; i < 30; i++) {
+                const x = Math.random() * W;
+                const y = Math.random() * H;
+                if (x + 50 < rect.left || x - 50 > rect.right || y + 50 < rect.top || y - 50 > rect.bottom) {
+                    return { x, y };
+                }
+            }
+            return { x: Math.random() * W, y: Math.random() * H };
+        }
+
+        function spawnIcons(n) {
+            for (let i = 0; i < n; i++) {
+                const img = iconImages[Math.floor(Math.random() * iconImages.length)];
+                const pos = randomFreePosition();
+                icons.push(new Icon(pos.x, pos.y, img));
+            }
+        }
+        spawnIcons(18);
+
+        function spawnAmbientDots(n) {
+            for (let i = 0; i < n; i++) {
+                ambientDots.push(new AmbientDot(Math.random() * W, Math.random() * H));
+            }
+        }
+        spawnAmbientDots(120);  // 120 个背景彩色小颗粒
+
+        function resetIcons() { icons = []; spawnIcons(18); }
+        function addIcons(n) { spawnIcons(n); }
+        function toggleGravity() {
+            gravityEnabled = !gravityEnabled;
+            document.getElementById('btnGravity').classList.toggle('active', gravityEnabled);
+        }
+        function togglePause() {
+            paused = !paused;
+            const btn = document.getElementById('btnPause');
+            const txt = document.getElementById('btnPauseText');
+            btn.classList.toggle('active', paused);
+            txt.textContent = paused ? '继续' : '暂停';
+        }
+
+        let lastMouseTime = 0;
+        let draggingIcon = null;
+        let dragOffsetX = 0, dragOffsetY = 0;
+
+        document.addEventListener('mousemove', (e) => {
+            const now = Date.now();
+            if (now - lastMouseTime > 10 && !paused) {
+                for (let i = 0; i < 2; i++) trail.push(new TrailParticle(e.clientX, e.clientY));
+                lastMouseTime = now;
+            }
+            if (draggingIcon) {
+                draggingIcon.x = e.clientX + dragOffsetX;
+                draggingIcon.y = e.clientY + dragOffsetY;
+                draggingIcon.vx = 0; draggingIcon.vy = 0;
+            }
+        });
+
+        document.addEventListener('mousedown', (e) => {
+            if (e.target.closest('.login-card') || e.target.closest('.controls')) return;
+            let closest = null, minDist = Infinity;
+            for (const i of icons) {
+                const dx = e.clientX - i.x;
+                const dy = e.clientY - i.y;
+                const d = Math.sqrt(dx*dx + dy*dy);
+                if (d < i.size/2 && d < minDist) { closest = i; minDist = d; }
+            }
+            if (closest) {
+                draggingIcon = closest;
+                closest.dragging = true;
+                dragOffsetX = closest.x - e.clientX;
+                dragOffsetY = closest.y - e.clientY;
+            }
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (draggingIcon) {
+                draggingIcon.dragging = false;
+                draggingIcon.vx = (Math.random() - 0.5) * 12;
+                draggingIcon.vy = (Math.random() - 0.5) * 12;
+                draggingIcon = null;
+            }
+        });
+
+        // 键盘快捷键
+        document.addEventListener('keydown', (e) => {
+            if (e.target.matches('input, textarea')) return;
+            if (e.code === 'Space') { e.preventDefault(); gravityAngle = (gravityAngle + Math.PI / 2) % (Math.PI * 2); }
+            if (e.code === 'KeyG') toggleGravity();
+            if (e.code === 'KeyR') resetIcons();
+            if (e.code === 'KeyP') togglePause();
+        });
+
+        // 渲染循环
+        let t0 = Date.now();
+        function animate() {
+            const t = (Date.now() - t0) / 1000;
+
+            // 背景颜色轻微残影
+            ctx.fillStyle = 'rgba(250, 251, 252, 0.25)';
+            ctx.fillRect(0, 0, W, H);
+
+            // 背景环境小颗粒（始终动，与重力/暂停无关）
+            for (const d of ambientDots) {
+                d.update(t);
+                d.draw();
+            }
+
+            // 碰撞处理
+            for (const i of icons) {
+                if (!i.dragging) {
+                    collideWithLoginCard(i);
+                    collideWithWalls(i);
+                }
+            }
+            for (let a = 0; a < icons.length; a++) {
+                for (let b = a + 1; b < icons.length; b++) {
+                    if (!icons[a].dragging && !icons[b].dragging) collideIcons(icons[a], icons[b]);
+                }
+            }
+
+            // 图标
+            for (const i of icons) { i.update(); i.draw(); }
+
+            // 喷溅粒子
+            for (let i = splashes.length - 1; i >= 0; i--) {
+                splashes[i].update();
+                splashes[i].draw();
+                if (splashes[i].life <= 0) splashes.splice(i, 1);
+            }
+            if (splashes.length > 400) splashes.splice(0, 100);
+
+            // 鼠标轨迹
+            for (let i = trail.length - 1; i >= 0; i--) {
+                trail[i].update(); trail[i].draw();
+                if (trail[i].life <= 0) trail.splice(i, 1);
+            }
+            if (trail.length > 200) trail.splice(0, 50);
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+    </script>
+
+    <script>
+        function togglePassword() {
+            const pwd = document.getElementById('password');
+            const icon = document.getElementById('eyeIcon');
+            if (pwd.type === 'password') {
+                pwd.type = 'text';
+                // 切到"眼睛打斜杠"图标（隐藏状态）
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.242 4.242L9.88 9.88"/>';
+            } else {
+                pwd.type = 'password';
+                // 恢复"睁眼"图标
+                icon.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>';
+            }
+        }
+        async function handleLogin(e) {
+            e.preventDefault();
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const err = document.getElementById('errorMsg');
+            const btn = document.getElementById('btnLogin');
+            err.style.display = 'none';
+            btn.disabled = true;
+            btn.textContent = '登录中...';
+
+            try {
+                const res = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password }),
+                });
+                const data = await res.json();
+                if (data.code === 0) {
+                    btn.textContent = '✓ 登录成功';
+                    setTimeout(() => window.location.href = '/', 300);
+                } else {
+                    err.textContent = data.message;
+                    err.style.display = 'block';
+                    btn.disabled = false;
+                    btn.textContent = '登 录';
+                }
+            } catch (e) {
+                err.textContent = '网络错误，请重试';
+                err.style.display = 'block';
+                btn.disabled = false;
+                btn.textContent = '登 录';
+            }
+        }
+    </script>
+</body>
+</html>

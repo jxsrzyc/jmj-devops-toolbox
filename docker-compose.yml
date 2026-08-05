@@ -1,0 +1,16 @@
+version: "3.8"
+
+services:
+  lanqi-svc-params:
+    build: .
+    image: lanqi-svc-params:latest
+    container_name: lanqi-svc-params
+    ports:
+      - "5001:5001"
+    volumes:
+      # SQLite 数据持久化
+      - ./data:/app/data
+    environment:
+      - DB_PATH=/app/data/data.db
+      - TZ=Asia/Shanghai
+    restart: unless-stopped

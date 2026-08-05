@@ -1,0 +1,2354 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>运维工具箱</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+    <style>
+        .table-row-hover:hover { background-color: #f0f4ff; }
+        .modal-overlay { animation: fadeIn 0.2s ease; }
+        .modal-content { animation: slideIn 0.2s ease; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+        .toast { animation: slideDown 0.3s ease; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-40px); } to { opacity: 1; transform: translateY(0); } }
+        .copy-btn { transition: all 0.15s; }
+        .copy-btn:active { transform: scale(0.95); }
+        .sidebar-link { transition: all 0.15s; }
+        .sidebar-link:hover { background-color: #f3f4f6; }
+        .sidebar-link.active { background-color: #dbeafe !important; color: #1d4ed8 !important; border-left: 3px solid #1d4ed8 !important; border-left-color: #1d4ed8 !important; font-weight: 700 !important; }
+        .sidebar-link.active svg { color: #1d4ed8 !important; }
+        .sidebar-sub.active { background-color: #dbeafe !important; color: #1d4ed8 !important; border-left: 3px solid #1d4ed8 !important; border-left-color: #1d4ed8 !important; font-weight: 700 !important; }
+        .sidebar-sub.active svg { color: #1d4ed8 !important; }
+        .sidebar-sub.active span { color: #1d4ed8 !important; background-color: #bfdbfe !important; }
+        .batch-btn { transition: all 0.15s; }
+        .batch-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen flex">
+
+    <!-- ==================== 侧边栏 ==================== -->
+    <aside class="w-56 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col min-h-screen">
+        <!-- Logo -->
+        <div class="px-5 py-5 border-b border-gray-100">
+            <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                    </svg>
+                </div>
+                <div class="flex-1 min-w-0">
+                    <h1 class="text-sm font-bold text-gray-900 truncate">运维工具箱</h1>
+                    <p class="text-[10px] text-gray-400 truncate">{{ display_name }}</p>
+                </div>
+                <a href="/logout" title="退出登录" class="p-1 rounded hover:bg-gray-100">
+                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                    </svg>
+                </a>
+            </div>
+        </div>
+
+        <!-- 导航菜单 -->
+        <nav class="flex-1 py-3 overflow-y-auto">
+            <p class="px-5 py-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wider">核心功能</p>
+
+            {% if has_perm('release') %}
+            <!-- 发版管理（可展开） -->
+            <a href="#" onclick="toggleCiMenu(); return false;"
+                class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
+                data-page="params" id="ciMenuToggle">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6"/>
+                </svg>
+                发版管理
+                <svg id="ciMenuArrow" class="w-3 h-3 ml-auto transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </a>
+            <div id="ciSubmenu" class="ml-9 border-l border-gray-200 hidden">
+                <a href="#" onclick="switchCiTab('params'); return false;"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-ci-tab="params" id="ciSub-params">
+                    蓝鲸发版参数管理
+                </a>
+                <a href="#" onclick="switchCiTab('ciorders'); return false;"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-ci-tab="ciorders" id="ciSub-ciorders">
+                    云效创建变更单参数
+                </a>
+                <a href="#" onclick="switchCiTab('cidevflow'); return false;"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-ci-tab="cidevflow" id="ciSub-cidevflow">
+                    云效运行研发流程参数
+                </a>
+            </div>
+            {% endif %}
+
+            {% if has_perm('credentials') %}
+            <!-- 服务凭证管理 -->
+            <a href="#" onclick="switchPage('credentials'); return false;"
+                class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
+                data-page="credentials">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/>
+                </svg>
+                服务凭证管理
+            </a>
+            {% endif %}
+
+            {% if has_perm('domains') %}
+            <!-- 域名管理（可展开） -->
+            <a href="#" onclick="toggleDomainMenu(); return false;"
+                class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
+                data-page="domains" id="domainMenuToggle">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9"/>
+                </svg>
+                域名管理
+                <svg id="domainMenuArrow" class="w-3 h-3 ml-auto transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </a>
+            <!-- 域名子菜单 -->
+            <div id="domainSubmenu" class="hidden ml-9 border-l border-gray-200">
+                <a href="#" onclick="switchDomainRoot('jmj1995.com'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-domain="jmj1995.com" id="domainSub-jmj1995.com">
+                    jmj1995.com
+                </a>
+                <a href="#" onclick="switchDomainRoot('jiumaojiu.com'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-domain="jiumaojiu.com" id="domainSub-jiumaojiu.com">
+                    jiumaojiu.com
+                </a>
+                <a href="#" onclick="switchDomainRoot('datousoft.com'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-domain="datousoft.com" id="domainSub-datousoft.com">
+                    datousoft.com
+                </a>
+            </div>
+            {% endif %}
+
+            <p class="px-5 py-1.5 mt-4 text-[11px] font-medium text-gray-400 uppercase tracking-wider">系统管理</p>
+
+            {% if permissions == '*' %}
+            <!-- 用户管理 -->
+            <a href="#" onclick="switchPage('users'); return false;"
+                class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
+                data-page="users">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                </svg>
+                用户管理
+            </a>
+            {% endif %}
+
+            <p class="px-5 py-1.5 mt-4 text-[11px] font-medium text-gray-400 uppercase tracking-wider">其他工具</p>
+
+            <!-- 预留更多菜单项 -->
+            <a href="#" class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-sm text-gray-400 border-l-3 border-transparent cursor-not-allowed opacity-60">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                </svg>
+                数据看板
+            </a>
+            <a href="#" class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-sm text-gray-400 border-l-3 border-transparent cursor-not-allowed opacity-60">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
+                </svg>
+                部署流水线
+            </a>
+        </nav>
+
+        </aside>
+
+    <!-- ==================== 右侧主内容区 ==================== -->
+    <main class="flex-1 min-w-0 min-h-screen flex flex-col">
+
+        <!-- 发版参数管理页面 -->
+        <div id="page-params" class="p-6 flex-1 flex flex-col min-h-0">
+            <!-- 页面头部 -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">蓝鲸发版参数管理</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">按业务模块/环境筛选 · 一键批量复制参数</p>
+                </div>
+                <div class="flex gap-2">
+                    <div class="relative" id="paramsExcelMenu">
+                        <button onclick="toggleExcelMenu('params')"
+                            class="inline-flex items-center px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Excel 操作 ▾
+                        </button>
+                        <div id="paramsExcelDropdown" class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                            <a href="#" onclick="importFromExcel(); closeExcelMenu('params'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📥 导入 Excel</a>
+                            <a href="#" onclick="exportServicesToExcel(); closeExcelMenu('params'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📤 导出当前数据</a>
+                            <a href="#" onclick="downloadTemplate('services'); closeExcelMenu('params'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📋 下载导入模板</a>
+                        </div>
+                    </div>
+                    <button onclick="openAddModal()"
+                        class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                        + 新增服务
+                    </button>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-4 gap-4 mb-5">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">业务模块</p>
+                    <p class="text-2xl font-bold text-blue-600" id="statModules">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">服务总数</p>
+                    <p class="text-2xl font-bold text-green-600" id="statTotal">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">筛选结果</p>
+                    <p class="text-2xl font-bold text-purple-600" id="statFiltered">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">数据覆盖环境</p>
+                    <p class="text-2xl font-bold text-orange-600" id="statEnvs">-</p>
+                </div>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1 min-w-0 relative" id="moduleDropdown">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">业务模块</label>
+                        <!-- 触发按钮 -->
+                        <button type="button" id="moduleTrigger"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span id="moduleTriggerLabel" class="text-gray-400">全部</span>
+                            <svg class="w-4 h-4 text-gray-400 transition-transform" id="moduleArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <!-- 下拉面板 -->
+                        <div id="modulePanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 flex flex-col">
+                            <!-- 搜索框 -->
+                            <div class="p-2 border-b border-gray-100">
+                                <div class="relative">
+                                    <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <input id="moduleSearch" type="text" placeholder="搜索业务模块..."
+                                        class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                </div>
+                            </div>
+                            <!-- 模块列表 -->
+                            <ul id="moduleList" class="overflow-y-auto flex-1 py-1"></ul>
+                            <!-- 分页 -->
+                            <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs">
+                                <span id="modulePageInfo" class="text-gray-400"></span>
+                                <div class="flex gap-1">
+                                    <button id="modulePrev" onclick="moduleGoPage(-1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                                    <button id="moduleNext" onclick="moduleGoPage(1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="w-36 min-w-0">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">环境</label>
+                        <select id="filterEnv"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">搜索</label>
+                        <div class="relative">
+                            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input id="filterKeyword" type="text" placeholder="服务名/参数..."
+                                class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="searchServices()"
+                            class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                            查询
+                        </button>
+                        <button onclick="resetFilter()"
+                            class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 transition-colors border border-gray-300">
+                            重置
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 批量复制按钮行 -->
+                <div class="flex items-center gap-3 mt-4 pt-4 border-t border-gray-100">
+                    <span class="text-xs font-medium text-gray-500 flex-shrink-0">批量复制全部筛选结果：</span>
+                    <button onclick="batchCopy('create')"
+                        class="batch-btn inline-flex items-center px-3 py-2 bg-blue-50 text-blue-700 text-sm font-medium rounded-lg border border-blue-200 hover:bg-blue-100">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        复制全部创建变更单参数
+                    </button>
+                    <button onclick="batchCopy('devflow')"
+                        class="batch-btn inline-flex items-center px-3 py-2 bg-purple-50 text-purple-700 text-sm font-medium rounded-lg border border-purple-200 hover:bg-purple-100">
+                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                        </svg>
+                        复制全部运行研发流程参数
+                    </button>
+                    <span class="text-xs text-gray-400" id="batchHint">（将根据当前筛选条件批量复制）</span>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                <div class="overflow-y-auto flex-1 min-h-0">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
+                            <tr>
+                                <th class="px-4 py-3 font-medium text-gray-600 w-10">#</th>
+                                <th class="px-4 py-3 font-medium text-gray-600">业务模块</th>
+                                <th class="px-4 py-3 font-medium text-gray-600">服务名称</th>
+                                <th class="px-4 py-3 font-medium text-gray-600">创建变更单参数</th>
+                                <th class="px-4 py-3 font-medium text-gray-600">运行研发流程参数</th>
+                                <th class="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">环境</th>
+                                <th class="px-4 py-3 font-medium text-gray-600 w-32">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tableBody">
+                            <tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="border-t border-gray-200" id="pagination"></div>
+            </div>
+        </div>
+
+        <!-- 服务凭证管理页面 -->
+        <div id="page-credentials" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <!-- 头部 -->
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">服务凭证管理</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">按服务名管理访问链接、用户名密码、SSH 密钥、内网/公网地址</p>
+                </div>
+                <div class="flex gap-2">
+                    <div class="relative" id="credExcelMenu">
+                        <button onclick="toggleExcelMenu('cred')"
+                            class="inline-flex items-center px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 transition-colors border border-gray-300 shadow-sm">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Excel 操作 ▾
+                        </button>
+                        <div id="credExcelDropdown" class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                            <a href="#" onclick="importCredentialsExcel(); closeExcelMenu('cred'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📥 导入 Excel</a>
+                            <a href="#" onclick="exportCredentialsToExcel(); closeExcelMenu('cred'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📤 导出当前数据</a>
+                            <a href="#" onclick="downloadTemplate('credentials'); closeExcelMenu('cred'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📋 下载导入模板</a>
+                        </div>
+                    </div>
+                    <button onclick="openCredAddModal()"
+                        class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm">
+                        + 新增凭证
+                    </button>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-4 gap-4 mb-5">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">凭证总数</p>
+                    <p class="text-2xl font-bold text-blue-600" id="credStatTotal">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">正常</p>
+                    <p class="text-2xl font-bold text-green-600" id="credStatNormal">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">即将过期</p>
+                    <p class="text-2xl font-bold text-yellow-600" id="credStatExpiring">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">已过期</p>
+                    <p class="text-2xl font-bold text-red-600" id="credStatExpired">-</p>
+                </div>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1 min-w-0">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">搜索</label>
+                        <div class="relative">
+                            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input id="credFilterKeyword" type="text" placeholder="服务名/负责人/访问链接..."
+                                class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="w-40 min-w-0">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">凭证类型</label>
+                        <select id="credFilterType" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="">全部</option>
+                            <option value="用户名密码">用户名密码</option>
+                            <option value="SSH密钥">SSH密钥</option>
+                            <option value="API Token">API Token</option>
+                            <option value="数据库连接">数据库连接</option>
+                        </select>
+                    </div>
+                    <div class="w-32 min-w-0">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">状态</label>
+                        <select id="credFilterStatus" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="">全部</option>
+                            <option value="正常">正常</option>
+                            <option value="即将过期">即将过期</option>
+                            <option value="已过期">已过期</option>
+                            <option value="禁用">禁用</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="credSearch()"
+                            class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button>
+                        <button onclick="credReset()"
+                            class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                <div class="overflow-y-auto flex-1 min-h-0">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-3 font-medium text-gray-600 w-10">#</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">服务名</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">类型</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">访问链接</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">用户名</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">密码</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">内网地址</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">公网地址</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">负责人</th>
+                                <th class="px-3 py-3 font-medium text-gray-600 w-20">过期时间</th>
+                                <th class="px-3 py-3 font-medium text-gray-600 w-16">状态</th>
+                                <th class="px-3 py-3 font-medium text-gray-600 w-24">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="credTableBody">
+                            <tr><td colspan="12" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="border-t border-gray-200" id="credPagination"></div>
+            </div>
+        </div>
+
+        <!-- 云效创建变更单页面 -->
+        <div id="page-ciorders" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">云效创建变更单参数</h2><p class="text-sm text-gray-500">管理云效创建变更单参数 · 应用交付服务/环境/分支/代码仓库标识符</p></div>
+                <div class="flex gap-2">
+                    <div class="relative" id="ciordersExcelMenu">
+                        <button onclick="toggleExcelMenu('ciorders')" class="inline-flex items-center px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-300 shadow-sm">Excel 操作 ▾</button>
+                        <div id="ciordersExcelDropdown" class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                            <a href="#" onclick="importCiOrders(); closeExcelMenu('ciorders'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📥 导入 Excel</a>
+                            <a href="#" onclick="exportCiOrders(); closeExcelMenu('ciorders'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📤 导出当前数据</a>
+                            <a href="#" onclick="downloadTemplate('ci-orders'); closeExcelMenu('ciorders'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📋 下载导入模板</a>
+                        </div>
+                    </div>
+                    <button onclick="openCiOrderAdd()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">+ 新增</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mb-5">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">总数</p><p class="text-2xl font-bold text-blue-600" id="cioStatTotal">-</p></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">环境数</p><p class="text-2xl font-bold text-green-600" id="cioStatEnvs">-</p></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">分支数</p><p class="text-2xl font-bold text-purple-600" id="cioStatBranches">-</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5"><div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1"><label class="block text-xs font-medium text-gray-500 mb-1">搜索</label><div class="relative">
+                    <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input id="cioKeyword" type="text" placeholder="搜索服务名..." class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div>
+                <div class="w-36"><label class="block text-xs font-medium text-gray-500 mb-1">环境</label><select id="cioEnv" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                <div class="flex items-end gap-2"><button onclick="cioSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button><button onclick="cioReset()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button></div>
+            </div></div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                <div class="overflow-y-auto flex-1 min-h-0">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50"><tr><th class="px-4 py-3 font-medium text-gray-600">应用交付服务</th><th class="px-4 py-3 font-medium text-gray-600">环境</th><th class="px-4 py-3 font-medium text-gray-600">发版分支</th><th class="px-4 py-3 font-medium text-gray-600">代码仓库标识符</th><th class="px-4 py-3 font-medium text-gray-600 w-32">操作</th></tr></thead>
+                <tbody id="cioTableBody"><tr><td colspan="5" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
+            </table></div><div class="border-t border-gray-200" id="cioPagination"></div></div>
+        </div>
+        <!-- 云效运行研发流程页面 -->
+        <div id="page-cidevflow" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">云效运行研发流程参数</h2><p class="text-sm text-gray-500">管理云效运行研发流程参数 · 应用交付服务/环境/流程序列号/阶段序列号</p></div>
+                <div class="flex gap-2">
+                    <div class="relative" id="cidExcelMenu">
+                        <button onclick="toggleExcelMenu('cid')" class="inline-flex items-center px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-300 shadow-sm">Excel 操作 ▾</button>
+                        <div id="cidExcelDropdown" class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                            <a href="#" onclick="importCiDevflow(); closeExcelMenu('cid'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📥 导入 Excel</a>
+                            <a href="#" onclick="exportCiDevflow(); closeExcelMenu('cid'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📤 导出当前数据</a>
+                            <a href="#" onclick="downloadTemplate('ci-devflow'); closeExcelMenu('cid'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📋 下载导入模板</a>
+                        </div>
+                    </div>
+                    <button onclick="openCiDevflowAdd()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">+ 新增</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-3 gap-4 mb-5">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">总数</p><p class="text-2xl font-bold text-blue-600" id="cidStatTotal">-</p></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">环境数</p><p class="text-2xl font-bold text-green-600" id="cidStatEnvs">-</p></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">筛选结果</p><p class="text-2xl font-bold text-purple-600" id="cidStatFiltered">-</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5"><div class="flex flex-col sm:flex-row gap-3">
+                <div class="flex-1"><label class="block text-xs font-medium text-gray-500 mb-1">搜索</label><div class="relative">
+                    <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                    <input id="cidKeyword" type="text" placeholder="搜索服务名..." class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div>
+                <div class="w-36"><label class="block text-xs font-medium text-gray-500 mb-1">环境</label><select id="cidEnv" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                <div class="flex items-end gap-2"><button onclick="cidSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button><button onclick="cidReset()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button></div>
+            </div></div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                <div class="overflow-y-auto flex-1 min-h-0">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50"><tr><th class="px-4 py-3 font-medium text-gray-600">应用交付服务</th><th class="px-4 py-3 font-medium text-gray-600">环境</th><th class="px-4 py-3 font-medium text-gray-600">发布流程序列号</th><th class="px-4 py-3 font-medium text-gray-600">发布阶段序列号</th><th class="px-4 py-3 font-medium text-gray-600 w-32">操作</th></tr></thead>
+                <tbody id="cidTableBody"><tr><td colspan="5" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
+            </table></div><div class="border-t border-gray-200" id="cidPagination"></div></div>
+        </div>
+        <!-- 域名管理页面 -->
+        <div id="page-domains" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-900">域名管理</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">管理所有环境的生产/测试/私有云域名及 SSL 证书到期时间 · 当前: <span class="font-medium text-blue-600" id="domainRootLabel">jmj1995.com</span></p>
+                </div>
+                <div class="flex gap-2">
+                    <div class="relative" id="domExcelMenu">
+                        <button onclick="toggleExcelMenu('dom')"
+                            class="inline-flex items-center px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-300 shadow-sm">
+                            <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Excel 操作 ▾
+                        </button>
+                        <div id="domExcelDropdown" class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                            <a href="#" onclick="importDomains(); closeExcelMenu('dom'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📥 导入 Excel</a>
+                            <a href="#" onclick="exportDomainsToExcel(); closeExcelMenu('dom'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📤 导出当前数据</a>
+                            <a href="#" onclick="downloadTemplate('domains'); closeExcelMenu('dom'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📋 下载导入模板</a>
+                        </div>
+                    </div>
+                    <button onclick="openDomainAddModal()"
+                        class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">
+                        + 新增域名
+                    </button>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div class="grid grid-cols-4 gap-4 mb-5">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">域名总数</p>
+                    <p class="text-2xl font-bold text-blue-600" id="domStatTotal">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">证书正常</p>
+                    <p class="text-2xl font-bold text-green-600" id="domStatNormal">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">即将过期</p>
+                    <p class="text-2xl font-bold text-yellow-600" id="domStatExpiring">-</p>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4">
+                    <p class="text-xs text-gray-500 mb-0.5">已过期</p>
+                    <p class="text-2xl font-bold text-red-600" id="domStatExpired">-</p>
+                </div>
+            </div>
+
+            <!-- 筛选栏 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">搜索</label>
+                        <div class="relative">
+                            <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                            </svg>
+                            <input id="domFilterKeyword" type="text" placeholder="搜索域名或服务名..."
+                                class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="w-32">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">大区</label>
+                        <select id="domFilterRegion" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="w-32">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">域名类型</label>
+                        <select id="domFilterType" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="w-36">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">环境</label>
+                        <select id="domFilterEnv" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="">全部</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="domSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button>
+                        <button onclick="domReset()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 数据表格 -->
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                <div class="overflow-y-auto flex-1 min-h-0">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
+                            <tr>
+                                <th class="px-3 py-3 font-medium text-gray-600 whitespace-nowrap">大区</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">域名</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">服务</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">类型</th>
+                                <th class="px-3 py-3 font-medium text-gray-600 whitespace-nowrap">环境</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">证书进度</th>
+                                <th class="px-3 py-3 font-medium text-gray-600 whitespace-nowrap">证书到期</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">备注</th>
+                                <th class="px-3 py-3 font-medium text-gray-600 w-28 whitespace-nowrap">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="domTableBody">
+                            <tr><td colspan="9" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="border-t border-gray-200" id="domPagination"></div>
+            </div>
+        </div>
+
+        <!-- 用户管理页面 -->
+        <div id="page-users" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">用户管理</h2><p class="text-sm text-gray-500">管理用户账号、显示名、密码和权限（仅管理员可见）</p></div>
+                <button onclick="openUserAddModal()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">+ 新增用户</button>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                <div class="overflow-y-auto flex-1 min-h-0">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
+                            <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">用户名</th><th class="px-4 py-3 font-medium text-gray-600">显示名</th><th class="px-4 py-3 font-medium text-gray-600">权限</th><th class="px-4 py-3 font-medium text-gray-600">状态</th><th class="px-4 py-3 font-medium text-gray-600">创建时间</th><th class="px-4 py-3 font-medium text-gray-600 w-44">操作</th></tr>
+                    </thead>
+                    <tbody id="usersTableBody"><tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
+                </table>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- ==================== 弹窗组件 ==================== -->
+    <!-- 新增/编辑弹窗 -->
+    <div id="formModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeFormModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900" id="modalTitle">新增服务</h3>
+                <button onclick="closeFormModal()" class="p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="serviceForm" onsubmit="saveService(event)">
+                <input type="hidden" id="formId">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">业务模块 <span class="text-red-500">*</span></label>
+                        <input id="formModule" type="text" autocomplete="off" required
+                            placeholder="选择或输入业务模块"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">服务名称 <span class="text-red-500">*</span></label>
+                        <input id="formServiceName" type="text" required placeholder="如: member-admin"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">创建变更单参数</label>
+                        <input id="formCreateParams" type="text" placeholder="如: member-admin"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">运行研发流程参数</label>
+                        <input id="formDevflowParams" type="text" placeholder="如: member-admin|cn"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">服务环境</label>
+                        <select id="formEnv"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeFormModal()"
+                        class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">
+                        取消
+                    </button>
+                    <button type="submit"
+                        class="px-4 py-2.5 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">
+                        保存
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 用户管理 新增/编辑弹窗 -->
+    <div id="userFormModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeUserForm()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-bold text-gray-900" id="userModalTitle">新增用户</h3>
+                <button onclick="closeUserForm()" class="p-1 rounded-lg hover:bg-gray-100"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+            <form id="userForm" onsubmit="saveUser(event)">
+                <input type="hidden" id="userFormId">
+                <div class="space-y-3">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">用户名 <span class="text-red-500">*</span></label><input id="userFormUsername" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">显示名</label><input id="userFormDisplayName" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">密码 <span class="text-red-500 text-xs" id="userFormPwdRequired">*</span></label><input id="userFormPassword" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">权限（逗号分隔，留空 = 仅 release）</label>
+                        <select id="userFormPermissions" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="*">* 全部权限（管理员）</option>
+                            <option value="release,credentials,domains">release,credentials,domains（全部）</option>
+                            <option value="release">release（仅发版管理）</option>
+                            <option value="credentials">credentials（仅服务凭证）</option>
+                            <option value="domains">domains（仅域名）</option>
+                            <option value="release,credentials">release,credentials</option>
+                            <option value="release,domains">release,domains</option>
+                            <option value="credentials,domains">credentials,domains</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeUserForm()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 域名新增/编辑弹窗 -->
+    <!-- 云效创建变更单/研发流程 新增编辑弹窗 -->
+    <div id="ciFormModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeCiForm()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-bold text-gray-900" id="ciModalTitle">新增</h3>
+                <button onclick="closeCiForm()" class="p-1 rounded-lg hover:bg-gray-100"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+            <form id="ciForm" onsubmit="saveCiItem(event)">
+                <input type="hidden" id="ciFormId"><input type="hidden" id="ciFormMode">
+                <div class="space-y-3">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">应用交付服务 <span class="text-red-500">*</span></label><input id="ciFormService" type="text" required autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">环境</label>
+                        <select id="ciFormEnv" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"></select>
+                    </div>
+                    <!-- 创建变更单字段 -->
+                    <div id="ciFormOrdersFields">
+                        <div class="mb-3"><label class="block text-sm font-medium text-gray-700 mb-1">发版分支</label><input id="ciFormBranch" type="text" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">代码仓库标识符</label><input id="ciFormRepo" type="text" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    </div>
+                    <!-- 运行研发流程字段 -->
+                    <div id="ciFormDevflowFields" style="display: none;">
+                        <div class="mb-3"><label class="block text-sm font-medium text-gray-700 mb-1">发布流程序列号</label><input id="ciFormWf" type="text" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">发布阶段序列号</label><input id="ciFormStage" type="text" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeCiForm()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="domFormModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeDomFormModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900" id="domModalTitle">新增域名</h3>
+                <button onclick="closeDomFormModal()" class="p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form id="domForm" onsubmit="saveDomain(event)">
+                <input type="hidden" id="domFormId">
+                <input type="hidden" id="domFormRoot">
+                <div class="space-y-3">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">域名 <span class="text-red-500">*</span></label>
+                        <input id="domFormDomain" type="text" required placeholder="如: gateway.jmj1995.com" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div class="grid grid-cols-2 gap-3">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">服务名称</label>
+                            <input id="domFormService" type="text" placeholder="如: gateway" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">域名类型</label>
+                            <select id="domFormType" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"></select></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">环境</label>
+                            <select id="domFormEnv" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"></select></div>
+                        <div><label class="block text-sm font-medium text-gray-700 mb-1">证书进度</label>
+                            <select id="domFormProgress" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                                <option value="已完成">已完成</option><option value="进行中">进行中</option><option value="未开始">未开始</option></select></div>
+                    </div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">证书到期时间</label>
+                        <input id="domFormExpiry" type="datetime-local" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                        <textarea id="domFormNotes" rows="2" placeholder="证书更新来源、供应商等..." class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea></div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeDomFormModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 凭证新增/编辑弹窗 -->
+    <div id="credFormModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeCredFormModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 modal-content max-h-[90vh] overflow-y-auto">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900" id="credModalTitle">新增凭证</h3>
+                <button onclick="closeCredFormModal()" class="p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <form id="credForm" onsubmit="saveCredential(event)">
+                <input type="hidden" id="credFormId">
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2 sm:col-span-1">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">服务名 <span class="text-red-500">*</span></label>
+                        <input id="credFormService" type="text" autocomplete="off" required
+                            placeholder="如: member-admin"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">凭证类型</label>
+                        <select id="credFormType" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="用户名密码">用户名密码</option>
+                            <option value="SSH密钥">SSH密钥</option>
+                            <option value="API Token">API Token</option>
+                            <option value="数据库连接">数据库连接</option>
+                        </select>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">访问链接</label>
+                        <input id="credFormUrl" type="text" placeholder="如: https://admin.example.com"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">用户名</label>
+                        <input id="credFormUsername" type="text"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">密码</label>
+                        <input id="credFormPassword" type="text"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">内网地址</label>
+                        <input id="credFormInternalUrl" type="text" placeholder="如: http://10.0.1.100"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">内网端口</label>
+                        <input id="credFormInternalPort" type="number" placeholder="如: 8080"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">公网地址</label>
+                        <input id="credFormExternalUrl" type="text" placeholder="如: https://api.example.com"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">公网端口</label>
+                        <input id="credFormExternalPort" type="number" placeholder="如: 443"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">数据库名</label>
+                        <input id="credFormDbName" type="text" placeholder="如: member_db"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">负责人</label>
+                        <input id="credFormOwner" type="text" placeholder="如: 张三"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">过期时间</label>
+                        <input id="credFormExpires" type="date"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">状态</label>
+                        <select id="credFormStatus" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="正常">正常</option>
+                            <option value="即将过期">即将过期</option>
+                            <option value="已过期">已过期</option>
+                            <option value="禁用">禁用</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">SSH 私钥</label>
+                        <textarea id="credFormSshKey" rows="2" placeholder="-----BEGIN OPENSSH PRIVATE KEY-----"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">API Token</label>
+                        <textarea id="credFormApiToken" rows="2" placeholder="sk-xxxxxxxx"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none font-mono"></textarea>
+                    </div>
+                    <div class="col-span-2">
+                        <label class="block text-sm font-medium text-gray-700 mb-1">备注</label>
+                        <textarea id="credFormNotes" rows="2" placeholder="任何额外信息..."
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeCredFormModal()"
+                        class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button type="submit"
+                        class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 删除确认弹窗 -->
+    <div id="deleteModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeDeleteModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 modal-content">
+            <div class="text-center">
+                <div class="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z"/>
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">确认删除</h3>
+                <p class="text-sm text-gray-500 mb-6" id="deleteMsg"></p>
+                <div class="flex gap-3 justify-center">
+                    <button onclick="closeDeleteModal()"
+                        class="px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button onclick="confirmDelete()"
+                        class="px-4 py-2.5 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 shadow-sm">删除</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="fixed top-4 right-4 z-[100] hidden"><div class="flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium" id="toastContent"></div></div>
+
+    <!-- 批量复制结果弹窗 -->
+    <div id="batchResultModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeBatchResult()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 modal-content max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900" id="batchResultTitle">批量复制结果</h3>
+                <button onclick="closeBatchResult()" class="p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="text-xs text-gray-400 mb-3" id="batchResultInfo"></div>
+            <div class="overflow-auto flex-1">
+                <pre id="batchResultContent" class="bg-gray-50 p-4 rounded-lg text-sm text-gray-800 whitespace-pre-wrap break-all font-mono"></pre>
+            </div>
+            <div class="flex justify-end gap-3 mt-4">
+                <button onclick="copyBatchResult()"
+                    class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">
+                    复制到剪贴板
+                </button>
+                <button onclick="closeBatchResult()"
+                    class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">
+                    关闭
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 工具函数 ====================
+        const $ = (sel) => document.querySelector(sel);
+        function showToast(msg, type = 'success') {
+            const t = $('#toast'), c = $('#toastContent');
+            c.textContent = msg;
+            c.className = `flex items-center gap-2 px-4 py-3 rounded-xl shadow-lg text-white text-sm font-medium ${type === 'success' ? 'bg-green-600' : type === 'error' ? 'bg-red-600' : 'bg-gray-800'}`;
+            t.classList.remove('hidden'); t.classList.add('toast');
+            clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.add('hidden'), 2500);
+        }
+        async function api(url, options = {}) {
+            const res = await fetch(url, { headers: { 'Content-Type': 'application/json', ...options.headers }, ...options });
+            return res.json();
+        }
+        function esc(s) {
+            if (!s) return '';
+            const div = document.createElement('div'); div.textContent = s; return div.innerHTML;
+        }
+
+        // ==================== 页面切换 ====================
+        function switchPage(page) {
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            document.querySelector(`[data-page="${page}"]`).classList.add('active');
+            document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
+            document.getElementById(`page-${page}`).classList.remove('hidden');
+            if (page === 'users') loadUsers();
+        }
+
+        // ==================== 初始化 ====================
+        let currentPage = 1;
+        let svcPageSize = 20;
+        let currentModule = '';
+        let currentEnv = '';
+        let currentKeyword = '';
+        let deleteTargetId = null;
+        let batchResultText = '';
+
+        async function init() {
+            // 初始默认激活第一个子标签
+            document.getElementById('ciSub-params').classList.add('active');
+            await loadEnvs();
+            await loadModules();
+            await loadServices();
+        }
+
+        async function loadEnvs() {
+            const res = await api('/api/envs');
+            if (res.code === 0) {
+                const filterEnv = $('#filterEnv');
+                const formEnv = $('#formEnv');
+                filterEnv.innerHTML = '<option value="">全部</option>';
+                formEnv.innerHTML = '';
+                res.data.forEach(e => {
+                    filterEnv.innerHTML += `<option value="${e}">${e}</option>`;
+                    formEnv.innerHTML += `<option value="${e}">${e}</option>`;
+                });
+                $('#statEnvs').textContent = res.data.length;
+            }
+        }
+
+        // ==================== 业务模块自定义下拉 ====================
+        const MODULE_PAGE_SIZE = 10;
+        let allModules = [];          // 全部模块
+        let filteredModules = [];     // 搜索后的模块
+        let modulePage = 1;            // 当前页
+        let moduleSearchKeyword = '';
+
+        async function loadModules() {
+            const res = await api('/api/modules');
+            if (res.code === 0) {
+                allModules = res.data;
+                $('#statModules').textContent = allModules.length;
+
+                applyModuleFilter();
+            }
+        }
+
+        function applyModuleFilter() {
+            const kw = moduleSearchKeyword.trim().toLowerCase();
+            filteredModules = kw
+                ? allModules.filter(m => m.toLowerCase().includes(kw))
+                : allModules;
+            // 选中项若被搜索过滤掉,允许保留显示
+            modulePage = 1;
+            renderModulePage();
+        }
+
+        function renderModulePage() {
+            const totalPages = Math.max(1, Math.ceil(filteredModules.length / MODULE_PAGE_SIZE));
+            if (modulePage > totalPages) modulePage = totalPages;
+            if (modulePage < 1) modulePage = 1;
+
+            const start = (modulePage - 1) * MODULE_PAGE_SIZE;
+            const pageItems = filteredModules.slice(start, start + MODULE_PAGE_SIZE);
+
+            // 渲染列表
+            const list = $('#moduleDropdown #moduleList');
+            let html = `<li onclick="selectModule('')" class="px-3 py-2 cursor-pointer hover:bg-blue-50 text-sm ${currentModule === '' ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}">全部</li>`;
+            html += pageItems.map(m => `
+                <li onclick="selectModule('${m.replace(/'/g, "'")}')" class="px-3 py-2 cursor-pointer hover:bg-blue-50 text-sm ${currentModule === m ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}">${m}</li>
+            `).join('');
+            list.innerHTML = html;
+
+            // 更新分页信息
+            $('#moduleDropdown #modulePageInfo').textContent =
+                filteredModules.length === 0
+                    ? '0 条'
+                    : `第 ${modulePage}/${totalPages} 页 · 共 ${filteredModules.length} 条`;
+            $('#moduleDropdown #modulePrev').disabled = modulePage <= 1;
+            $('#moduleDropdown #moduleNext').disabled = modulePage >= totalPages;
+        }
+
+        function moduleGoPage(delta) {
+            modulePage += delta;
+            renderModulePage();
+        }
+
+        function selectModule(value) {
+            currentModule = value;
+            $('#moduleDropdown #moduleTriggerLabel').textContent = value || '全部';
+            $('#moduleDropdown #moduleTriggerLabel').className = value ? 'text-gray-900' : 'text-gray-400';
+            closeModuleDropdown();
+            currentPage = 1;
+            loadServices();
+        }
+
+        function toggleModuleDropdown() {
+            const panel = $('#moduleDropdown #modulePanel');
+            const arrow = $('#moduleDropdown #moduleArrow');
+            if (panel.classList.contains('hidden')) {
+                panel.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+                setTimeout(() => $('#moduleSearch').focus(), 50);
+            } else {
+                closeModuleDropdown();
+            }
+        }
+
+        function closeModuleDropdown() {
+            $('#moduleDropdown #modulePanel').classList.add('hidden');
+            $('#moduleDropdown #moduleArrow').classList.remove('rotate-180');
+        }
+
+        // 事件绑定
+        document.getElementById('moduleTrigger').addEventListener('click', toggleModuleDropdown);
+        document.getElementById('moduleSearch').addEventListener('input', (e) => {
+            moduleSearchKeyword = e.target.value;
+            applyModuleFilter();
+        });
+        document.getElementById('moduleSearch').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                // 选中第一项
+                const firstItem = filteredModules[0];
+                if (firstItem) selectModule(firstItem);
+                e.preventDefault();
+            } else if (e.key === 'Escape') {
+                closeModuleDropdown();
+            }
+        });
+        // 点击外部关闭
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('#moduleDropdown')) closeModuleDropdown();
+        });
+
+        async function loadServices() {
+            const params = new URLSearchParams();
+            if (currentModule) params.set('module', currentModule);
+            if (currentEnv) params.set('env', currentEnv);
+            if (currentKeyword) params.set('keyword', currentKeyword);
+            params.set('page', currentPage);
+            params.set('page_size', svcPageSize);
+
+            const res = await api(`/api/services?${params}`);
+            if (res.code === 0) {
+                renderTable(res.data);
+                renderPagination('pagination', res.total, res.page, svcPageSize,
+                    (p) => { currentPage = p; loadServices(); },
+                    (s) => { svcPageSize = s; currentPage = 1; loadServices(); }
+                );
+                $('#statTotal').textContent = res.total;
+                $('#statFiltered').textContent = res.data.length;
+
+                // 更新批量复制提示
+                if (currentModule || currentEnv || currentKeyword) {
+                    $('#batchHint').textContent = `（当前筛选条件匹配 ${res.total} 条结果）`;
+                } else {
+                    $('#batchHint').textContent = '（将根据当前筛选条件批量复制）';
+                }
+            }
+        }
+
+        // ==================== 表格 ====================
+        function renderTable(services) {
+            const tbody = $('#tableBody');
+            if (services.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = services.map((s, i) => `
+            <tr class="table-row-hover border-b border-gray-100 transition-colors">
+              <td class="px-4 py-3 text-gray-400 text-xs">${(currentPage - 1) * svcPageSize + i + 1}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">${esc(s.business_module)}</span>
+              </td>
+              <td class="px-4 py-3 font-medium text-gray-900">${esc(s.service_name)}</td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer copy-btn group" onclick="copySingle('${esc(s.create_change_params)}')">
+                  <code class="bg-gray-100 px-2 py-0.5 rounded text-xs text-gray-700">${esc(s.create_change_params) || '-'}</code>
+                  <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <span class="inline-flex items-center gap-1 cursor-pointer copy-btn group" onclick="copySingle('${esc(s.run_devflow_params)}')">
+                  <code class="bg-purple-50 px-2 py-0.5 rounded text-xs text-purple-700">${esc(s.run_devflow_params) || '-'}</code>
+                  <svg class="w-3.5 h-3.5 text-gray-400 group-hover:text-blue-500 hidden sm:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                </span>
+              </td>
+              <td class="px-4 py-3">
+                <span class="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${s.env === '中国' ? 'bg-green-100 text-green-700' : s.env === '新加坡' ? 'bg-yellow-100 text-yellow-700' : 'bg-orange-100 text-orange-700'}">${esc(s.env)}</span>
+              </td>
+              <td class="px-4 py-3">
+                <div class="flex items-center gap-1">
+                  <button onclick="openEditModal(${s.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button>
+                  <button onclick="quickDelete('services', ${s.id}, '${esc(s.service_name)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">删除</button>
+                </div>
+              </td>
+            </tr>`).join('');
+        }
+
+        // ==================== 统一分页组件 ====================
+        function renderPagination(containerId, total, page, pageSize, onPageChange, onPageSizeChange) {
+            const c = document.getElementById(containerId);
+            if (!c) return;
+            const tp = Math.max(1, Math.ceil(total / pageSize));
+
+            // 计算显示的页码（最多 5 个 + 省略号）
+            function getPages() {
+                const pages = [];
+                if (tp <= 7) {
+                    for (let i = 1; i <= tp; i++) pages.push(i);
+                } else {
+                    pages.push(1);
+                    let start = Math.max(2, page - 1);
+                    let end = Math.min(tp - 1, page + 1);
+                    if (page <= 3) { start = 2; end = 4; }
+                    if (page >= tp - 2) { start = tp - 3; end = tp - 1; }
+                    if (start > 2) pages.push('...');
+                    for (let i = start; i <= end; i++) pages.push(i);
+                    if (end < tp - 1) pages.push('...');
+                    pages.push(tp);
+                }
+                return pages;
+            }
+
+            const prevDisabled = page <= 1;
+            const nextDisabled = page >= tp;
+            const pages = getPages();
+
+            // 页码按钮（用 data-page 保存页码）
+            const pageBtns = pages.map(p => {
+                if (p === '...') return `<span class="px-2 text-gray-400">...</span>`;
+                const active = p === page;
+                return `<button data-page="${p}"
+                    class="w-9 h-9 rounded ${active ? 'border-2 border-blue-500 text-blue-600 font-medium' : 'text-gray-700 hover:bg-gray-100'} text-sm">${p}</button>`;
+            }).join('');
+
+            c.innerHTML = `
+                <div class="flex flex-wrap items-center justify-between gap-3 px-4 py-3 text-sm">
+                    <div class="text-gray-500">共 <b class="text-gray-900">${total}</b> 条</div>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <div class="flex items-center gap-1">
+                            <button data-page="${page - 1}" ${prevDisabled ? 'disabled' : ''}
+                                class="w-9 h-9 rounded flex items-center justify-center ${prevDisabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+                            </button>
+                            ${pageBtns}
+                            <button data-page="${page + 1}" ${nextDisabled ? 'disabled' : ''}
+                                class="w-9 h-9 rounded flex items-center justify-center ${nextDisabled ? 'text-gray-300 cursor-not-allowed' : 'text-gray-600 hover:bg-gray-100'}">
+                                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                            </button>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-gray-600">
+                            <span>${page}/${tp}</span>
+                            <span>到第</span>
+                            <input id="${containerId}-jumpInput" type="number" min="1" max="${tp}" value="${page}"
+                                class="w-14 h-9 px-2 border border-gray-300 rounded text-center text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none"
+                                onkeydown="if(event.key==='Enter') document.getElementById('${containerId}-jumpBtn').click()">
+                            <span>页</span>
+                            <button id="${containerId}-jumpBtn"
+                                class="h-9 px-3 bg-gray-100 hover:bg-gray-200 rounded text-sm font-medium text-gray-700 border border-gray-300">确定</button>
+                        </div>
+                        <div class="flex items-center gap-1.5 text-gray-600">
+                            <span>每页显示</span>
+                            <select data-pagesize class="h-9 px-2 border border-gray-300 rounded text-sm bg-white focus:border-blue-500 focus:ring-1 focus:ring-blue-500 outline-none">
+                                <option value="10" ${pageSize == 10 ? 'selected' : ''}>10</option>
+                                <option value="20" ${pageSize == 20 ? 'selected' : ''}>20</option>
+                                <option value="30" ${pageSize == 30 ? 'selected' : ''}>30</option>
+                                <option value="50" ${pageSize == 50 ? 'selected' : ''}>50</option>
+                                <option value="100" ${pageSize == 100 ? 'selected' : ''}>100</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            // 绑定事件
+            c.querySelectorAll('button[data-page]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    if (btn.disabled) return;
+                    const p = parseInt(btn.dataset.page);
+                    if (p >= 1 && p <= tp) onPageChange(p);
+                });
+            });
+            document.getElementById(`${containerId}-jumpBtn`).addEventListener('click', () => {
+                const v = parseInt(document.getElementById(`${containerId}-jumpInput`).value);
+                if (!v || v < 1 || v > tp) {
+                    showToast(`请输入 1-${tp} 之间的页码`, 'error');
+                    return;
+                }
+                onPageChange(v);
+            });
+            const psSelect = c.querySelector('select[data-pagesize]');
+            psSelect.addEventListener('change', () => {
+                onPageSizeChange(parseInt(psSelect.value));
+            });
+        }
+
+        function copySingle(text) { navigator.clipboard.writeText(text).then(() => showToast('已复制: ' + text)); }
+
+        // ==================== 批量复制 ====================
+        async function batchCopy(type) {
+            const params = new URLSearchParams();
+            if (currentModule) params.set('module', currentModule);
+            if (currentEnv) params.set('env', currentEnv);
+            if (currentKeyword) params.set('keyword', currentKeyword);
+
+            const res = await api(`/api/services/export?${params}`);
+            if (res.code === 0) {
+                const data = res.data;
+                const items = type === 'create' ? data.create_change_params : data.run_devflow_params;
+                if (items.length === 0) {
+                    showToast('当前筛选条件无匹配结果', 'error');
+                    return;
+                }
+                batchResultText = items.join('\n');
+
+                // 同时直接复制到剪贴板
+                navigator.clipboard.writeText(batchResultText).then(() => {
+                    showToast(`已复制 ${items.length} 条参数`);
+                });
+
+                // 显示弹窗预览
+                const label = type === 'create' ? '创建变更单参数' : '运行研发流程参数';
+                $('#batchResultTitle').textContent = `${label}（共 ${items.length} 条）`;
+                const filters = [];
+                if (currentModule) filters.push(`模块: ${currentModule}`);
+                if (currentEnv) filters.push(`环境: ${currentEnv}`);
+                if (currentKeyword) filters.push(`搜索: ${currentKeyword}`);
+                $('#batchResultInfo').textContent = `已自动复制到剪贴板 · 筛选条件: ${filters.length > 0 ? filters.join(' | ') : '全部'}`;
+                $('#batchResultContent').textContent = batchResultText;
+                $('#batchResultModal').classList.remove('hidden');
+                $('#batchResultModal').classList.add('flex');
+            } else {
+                showToast('获取参数失败', 'error');
+            }
+        }
+
+        function copyBatchResult() {
+            navigator.clipboard.writeText(batchResultText).then(() => showToast('已复制'));
+        }
+
+        function closeBatchResult() {
+            $('#batchResultModal').classList.add('hidden');
+            $('#batchResultModal').classList.remove('flex');
+        }
+
+        // ==================== 筛选 ====================
+        function searchServices() {
+            // currentModule 由 selectModule() 直接维护
+            currentEnv = $('#filterEnv').value;
+            currentKeyword = $('#filterKeyword').value.trim();
+            currentPage = 1;
+            loadServices();
+        }
+        function resetFilter() {
+            selectModule('');
+            $('#filterEnv').value = '';
+            $('#filterKeyword').value = '';
+            currentEnv = ''; currentKeyword = ''; currentPage = 1;
+            loadServices();
+        }
+        $('#filterKeyword').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchServices(); });
+        $('#filterEnv').addEventListener('change', () => searchServices());
+
+        // ==================== 新增/编辑 ====================
+        function openAddModal() {
+            closeAllModals();
+            $('#formId').value = '';
+            $('#modalTitle').textContent = '新增服务';
+            $('#serviceForm').reset();
+            if ($('#formEnv').options.length > 0) $('#formEnv').value = '中国';
+            $('#formModal').classList.remove('hidden'); $('#formModal').classList.add('flex');
+        }
+        async function openEditModal(id) {
+            closeAllModals();
+            closeAllModals();
+            const res = await api(`/api/services/${id}`);
+            if (res.code === 0) {
+                const d = res.data;
+                $('#formId').value = d.id; $('#modalTitle').textContent = '编辑服务';
+                $('#formModule').value = d.business_module;
+                $('#formServiceName').value = d.service_name;
+                $('#formCreateParams').value = d.create_change_params || '';
+                $('#formDevflowParams').value = d.run_devflow_params || '';
+                $('#formEnv').value = d.env || '中国';
+                $('#formModal').classList.remove('hidden'); $('#formModal').classList.add('flex');
+            }
+        }
+        function closeFormModal() { $('#formModal').classList.add('hidden'); $('#formModal').classList.remove('flex'); }
+        async function saveService(e) {
+            e.preventDefault();
+            const id = $('#formId').value;
+            const body = {
+                business_module: $('#formModule').value.trim(),
+                service_name: $('#formServiceName').value.trim(),
+                create_change_params: $('#formCreateParams').value.trim(),
+                run_devflow_params: $('#formDevflowParams').value.trim(),
+                env: $('#formEnv').value,
+            };
+            const res = id
+                ? await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+                : await api('/api/services', { method: 'POST', body: JSON.stringify(body) });
+            if (res.code === 0) {
+                showToast(id ? '更新成功' : '新增成功');
+                closeFormModal();
+                await loadModules(); await loadEnvs(); await loadServices();
+            } else { showToast(res.message || '操作失败', 'error'); }
+        }
+
+        // ==================== 删除 ====================
+        // ==================== 通用删除逻辑 ====================
+        // 每次打开删除弹窗时设置：deleteEndpoint（如 'services'、'credentials'）和 onDeleted（删除成功后的回调）
+        let deleteEndpoint = '';
+        let onDeleted = null;
+
+        // 关闭所有 modal（防止多个 modal 同时打开互相覆盖）
+        function closeAllModals() {
+            const modals = ['formModal', 'userFormModal', 'ciFormModal', 'domFormModal', 'credFormModal', 'deleteModal', 'batchResultModal'];
+            modals.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
+            });
+        }
+
+        // 简易版删除（绕过复杂 modal 系统）
+        async function quickDelete(endpoint, id, name) {
+            if (!confirm(`确定要删除「${name}」吗？此操作不可撤销。`)) return;
+            try {
+                const res = await api(`/api/${endpoint}/${id}`, { method: 'DELETE' });
+                if (res.code === 0) {
+                    alert('删除成功');
+                    if (endpoint === 'services') loadServices();
+                    else if (endpoint === 'credentials') loadCredentials();
+                    else if (endpoint === 'ci-orders') loadCiOrders();
+                    else if (endpoint === 'ci-devflow') loadCiDevflows();
+                    else if (endpoint === 'domains') loadDomains();
+                } else {
+                    alert('删除失败: ' + (res.message || '未知错误'));
+                }
+            } catch (e) {
+                alert('删除异常: ' + e.message);
+            }
+        }
+
+        function openDeleteModal(id, name) {
+            closeAllModals();
+            deleteTargetId = id;
+            deleteEndpoint = 'services';
+            onDeleted = async () => { await loadModules(); await loadEnvs(); await loadServices(); };
+            $('#deleteMsg').textContent = `确定要删除「${name}」吗？此操作不可撤销。`;
+            $('#deleteModal').classList.remove('hidden'); $('#deleteModal').classList.add('flex');
+        }
+        function closeDeleteModal() { deleteTargetId = null; deleteEndpoint = ''; onDeleted = null; $('#deleteModal').classList.add('hidden'); $('#deleteModal').classList.remove('flex'); }
+        async function confirmDelete() {
+            if (!deleteTargetId || !deleteEndpoint) return;
+            const res = await api(`/api/${deleteEndpoint}/${deleteTargetId}`, { method: 'DELETE' });
+            if (res.code === 0) {
+                showToast('删除成功'); closeDeleteModal();
+                if (onDeleted) await onDeleted();
+            } else { showToast(res.message || '删除失败', 'error'); }
+        }
+
+        // ==================== Excel 通用：导入/导出/模板 ====================
+        function toggleExcelMenu(key) {
+            const dd = document.getElementById(`${key}ExcelDropdown`);
+            dd.classList.toggle('hidden');
+        }
+        function closeExcelMenu(key) {
+            const dd = document.getElementById(`${key}ExcelDropdown`);
+            if (dd) dd.classList.add('hidden');
+        }
+        // 点击外部关闭所有 Excel 菜单
+        document.addEventListener('click', (e) => {
+            document.querySelectorAll('[id$="ExcelDropdown"]').forEach(dd => {
+                if (!e.target.closest('[id$="ExcelMenu"]')) dd.classList.add('hidden');
+            });
+        });
+
+        function downloadTemplate(type) {
+            window.location.href = `/api/${type}/template`;
+            showToast('模板下载已开始');
+        }
+
+        // 触发浏览器下载（带筛选参数）
+        function downloadWithParams(url, params) {
+            const qs = new URLSearchParams(params).toString();
+            window.location.href = qs ? `${url}?${qs}` : url;
+        }
+
+        async function exportServicesToExcel() {
+            const params = {
+                module: currentModule,
+                env: currentEnv,
+                keyword: currentKeyword,
+            };
+            downloadWithParams('/api/services/export-xlsx', params);
+        }
+
+        async function importCredentialsExcel() {
+            if (!confirm('将从 ~/Downloads/服务凭证导入模板.xlsx 导入凭证，确认继续？\n（导入模板文件不存在时，请先点击「下载导入模板」获取）')) return;
+            const res = await api('/api/credentials/import', { method: 'POST', body: JSON.stringify({}) });
+            if (res.code === 0) { showToast(res.message); await loadCredentials(); }
+            else { showToast(res.message, 'error'); }
+        }
+
+        async function exportCredentialsToExcel() {
+            const params = {
+                keyword: credKeyword,
+                type: credType,
+                status: credStatus,
+            };
+            downloadWithParams('/api/credentials/export', params);
+        }
+
+        async function exportDomainsToExcel() {
+            const params = {
+                root: domRoot,
+                keyword: domKeyword,
+                region: domRegion,
+                type: domType,
+                env: domEnv,
+            };
+            downloadWithParams('/api/domains/export', params);
+        }
+
+        // ==================== CI 子标签切换 + 数据 ====================
+        let ciActiveTab = 'params';
+
+        function toggleCiMenu() {
+            const sub = document.getElementById('ciSubmenu');
+            const arrow = document.getElementById('ciMenuArrow');
+            const wasHidden = sub.classList.contains('hidden');
+            sub.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+            // 父菜单点击：始终导航到「蓝鲸发版参数管理」子标签页，并保持子菜单展开
+            if (wasHidden) {
+                switchCiTab('params');
+            }
+        }
+
+        function switchCiTab(tab) {
+            ciActiveTab = tab;
+            // ⚠️ 顺序很重要：先清掉所有 .sidebar-link 的 active（包括子标签），
+            // 再给当前点击的子标签加 active，否则会被一起清掉
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('[data-ci-tab]').forEach(el => {
+                el.classList.remove('active', 'sidebar-sub-active');
+            });
+            // 激活当前子标签
+            const el = document.getElementById(`ciSub-${tab}`);
+            if (el) el.classList.add('active');
+            // 激活父菜单（ciMenuToggle）
+            document.getElementById('ciMenuToggle').classList.add('active');
+            // 展开子菜单
+            document.getElementById('ciSubmenu').classList.remove('hidden');
+            document.getElementById('ciMenuArrow').classList.add('rotate-180');
+            // 切换页面
+            const pageMap = { params: 'page-params', ciorders: 'page-ciorders', cidevflow: 'page-cidevflow' };
+            document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
+            const page = document.getElementById(pageMap[tab]);
+            if (page) page.classList.remove('hidden');
+            // 加载数据
+            if (tab === 'ciorders') loadCiOrders();
+            if (tab === 'cidevflow') loadCiDevflows();
+            if (tab === 'params') { loadServices(); }
+        }
+
+        // --- 云效创建变更单 ---
+        let cioPage = 1, cioPageSize = 20, cioKeyword = '', cioEnv = '', cioFiltersLoaded = false;
+
+        async function loadCiOrdersFilters() {
+            // 类似 loadFilterOptions：只加载一次筛选下拉，避免 bug
+            const envs = await api('/api/ci-orders/envs');
+            if (envs.code === 0) {
+                const s = $('#cioEnv');
+                const cur = s.value;
+                s.innerHTML = '<option value="">全部</option>';
+                envs.data.forEach(v => s.innerHTML += `<option value="${v}">${v}</option>`);
+                if (cur && [...s.options].some(o => o.value === cur)) s.value = cur;
+            }
+            cioFiltersLoaded = true;
+        }
+
+        async function loadCiOrders() {
+            if (!cioFiltersLoaded) await loadCiOrdersFilters();
+
+            const params = new URLSearchParams({ page: cioPage, page_size: cioPageSize, keyword: cioKeyword, env: cioEnv });
+            const res = await api(`/api/ci-orders?${params}`);
+            if (res.code === 0) {
+                $('#cioTableBody').innerHTML = res.data.length === 0 ? '<tr><td colspan="5" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>'
+                    : res.data.map((d, i) => `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 font-medium">${esc(d.delivery_service)}</td><td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${d.env==='中国'?'bg-green-100 text-green-700':d.env==='新加坡'?'bg-yellow-100 text-yellow-700':'bg-blue-100 text-blue-700'}">${esc(d.env)}</span></td><td class="px-4 py-3"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs">${esc(d.branch)}</code></td><td class="px-4 py-3"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn" onclick="copySingle('${esc(d.repo_sn)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs font-mono max-w-[280px] truncate inline-block">${esc(d.repo_sn)}</code></span></td><td class="px-4 py-3"><button onclick="openCiOrderEdit(${d.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button><button onclick="quickDelete('ci-orders', ${d.id}, '${esc(d.delivery_service)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">删除</button></td></tr>`).join('');
+                $('#cioStatTotal').textContent = res.total;
+                renderPagination('cioPagination', res.total, res.page, cioPageSize,
+                    (p) => { cioPage = p; loadCiOrders(); },
+                    (s) => { cioPageSize = s; cioPage = 1; loadCiOrders(); }
+                );
+
+                // 统计环境数和分支数（基于全量数据）
+                const all = await api('/api/ci-orders?page=1&page_size=1000');
+                if (all.code === 0) {
+                    const envsSet = new Set(all.data.map(d => d.env).filter(Boolean));
+                    const branchesSet = new Set(all.data.map(d => d.branch).filter(Boolean));
+                    $('#cioStatEnvs').textContent = envsSet.size;
+                    $('#cioStatBranches').textContent = branchesSet.size;
+                }
+            }
+        }
+        function cioSearch() { cioKeyword = $('#cioKeyword').value.trim(); cioEnv = $('#cioEnv').value; cioPage = 1; loadCiOrders(); }
+        function cioReset() { $('#cioKeyword').value = ''; $('#cioEnv').value = ''; cioKeyword = ''; cioEnv = ''; cioPage = 1; loadCiOrders(); }
+        $('#cioKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') cioSearch(); });
+        $('#cioEnv').addEventListener('change', cioSearch);
+
+        function cioPopulateFormEnvs() {
+            const sel = $('#ciFormEnv'); const cur = sel.value;
+            sel.innerHTML = '<option value="">- 请选择 -</option>';
+            ['中国', '新加坡', '北美'].forEach(v => { sel.innerHTML += `<option value="${v}">${v}</option>`; });
+            if (cur) sel.value = cur;
+        }
+
+        async function openCiOrderAdd() {
+            closeAllModals();
+            $('#ciFormId').value = ''; $('#ciModalTitle').textContent = '新增创建变更单';
+            $('#ciFormMode').value = 'orders';
+            $('#ciFormOrdersFields').style.display = '';
+            $('#ciFormDevflowFields').style.display = 'none';
+            $('#ciForm').reset(); cioPopulateFormEnvs();
+            $('#ciFormModal').classList.remove('hidden'); $('#ciFormModal').classList.add('flex');
+        }
+        async function openCiOrderEdit(id) {
+            closeAllModals();
+            const res = await api(`/api/ci-orders/${id}`);
+            if (res.code === 0) {
+                const d = res.data;
+                $('#ciFormId').value = d.id; $('#ciFormMode').value = 'orders'; $('#ciModalTitle').textContent = '编辑创建变更单';
+                $('#ciFormService').value = d.delivery_service || '';
+                $('#ciFormBranch').value = d.branch || '';
+                $('#ciFormRepo').value = d.repo_sn || '';
+                $('#ciFormOrdersFields').style.display = '';
+                $('#ciFormDevflowFields').style.display = 'none';
+                cioPopulateFormEnvs(); $('#ciFormEnv').value = d.env || '';
+                $('#ciFormModal').classList.remove('hidden'); $('#ciFormModal').classList.add('flex');
+            }
+        }
+
+        // --- 云效运行研发流程 ---
+        let cidPage = 1, cidPageSize = 20, cidKeyword = '', cidEnv = '', cidFiltersLoaded = false;
+
+        async function loadCiDevflowsFilters() {
+            const envs = await api('/api/ci-devflow/envs');
+            if (envs.code === 0) {
+                const s = $('#cidEnv');
+                const cur = s.value;
+                s.innerHTML = '<option value="">全部</option>';
+                envs.data.forEach(v => s.innerHTML += `<option value="${v}">${v}</option>`);
+                if (cur && [...s.options].some(o => o.value === cur)) s.value = cur;
+            }
+            cidFiltersLoaded = true;
+        }
+
+        async function loadCiDevflows() {
+            if (!cidFiltersLoaded) await loadCiDevflowsFilters();
+
+            const params = new URLSearchParams({ page: cidPage, page_size: cidPageSize, keyword: cidKeyword, env: cidEnv });
+            const res = await api(`/api/ci-devflow?${params}`);
+            if (res.code === 0) {
+                $('#cidTableBody').innerHTML = res.data.length === 0 ? '<tr><td colspan="5" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>'
+                    : res.data.map((d, i) => `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 font-medium">${esc(d.delivery_service)}</td><td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${d.env==='中国'?'bg-green-100 text-green-700':d.env==='新加坡'?'bg-yellow-100 text-yellow-700':'bg-blue-100 text-blue-700'}">${esc(d.env)}</span></td><td class="px-4 py-3"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn" onclick="copySingle('${esc(d.wf_sn)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs font-mono max-w-[280px] truncate inline-block">${esc(d.wf_sn)}</code></span></td><td class="px-4 py-3"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn" onclick="copySingle('${esc(d.stage_sn)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs font-mono max-w-[280px] truncate inline-block">${esc(d.stage_sn)}</code></span></td><td class="px-4 py-3"><button onclick="openCiDevflowEdit(${d.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button><button onclick="quickDelete('ci-devflow', ${d.id}, '${esc(d.delivery_service)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">删除</button></td></tr>`).join('');
+                $('#cidStatTotal').textContent = res.total;
+                $('#cidStatFiltered').textContent = res.data.length;
+                renderPagination('cidPagination', res.total, res.page, cidPageSize,
+                    (p) => { cidPage = p; loadCiDevflows(); },
+                    (s) => { cidPageSize = s; cidPage = 1; loadCiDevflows(); }
+                );
+
+                // 统计环境数（基于全量数据）
+                const all = await api('/api/ci-devflow?page=1&page_size=1000');
+                if (all.code === 0) {
+                    const envsSet = new Set(all.data.map(d => d.env).filter(Boolean));
+                    $('#cidStatEnvs').textContent = envsSet.size;
+                }
+            }
+        }
+        function cidSearch() { cidKeyword = $('#cidKeyword').value.trim(); cidEnv = $('#cidEnv').value; cidPage = 1; loadCiDevflows(); }
+        function cidReset() { $('#cidKeyword').value = ''; $('#cidEnv').value = ''; cidKeyword = ''; cidEnv = ''; cidPage = 1; loadCiDevflows(); }
+        $('#cidKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') cidSearch(); });
+        $('#cidEnv').addEventListener('change', cidSearch);
+
+        async function openCiDevflowAdd() {
+            closeAllModals();
+            $('#ciFormId').value = ''; $('#ciModalTitle').textContent = '新增运行研发流程';
+            $('#ciFormMode').value = 'devflow';
+            $('#ciFormOrdersFields').style.display = 'none';
+            $('#ciFormDevflowFields').style.display = '';
+            $('#ciForm').reset(); cioPopulateFormEnvs();
+            $('#ciFormModal').classList.remove('hidden'); $('#ciFormModal').classList.add('flex');
+        }
+        async function openCiDevflowEdit(id) {
+            closeAllModals();
+            const res = await api(`/api/ci-devflow/${id}`);
+            if (res.code === 0) {
+                const d = res.data;
+                $('#ciFormId').value = d.id; $('#ciFormMode').value = 'devflow'; $('#ciModalTitle').textContent = '编辑运行研发流程';
+                $('#ciFormService').value = d.delivery_service || '';
+                $('#ciFormWf').value = d.wf_sn || '';
+                $('#ciFormStage').value = d.stage_sn || '';
+                $('#ciFormOrdersFields').style.display = 'none';
+                $('#ciFormDevflowFields').style.display = '';
+                cioPopulateFormEnvs(); $('#ciFormEnv').value = d.env || '';
+                $('#ciFormModal').classList.remove('hidden'); $('#ciFormModal').classList.add('flex');
+            }
+        }
+
+        function closeCiForm() { $('#ciFormModal').classList.add('hidden'); $('#ciFormModal').classList.remove('flex'); }
+
+        async function saveCiItem(e) {
+            e.preventDefault();
+            const mode = $('#ciFormMode').value;
+            const endpoint = mode === 'orders' ? '/api/ci-orders' : '/api/ci-devflow';
+            const body = { delivery_service: $('#ciFormService').value.trim(), env: $('#ciFormEnv').value };
+            if (mode === 'orders') { body.branch = $('#ciFormBranch').value; body.repo_sn = $('#ciFormRepo').value; }
+            else { body.wf_sn = $('#ciFormWf').value; body.stage_sn = $('#ciFormStage').value; }
+            const id = $('#ciFormId').value;
+            const res = id ? await api(`${endpoint}/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+                           : await api(endpoint, { method: 'POST', body: JSON.stringify(body) });
+            if (res.code === 0) { showToast(id ? '更新成功' : '新增成功'); closeCiForm(); mode === 'orders' ? loadCiOrders() : loadCiDevflows(); }
+            else { showToast(res.message || '操作失败', 'error'); }
+        }
+
+        async function ciDelete(endpoint, id, name) {
+            console.log('[ciDelete] called:', endpoint, id, name);
+            try {
+                closeAllModals();
+                deleteTargetId = id;
+                deleteEndpoint = endpoint;
+                onDeleted = endpoint === 'ci-orders' ? loadCiOrders : loadCiDevflows;
+                const msg = document.getElementById('deleteMsg');
+                if (msg) msg.textContent = `确定要删除「${name}」吗？此操作不可撤销。`;
+                const modal = document.getElementById('deleteModal');
+                if (!modal) { console.error('[ciDelete] deleteModal not found'); return; }
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                console.log('[ciDelete] modal shown, state:', modal.className);
+            } catch (e) {
+                console.error('[ciDelete] error:', e);
+            }
+        }
+
+        async function importCiOrders() {
+            if (!confirm('将从 Excel 导入云效创建变更单数据，会覆盖已有数据，确认继续？')) return;
+            const res = await api('/api/ci-orders/import', { method: 'POST' });
+            if (res.code === 0) { showToast(res.message); loadCiOrders(); } else { showToast(res.message, 'error'); }
+        }
+        async function importCiDevflow() {
+            if (!confirm('将从 Excel 导入云效运行研发流程数据，会覆盖已有数据，确认继续？')) return;
+            const res = await api('/api/ci-devflow/import', { method: 'POST' });
+            if (res.code === 0) { showToast(res.message); loadCiDevflows(); } else { showToast(res.message, 'error'); }
+        }
+
+        function exportCiOrders() { downloadWithParams('/api/ci-orders/export', { keyword: cioKeyword, env: cioEnv }); }
+        function exportCiDevflow() { downloadWithParams('/api/ci-devflow/export', { keyword: cidKeyword, env: cidEnv }); }
+
+        // ==================== Excel 导入 ====================
+        async function importFromExcel() {
+            if (!confirm('将从 Excel 文件导入数据，会覆盖已有数据，确认继续？')) return;
+            const res = await api('/api/import', { method: 'POST' });
+            if (res.code === 0) {
+                showToast(res.message);
+                await loadModules(); await loadEnvs(); await loadServices();
+            } else { showToast(res.message, 'error'); }
+        }
+
+        // ==================== 服务凭证管理 ====================
+        let credPage = 1;
+        let credPageSize = 20;
+        let credKeyword = '';
+        let credType = '';
+        let credStatus = '';
+
+        function isExpiring(expires) {
+            if (!expires) return false;
+            const today = new Date();
+            const exp = new Date(expires);
+            const diff = (exp - today) / (1000 * 60 * 60 * 24);
+            return diff >= 0 && diff <= 30;
+        }
+        function isExpired(expires) {
+            if (!expires) return false;
+            return new Date(expires) < new Date();
+        }
+
+        async function loadCredentials() {
+            const params = new URLSearchParams();
+            if (credKeyword) params.set('keyword', credKeyword);
+            if (credType) params.set('type', credType);
+            if (credStatus) params.set('status', credStatus);
+            params.set('page', credPage);
+            params.set('page_size', credPageSize);
+
+            const res = await api(`/api/credentials?${params}`);
+            if (res.code === 0) {
+                renderCredTable(res.data);
+                renderPagination('credPagination', res.total, res.page, credPageSize,
+                    (p) => { credPage = p; loadCredentials(); },
+                    (s) => { credPageSize = s; credPage = 1; loadCredentials(); }
+                );
+                $('#credStatTotal').textContent = res.total;
+
+                // 统计状态: 拉全部做精确统计
+                const all = await api('/api/credentials?page=1&page_size=1000');
+                if (all.code === 0) {
+                    let normal = 0, expiring = 0, expired = 0;
+                    all.data.forEach(d => {
+                        const status = isExpired(d.expires_at) ? '已过期' : isExpiring(d.expires_at) ? '即将过期' : (d.status || '正常');
+                        if (status === '正常') normal++;
+                        else if (status === '即将过期') expiring++;
+                        else if (status === '已过期') expired++;
+                    });
+                    $('#credStatNormal').textContent = normal;
+                    $('#credStatExpiring').textContent = expiring;
+                    $('#credStatExpired').textContent = expired;
+                }
+            }
+        }
+
+        function renderCredTable(items) {
+            const tbody = $('#credTableBody');
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="12" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = items.map((d, i) => {
+                const realStatus = isExpired(d.expires_at) ? '已过期' : isExpiring(d.expires_at) ? '即将过期' : (d.status || '正常');
+                const statusClass = realStatus === '已过期' ? 'bg-red-100 text-red-700' :
+                    realStatus === '即将过期' ? 'bg-yellow-100 text-yellow-700' :
+                        realStatus === '禁用' ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700';
+                const typeClass = d.credential_type === 'SSH密钥' ? 'bg-purple-100 text-purple-700' :
+                    d.credential_type === 'API Token' ? 'bg-orange-100 text-orange-700' :
+                        d.credential_type === '数据库连接' ? 'bg-pink-100 text-pink-700' :
+                            'bg-blue-100 text-blue-700';
+                return `
+                <tr class="table-row-hover border-b border-gray-100">
+                  <td class="px-3 py-3 text-gray-400 text-xs">${(credPage - 1) * 20 + i + 1}</td>
+                  <td class="px-3 py-3 font-medium text-gray-900">${esc(d.service_name)}</td>
+                  <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium ${typeClass}">${esc(d.credential_type || '用户名密码')}</span></td>
+                  <td class="px-3 py-3 max-w-[160px]"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn group" onclick="copySingle('${esc(d.access_url)}')"><code class="bg-gray-100 px-1.5 py-0.5 rounded text-xs truncate inline-block max-w-[120px]" title="${esc(d.access_url)}">${esc(d.access_url) || '-'}</code></span></td>
+                  <td class="px-3 py-3"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn group" onclick="copySingle('${esc(d.username)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs">${esc(d.username) || '-'}</code></span></td>
+                  <td class="px-3 py-3"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn group" onclick="copySingle('${esc(d.password)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs font-mono">${esc(d.password) || '-'}</code></span></td>
+                  <td class="px-3 py-3 max-w-[140px]"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn group" onclick="copySingle('${esc(d.internal_url)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs truncate inline-block max-w-[100px]" title="${esc(d.internal_url)}">${esc(d.internal_url) || '-'}</code></span></td>
+                  <td class="px-3 py-3 max-w-[140px]"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn group" onclick="copySingle('${esc(d.external_url)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs truncate inline-block max-w-[100px]" title="${esc(d.external_url)}">${esc(d.external_url) || '-'}</code></span></td>
+                  <td class="px-3 py-3 text-sm">${esc(d.owner) || '-'}</td>
+                  <td class="px-3 py-3 text-xs ${isExpired(d.expires_at) ? 'text-red-600 font-medium' : isExpiring(d.expires_at) ? 'text-yellow-600' : 'text-gray-600'}">${esc(d.expires_at) || '永久'}</td>
+                  <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium ${statusClass}">${esc(realStatus)}</span></td>
+                  <td class="px-3 py-3">
+                    <div class="flex items-center gap-1">
+                      <button onclick="openCredEditModal(${d.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button>
+                      <button onclick="quickDelete('credentials', ${d.id}, '${esc(d.service_name)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">删除</button>
+                    </div>
+                  </td>
+                </tr>`;
+            }).join('');
+        }
+
+        function credSearch() {
+            credKeyword = $('#credFilterKeyword').value.trim();
+            credType = $('#credFilterType').value;
+            credStatus = $('#credFilterStatus').value;
+            credPage = 1;
+            loadCredentials();
+        }
+        function credReset() {
+            $('#credFilterKeyword').value = '';
+            $('#credFilterType').value = '';
+            $('#credFilterStatus').value = '';
+            credKeyword = ''; credType = ''; credStatus = ''; credPage = 1;
+            loadCredentials();
+        }
+        $('#credFilterKeyword').addEventListener('keydown', (e) => { if (e.key === 'Enter') credSearch(); });
+        $('#credFilterType').addEventListener('change', () => credSearch());
+        $('#credFilterStatus').addEventListener('change', () => credSearch());
+
+        // 凭证弹窗
+        async function openCredAddModal() {
+            closeAllModals();
+            closeAllModals();
+            $('#credFormId').value = '';
+            $('#credModalTitle').textContent = '新增凭证';
+            $('#credForm').reset();
+            $('#credFormType').value = '用户名密码';
+            $('#credFormStatus').value = '正常';
+            $('#credFormModal').classList.remove('hidden');
+            $('#credFormModal').classList.add('flex');
+        }
+        async function openCredEditModal(id) {
+            closeAllModals();
+            closeAllModals();
+            const res = await api(`/api/credentials/${id}`);
+            if (res.code === 0) {
+                const d = res.data;
+                $('#credFormId').value = d.id;
+                $('#credModalTitle').textContent = '编辑凭证';
+                $('#credFormService').value = d.service_name || '';
+                $('#credFormType').value = d.credential_type || '用户名密码';
+                $('#credFormUrl').value = d.access_url || '';
+                $('#credFormUsername').value = d.username || '';
+                $('#credFormPassword').value = d.password || '';
+                $('#credFormSshKey').value = d.ssh_key || '';
+                $('#credFormApiToken').value = d.api_token || '';
+                $('#credFormInternalUrl').value = d.internal_url || '';
+                $('#credFormInternalPort').value = d.internal_port || '';
+                $('#credFormExternalUrl').value = d.external_url || '';
+                $('#credFormExternalPort').value = d.external_port || '';
+                $('#credFormDbName').value = d.db_name || '';
+                $('#credFormOwner').value = d.owner || '';
+                $('#credFormExpires').value = d.expires_at || '';
+                $('#credFormStatus').value = d.status || '正常';
+                $('#credFormNotes').value = d.notes || '';
+                $('#credFormModal').classList.remove('hidden');
+                $('#credFormModal').classList.add('flex');
+            }
+        }
+        function closeCredFormModal() { $('#credFormModal').classList.add('hidden'); $('#credFormModal').classList.remove('flex'); }
+
+        async function saveCredential(e) {
+            e.preventDefault();
+            const id = $('#credFormId').value;
+            const body = {
+                service_name: $('#credFormService').value.trim(),
+                credential_type: $('#credFormType').value,
+                access_url: $('#credFormUrl').value.trim(),
+                username: $('#credFormUsername').value,
+                password: $('#credFormPassword').value,
+                ssh_key: $('#credFormSshKey').value,
+                api_token: $('#credFormApiToken').value,
+                internal_url: $('#credFormInternalUrl').value.trim(),
+                internal_port: $('#credFormInternalPort').value ? parseInt($('#credFormInternalPort').value) : null,
+                external_url: $('#credFormExternalUrl').value.trim(),
+                external_port: $('#credFormExternalPort').value ? parseInt($('#credFormExternalPort').value) : null,
+                db_name: $('#credFormDbName').value.trim(),
+                owner: $('#credFormOwner').value.trim(),
+                expires_at: $('#credFormExpires').value || null,
+                status: $('#credFormStatus').value,
+                notes: $('#credFormNotes').value,
+            };
+            const res = id
+                ? await api(`/api/credentials/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+                : await api('/api/credentials', { method: 'POST', body: JSON.stringify(body) });
+            if (res.code === 0) {
+                showToast(id ? '更新成功' : '新增成功');
+                closeCredFormModal();
+                await loadCredentials();
+            } else { showToast(res.message || '操作失败', 'error'); }
+        }
+
+        function openCredDeleteModal(id, name) {
+            closeAllModals();
+            deleteTargetId = id;
+            deleteEndpoint = 'credentials';
+            onDeleted = loadCredentials;
+            $('#deleteMsg').textContent = `确定要删除「${name}」的凭证吗？此操作不可撤销。`;
+            $('#deleteModal').classList.remove('hidden'); $('#deleteModal').classList.add('flex');
+        }
+
+        // ==================== 域名管理 ====================
+        let domPage = 1, domPageSize = 20, domKeyword = '', domType = '', domEnv = '', domRegion = '', domRoot = 'jmj1995.com';
+        let filterOptionsLoaded = false; // 避免筛选时重复重建下拉
+
+        async function switchDomainRoot(root) {
+            domRoot = root; domPage = 1; domKeyword = ''; domType = ''; domEnv = ''; domRegion = '';
+            $('#domFilterKeyword').value = '';
+            $('#domFilterRegion').value = '';
+            $('#domFilterType').value = '';
+            $('#domFilterEnv').value = '';
+            $('#domainRootLabel').textContent = root;
+            // ⚠️ 同样先清掉所有 .sidebar-link 的 active，再给当前子标签加 active
+            switchPage('domains');
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('[id^="domainSub-"]').forEach(el => el.classList.remove('active'));
+            const active = document.getElementById(`domainSub-${root}`);
+            if (active) {
+                active.classList.add('active');
+                // 父菜单（域名管理）也激活
+                document.querySelector('[data-page="domains"]').classList.add('active');
+            }
+            const submenu = document.getElementById('domainSubmenu');
+            submenu.classList.remove('hidden');
+            document.getElementById('domainMenuArrow').classList.add('rotate-180');
+            filterOptionsLoaded = false; // 切换 root 时重新加载筛选下拉
+            await loadDomains();
+        }
+
+        function toggleDomainMenu() {
+            const sub = document.getElementById('domainSubmenu');
+            const arrow = document.getElementById('domainMenuArrow');
+            sub.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+            switchPage('domains');
+            loadDomains();
+        }
+
+        async function loadFilterOptions() {
+            // 只加载一次筛选下拉选项
+            const [regions, types, envs] = await Promise.all([
+                api(`/api/regions?root=${domRoot}`),
+                api(`/api/domain-types?root=${domRoot}`),
+                api(`/api/domain-envs?root=${domRoot}`),
+            ]);
+            const fillSelect = (sel, items) => {
+                const current = sel.value;
+                sel.innerHTML = '<option value="">全部</option>';
+                items.forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
+                // 恢复当前选择
+                if (current && [...sel.options].some(o => o.value === current)) {
+                    sel.value = current;
+                }
+            };
+            if (regions.code === 0) fillSelect($('#domFilterRegion'), regions.data);
+            if (types.code === 0) fillSelect($('#domFilterType'), types.data);
+            if (envs.code === 0) fillSelect($('#domFilterEnv'), envs.data);
+            filterOptionsLoaded = true;
+        }
+
+        async function loadDomains() {
+            if (!filterOptionsLoaded) await loadFilterOptions();
+
+            const params = new URLSearchParams();
+            params.set('root', domRoot);
+            if (domKeyword) params.set('keyword', domKeyword);
+            if (domRegion) params.set('region', domRegion);
+            if (domType) params.set('type', domType);
+            if (domEnv) params.set('env', domEnv);
+            params.set('page', domPage);
+            params.set('page_size', domPageSize);
+
+            const res = await api(`/api/domains?${params}`);
+            if (res.code === 0) {
+                renderDomTable(res.data);
+                renderPagination('domPagination', res.total, res.page, domPageSize,
+                    (p) => { domPage = p; loadDomains(); },
+                    (s) => { domPageSize = s; domPage = 1; loadDomains(); }
+                );
+                $('#domStatTotal').textContent = res.total;
+                // 证书状态统计（考虑当前筛选）
+                const all = await api(`/api/domains?root=${domRoot}&page=1&page_size=1000`);
+                if (all.code === 0) {
+                    let normal = 0, expiring = 0, expired = 0;
+                    const now = new Date();
+                    all.data.forEach(d => {
+                        if (!d.cert_expiry) { normal++; return; }
+                        const exp = new Date(d.cert_expiry);
+                        const diffDays = (exp - now) / (1000 * 60 * 60 * 24);
+                        if (diffDays < 0) expired++;
+                        else if (diffDays <= 30) expiring++;
+                        else normal++;
+                    });
+                    $('#domStatNormal').textContent = normal;
+                    $('#domStatExpiring').textContent = expiring;
+                    $('#domStatExpired').textContent = expired;
+                }
+            }
+        }
+
+        function renderDomTable(items) {
+            const tbody = $('#domTableBody');
+            if (items.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="9" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>`;
+                return;
+            }
+            tbody.innerHTML = items.map(d => {
+                let certBadge = '', certText = d.cert_expiry ? d.cert_expiry.slice(0, 10) : '无';
+                if (d.cert_expiry) {
+                    const diff = (new Date(d.cert_expiry) - new Date()) / (1000*60*60*24);
+                    if (diff < 0) certBadge = 'bg-red-100 text-red-700';
+                    else if (diff <= 30) certBadge = 'bg-yellow-100 text-yellow-700';
+                    else certBadge = 'bg-green-100 text-green-700';
+                }
+                const typeBadge = d.domain_type === 'higress' ? 'bg-purple-100 text-purple-700' :
+                    d.domain_type === 'nginx' ? 'bg-orange-100 text-orange-700' :
+                        d.domain_type === 'alb' ? 'bg-cyan-100 text-cyan-700' : 'bg-blue-100 text-blue-700';
+                const progressBadge = d.cert_progress === '进行中' ? 'bg-yellow-100 text-yellow-700' :
+                    d.cert_progress === '未开始' ? 'bg-gray-200 text-gray-500' : 'bg-green-100 text-green-700';
+                const regionBadge = d.region === '中国' ? 'bg-red-50 text-red-700' :
+                    d.region === '新加坡' ? 'bg-yellow-50 text-yellow-700' :
+                        d.region === '北美' ? 'bg-blue-50 text-blue-700' :
+                            d.region === '私有云' ? 'bg-purple-50 text-purple-700' : 'bg-gray-100 text-gray-700';
+                return `
+                <tr class="table-row-hover border-b border-gray-100">
+                  <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${regionBadge}">${esc(d.region) || '-'}</span></td>
+                  <td class="px-3 py-3"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn" onclick="copySingle('${esc(d.domain_name)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-xs text-gray-700">${esc(d.domain_name)}</code></span></td>
+                  <td class="px-3 py-3 text-sm text-gray-900">${esc(d.service_name) || '-'}</td>
+                  <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium ${typeBadge}">${esc(d.domain_type) || '-'}</span></td>
+                  <td class="px-3 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(d.env) || '-'}</td>
+                  <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${progressBadge}">${esc(d.cert_progress) || '-'}</span></td>
+                  <td class="px-3 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium whitespace-nowrap ${certBadge}">${esc(certText)}</span></td>
+                  <td class="px-3 py-3 text-xs text-gray-500 max-w-[120px] truncate" title="${esc(d.notes || '')}">${esc(d.notes) || '-'}</td>
+                  <td class="px-3 py-3"><div class="flex items-center gap-1">
+                    <button onclick="openDomEditModal(${d.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button>
+                    <button onclick="quickDelete('domains', ${d.id}, '${esc(d.domain_name)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">删除</button>
+                  </div></td>
+                </tr>`;
+            }).join('');
+        }
+
+        function domSearch() {
+            domKeyword = $('#domFilterKeyword').value.trim();
+            domRegion = $('#domFilterRegion').value;
+            domType = $('#domFilterType').value;
+            domEnv = $('#domFilterEnv').value;
+            domPage = 1;
+            loadDomains();
+        }
+        function domReset() {
+            $('#domFilterKeyword').value = '';
+            $('#domFilterRegion').value = '';
+            $('#domFilterType').value = '';
+            $('#domFilterEnv').value = '';
+            domKeyword = ''; domRegion = ''; domType = ''; domEnv = ''; domPage = 1;
+            loadDomains();
+        }
+        $('#domFilterKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') domSearch(); });
+        // 修复 bug：change 事件只更新变量，触发搜索但不重建下拉
+        $('#domFilterRegion').addEventListener('change', domSearch);
+        $('#domFilterType').addEventListener('change', domSearch);
+        $('#domFilterEnv').addEventListener('change', domSearch);
+
+        async function openDomainAddModal() {
+            closeAllModals();
+            closeAllModals();
+            $('#domFormId').value = ''; $('#domModalTitle').textContent = '新增域名';
+            $('#domFormRoot').value = domRoot;
+            $('#domForm').reset();
+            // 动态加载类型和环境选项（从所有 root_domain 聚合，避免漏选项）
+            const [types, envs, regions] = await Promise.all([
+                api('/api/domain-types'),
+                api('/api/domain-envs'),
+                api('/api/regions'),
+            ]);
+            const fill = (sel, items, allowEmpty = true) => {
+                sel.innerHTML = allowEmpty ? '<option value="">- 请选择 -</option>' : '';
+                items.forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
+            };
+            fill($('#domFormType'), types.code === 0 ? types.data : []);
+            fill($('#domFormEnv'), envs.code === 0 ? envs.data : []);
+            fill($('#domFormProgress'), ['已完成', '进行中', '未开始'], false);
+            $('#domFormType').value = 'apisix';
+            $('#domFormEnv').value = '';
+            $('#domFormProgress').value = '已完成';
+            $('#domFormModal').classList.remove('hidden'); $('#domFormModal').classList.add('flex');
+        }
+        async function openDomEditModal(id) {
+            closeAllModals();
+            closeAllModals();
+            const res = await api(`/api/domains/${id}`);
+            if (res.code === 0) {
+                const d = res.data;
+                $('#domFormId').value = d.id; $('#domModalTitle').textContent = '编辑域名';
+                $('#domFormRoot').value = d.root_domain;
+                $('#domFormDomain').value = d.domain_name;
+                $('#domFormService').value = d.service_name || '';
+                // 动态加载类型和环境选项
+                const [types, envs] = await Promise.all([
+                    api('/api/domain-types'),
+                    api('/api/domain-envs'),
+                ]);
+                const fill = (sel, items, currentVal, allowEmpty = true) => {
+                    sel.innerHTML = allowEmpty ? '<option value="">- 请选择 -</option>' : '';
+                    items.forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
+                    // 如果当前值不在列表里，临时添加进去（保证能正确显示）
+                    if (currentVal && !items.includes(currentVal)) {
+                        sel.innerHTML += `<option value="${currentVal}">${currentVal}</option>`;
+                    }
+                    sel.value = currentVal || '';
+                };
+                fill($('#domFormType'), types.code === 0 ? types.data : [], d.domain_type);
+                fill($('#domFormEnv'), envs.code === 0 ? envs.data : [], d.env);
+                fill($('#domFormProgress'), ['已完成', '进行中', '未开始'], d.cert_progress || '已完成', false);
+                $('#domFormExpiry').value = d.cert_expiry ? d.cert_expiry.replace(' ', 'T').slice(0, 16) : '';
+                $('#domFormNotes').value = d.notes || '';
+                $('#domFormModal').classList.remove('hidden'); $('#domFormModal').classList.add('flex');
+            }
+        }
+        function closeDomFormModal() { $('#domFormModal').classList.add('hidden'); $('#domFormModal').classList.remove('flex'); }
+        async function saveDomain(e) {
+            e.preventDefault();
+            const id = $('#domFormId').value;
+            const body = {
+                root_domain: $('#domFormRoot').value,
+                service_name: $('#domFormService').value.trim(),
+                domain_name: $('#domFormDomain').value.trim(),
+                domain_type: $('#domFormType').value,
+                env: $('#domFormEnv').value,
+                cert_progress: $('#domFormProgress').value,
+                cert_expiry: $('#domFormExpiry').value ? $('#domFormExpiry').value.replace('T', ' ') + ':00' : null,
+                notes: $('#domFormNotes').value,
+            };
+            const res = id
+                ? await api(`/api/domains/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+                : await api('/api/domains', { method: 'POST', body: JSON.stringify(body) });
+            if (res.code === 0) {
+                showToast(id ? '更新成功' : '新增成功');
+                closeDomFormModal();
+                await loadDomains();
+            } else { showToast(res.message || '操作失败', 'error'); }
+        }
+
+        function openDomDeleteModal(id, name) {
+            closeAllModals();
+            deleteTargetId = id;
+            deleteEndpoint = 'domains';
+            onDeleted = loadDomains;
+            $('#deleteMsg').textContent = `确定要删除域名「${name}」吗？此操作不可撤销。`;
+            $('#deleteModal').classList.remove('hidden'); $('#deleteModal').classList.add('flex');
+        }
+
+        async function importDomains() {
+            if (!confirm(`将从 Excel 导入 jmj1995.com 的域名数据，确认继续？`)) return;
+            const res = await api('/api/domains/import', { method: 'POST' });
+            if (res.code === 0) { showToast(res.message); await loadRootDomainCounts(); await loadDomains(); }
+            else { showToast(res.message, 'error'); }
+        }
+
+        async function exportCredentials() {
+            const params = new URLSearchParams();
+            if (credKeyword) params.set('keyword', credKeyword);
+            if (credType) params.set('type', credType);
+            if (credStatus) params.set('status', credStatus);
+            const res = await api(`/api/credentials?${params}&page=1&page_size=1000`);
+            if (res.code === 0 && res.data.length > 0) {
+                const headers = ['服务名', '类型', '访问链接', '用户名', '密码', '内网地址', '内网端口', '公网地址', '公网端口', '数据库', '负责人', '过期时间', '状态', '备注'];
+                const rows = res.data.map(d => [
+                    d.service_name, d.credential_type, d.access_url, d.username, d.password,
+                    d.internal_url, d.internal_port || '', d.external_url, d.external_port || '',
+                    d.db_name, d.owner, d.expires_at || '永久', d.status, d.notes
+                ]);
+                const csv = [headers, ...rows].map(r => r.map(c => `"${String(c || '').replace(/"/g, '""')}"`).join(',')).join('\n');
+                const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `服务凭证_${new Date().toISOString().slice(0,10)}.csv`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showToast(`已导出 ${res.data.length} 条凭证`);
+            } else {
+                showToast('暂无数据可导出', 'error');
+            }
+        }
+
+        // ==================== 用户管理（仅 admin）====================
+        async function loadUsers() {
+            const res = await api('/api/users');
+            if (res.code === 0) {
+                $('#usersTableBody').innerHTML = res.data.length === 0 ? '<tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">暂无用户</td></tr>'
+                    : res.data.map((u, i) => {
+                        const permLabel = u.permissions === '*' ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">管理员</span>' : u.permissions.split(',').map(p => `<span class="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 mr-1">${p}</span>`).join('');
+                        const statusLabel = u.is_active ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">启用</span>' : '<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-500">禁用</span>';
+                        return `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td><td class="px-4 py-3 font-medium">${esc(u.username)}${u.username === 'admin' ? ' <span class="text-xs text-red-500 ml-1">(系统)</span>' : ''}</td><td class="px-4 py-3">${esc(u.display_name)}</td><td class="px-4 py-3">${permLabel}</td><td class="px-4 py-3">${statusLabel}</td><td class="px-4 py-3 text-xs text-gray-500">${u.created_at || '-'}</td><td class="px-4 py-3"><div class="flex items-center gap-1"><button onclick="openUserEditModal(${u.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button><button onclick="resetUserPassword(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded">重置密码</button><button onclick="deleteUser(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded ${u.username === 'admin' ? 'opacity-40 cursor-not-allowed' : ''}" ${u.username === 'admin' ? 'disabled' : ''}>删除</button></div></td></tr>`;
+                    }).join('');
+            }
+        }
+        function openUserAddModal() {
+            closeAllModals();
+            document.getElementById('userFormId').value = '';
+            document.getElementById('userModalTitle').textContent = '新增用户';
+            document.getElementById('userForm').reset();
+            document.getElementById('userFormPassword').required = true;
+            document.getElementById('userFormPwdRequired').style.display = '';
+            document.getElementById('userFormPermissions').value = 'release,credentials,domains';
+            const m = document.getElementById('userFormModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        async function openUserEditModal(uid) {
+            closeAllModals();
+            closeAllModals();
+            const res = await api('/api/users');
+            if (res.code === 0) {
+                const u = res.data.find(x => x.id === uid);
+                if (!u) return;
+                document.getElementById('userFormId').value = u.id;
+                document.getElementById('userModalTitle').textContent = '编辑用户';
+                document.getElementById('userFormUsername').value = u.username;
+                document.getElementById('userFormUsername').readOnly = true;
+                document.getElementById('userFormDisplayName').value = u.display_name || '';
+                document.getElementById('userFormPassword').value = '';
+                document.getElementById('userFormPassword').required = false;
+                document.getElementById('userFormPwdRequired').style.display = 'none';
+                document.getElementById('userFormPermissions').value = u.permissions;
+                const m = document.getElementById('userFormModal');
+                m.classList.remove('hidden'); m.classList.add('flex');
+            }
+        }
+        function closeUserForm() {
+            const m = document.getElementById('userFormModal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        async function saveUser(e) {
+            e.preventDefault();
+            const id = document.getElementById('userFormId').value;
+            const body = {
+                username: document.getElementById('userFormUsername').value.trim(),
+                display_name: document.getElementById('userFormDisplayName').value.trim(),
+                permissions: document.getElementById('userFormPermissions').value,
+                is_active: 1,
+            };
+            const pwd = document.getElementById('userFormPassword').value;
+            if (pwd) body.password = pwd;
+            let res;
+            if (id) {
+                res = await api(`/api/users/${id}`, { method: 'PUT', body: JSON.stringify(body) });
+            } else {
+                body.password = pwd;
+                res = await api('/api/users', { method: 'POST', body: JSON.stringify(body) });
+            }
+            if (res.code === 0) { showToast(id ? '更新成功' : '新增成功'); closeUserForm(); loadUsers(); }
+            else { showToast(res.message || '操作失败', 'error'); }
+        }
+        async function resetUserPassword(uid, name) {
+            const pwd = prompt(`为用户「${name}」重置密码：`);
+            if (!pwd) return;
+            const res = await api(`/api/users/${uid}/reset-pwd`, { method: 'POST', body: JSON.stringify({ password: pwd }) });
+            if (res.code === 0) showToast('密码已重置');
+            else showToast(res.message, 'error');
+        }
+        async function deleteUser(uid, name) {
+            if (name === 'admin') return showToast('不能删除管理员', 'error');
+            if (!confirm(`确定要删除用户「${name}」吗？此操作不可撤销。`)) return;
+            const res = await api(`/api/users/${uid}`, { method: 'DELETE' });
+            if (res.code === 0) { showToast('删除成功'); loadUsers(); }
+            else showToast(res.message, 'error');
+        }
+
+        init();
+    </script>
+</body>
+</html>
