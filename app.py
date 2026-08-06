@@ -821,6 +821,29 @@ def reset_user_pwd(uid):
     return jsonify({"code": 0, "message": "密码重置成功"})
 
 
+@app.route("/api/change-password", methods=["POST"])
+def change_my_password():
+    """当前登录用户修改自己的密码（需要验证旧密码）"""
+    if "username" not in session:
+        return jsonify({"code": 401, "message": "请先登录"}), 401
+    data = request.get_json()
+    old_pwd = (data.get("old_password") or "").strip()
+    new_pwd = (data.get("new_password") or "").strip()
+    if not old_pwd or not new_pwd:
+        return jsonify({"code": 400, "message": "请填写旧密码和新密码"}), 400
+    if len(new_pwd) < 6:
+        return jsonify({"code": 400, "message": "新密码至少 6 位"}), 400
+    user = db.get_user_by_username(session["username"])
+    if not user:
+        return jsonify({"code": 404, "message": "用户不存在"}), 404
+    # 验证旧密码
+    if hash_password(old_pwd) != user["password_hash"]:
+        return jsonify({"code": 400, "message": "当前密码不正确"}), 400
+    # 修改密码
+    db.reset_password(user["id"], new_pwd)
+    return jsonify({"code": 0, "message": "密码修改成功"})
+
+
 @app.route("/api/users/<int:uid>", methods=["DELETE"])
 @require_perm("admin")
 def remove_user(uid):

@@ -27,10 +27,10 @@
         .batch-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
     </style>
 </head>
-<body class="bg-gray-50 min-h-screen flex">
+<body class="bg-gray-50 h-screen overflow-hidden flex">
 
     <!-- ==================== 侧边栏 ==================== -->
-    <aside class="w-56 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col min-h-screen">
+    <aside class="w-56 bg-white border-r border-gray-200 flex-shrink-0 flex flex-col h-screen">
         <!-- Logo -->
         <div class="px-5 py-5 border-b border-gray-100">
             <div class="flex items-center gap-2.5">
@@ -43,11 +43,6 @@
                     <h1 class="text-sm font-bold text-gray-900 truncate">运维工具箱</h1>
                     <p class="text-[10px] text-gray-400 truncate">{{ display_name }}</p>
                 </div>
-                <a href="/logout" title="退出登录" class="p-1 rounded hover:bg-gray-100">
-                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
-                    </svg>
-                </a>
             </div>
         </div>
 
@@ -163,10 +158,69 @@
             </a>
         </nav>
 
+        <!-- 底部用户面板 -->
+        <div class="border-t border-gray-100 p-3 relative" id="userPanel">
+            <button onclick="toggleUserMenu(event)" class="w-full flex items-center gap-2.5 px-2 py-2 rounded-lg hover:bg-gray-50 transition-colors text-left">
+                <div class="w-9 h-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-sm font-semibold flex-shrink-0" id="userAvatar">
+                    {{ (display_name or 'U')[0]|upper }}
+                </div>
+                <div class="flex-1 min-w-0">
+                    <div class="text-sm font-medium text-gray-900 truncate" id="userPanelName">{{ display_name }}</div>
+                    <div class="text-[11px] text-gray-400 truncate">@{{ username }}</div>
+                </div>
+                <svg class="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7"/></svg>
+            </button>
+
+            <!-- 用户下拉菜单 -->
+            <div id="userMenu" class="hidden absolute bottom-full left-3 right-3 mb-2 bg-white rounded-xl shadow-2xl border border-gray-200 overflow-hidden z-50">
+                <!-- 头部：用户信息卡 -->
+                <div class="px-4 py-4 bg-gradient-to-br from-blue-50 to-indigo-50 border-b border-gray-100">
+                    <div class="flex items-center gap-3">
+                        <div class="w-12 h-12 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 text-white flex items-center justify-center text-lg font-semibold flex-shrink-0">
+                            {{ (display_name or 'U')[0]|upper }}
+                        </div>
+                        <div class="flex-1 min-w-0">
+                            <div class="text-sm font-semibold text-gray-900 truncate" id="userMenuName">{{ display_name }}</div>
+                            <div class="text-xs text-gray-500 truncate">@{{ username }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 账号信息 -->
+                <div class="px-2 py-2 border-b border-gray-100">
+                    <div class="px-2 pt-1 pb-2 text-[10px] font-medium text-gray-400 uppercase tracking-wider">账号信息</div>
+                    <div class="px-2 py-1.5 flex items-center justify-between text-xs">
+                        <span class="text-gray-500">用户名</span>
+                        <span class="text-gray-900 font-mono" id="infoUsername">{{ username }}</span>
+                    </div>
+                    <div class="px-2 py-1.5 flex items-center justify-between text-xs">
+                        <span class="text-gray-500">显示名</span>
+                        <span class="text-gray-900" id="infoDisplayName">{{ display_name }}</span>
+                    </div>
+                    <div class="px-2 py-1.5 flex items-center justify-between text-xs">
+                        <span class="text-gray-500">权限范围</span>
+                        <span class="text-gray-900 font-mono" id="infoPermissions">{{ permissions }}</span>
+                    </div>
+                </div>
+
+                <!-- 操作 -->
+                <div class="py-1">
+                    <button onclick="openChangePasswordModal()" class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors">
+                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"/></svg>
+                        修改密码
+                    </button>
+                    <a href="/logout" class="w-full flex items-center gap-2.5 px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/></svg>
+                        退出登录
+                    </a>
+                </div>
+            </div>
+        </div>
+
         </aside>
 
     <!-- ==================== 右侧主内容区 ==================== -->
-    <main class="flex-1 min-w-0 min-h-screen flex flex-col">
+    <main class="flex-1 min-w-0 h-screen overflow-hidden flex flex-col">
 
         <!-- 发版参数管理页面 -->
         <div id="page-params" class="p-6 flex-1 flex flex-col min-h-0">
@@ -643,7 +697,7 @@
                 <div class="overflow-y-auto flex-1 min-h-0">
                     <table class="w-full text-sm text-left">
                         <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
-                            <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">用户名</th><th class="px-4 py-3 font-medium text-gray-600">显示名</th><th class="px-4 py-3 font-medium text-gray-600">权限</th><th class="px-4 py-3 font-medium text-gray-600">状态</th><th class="px-4 py-3 font-medium text-gray-600">创建时间</th><th class="px-4 py-3 font-medium text-gray-600 w-44">操作</th></tr>
+                            <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">用户名</th><th class="px-4 py-3 font-medium text-gray-600">显示名</th><th class="px-4 py-3 font-medium text-gray-600">权限</th><th class="px-4 py-3 font-medium text-gray-600">状态</th><th class="px-4 py-3 font-medium text-gray-600">创建时间</th><th class="px-4 py-3 font-medium text-gray-600 w-52 whitespace-nowrap">操作</th></tr>
                     </thead>
                     <tbody id="usersTableBody"><tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
                 </table>
@@ -738,6 +792,40 @@
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" onclick="closeUserForm()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 修改密码弹窗 -->
+    <div id="changePwdModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeChangePasswordModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-sm mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-5">
+                <h3 class="text-lg font-bold text-gray-900">修改密码</h3>
+                <button onclick="closeChangePasswordModal()" class="p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <form onsubmit="submitChangePassword(event)">
+                <div class="space-y-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">当前密码 <span class="text-red-500">*</span></label>
+                        <input id="changePwdOld" type="password" required autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">新密码 <span class="text-red-500">*</span></label>
+                        <input id="changePwdNew" type="password" required minlength="6" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <p class="text-[11px] text-gray-400 mt-1">至少 6 位</p>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">确认新密码 <span class="text-red-500">*</span></label>
+                        <input id="changePwdConfirm" type="password" required minlength="6" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeChangePasswordModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">确认修改</button>
                 </div>
             </form>
         </div>
@@ -2273,7 +2361,7 @@
                     : res.data.map((u, i) => {
                         const permLabel = u.permissions === '*' ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">管理员</span>' : u.permissions.split(',').map(p => `<span class="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 mr-1">${p}</span>`).join('');
                         const statusLabel = u.is_active ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">启用</span>' : '<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-500">禁用</span>';
-                        return `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td><td class="px-4 py-3 font-medium">${esc(u.username)}${u.username === 'admin' ? ' <span class="text-xs text-red-500 ml-1">(系统)</span>' : ''}</td><td class="px-4 py-3">${esc(u.display_name)}</td><td class="px-4 py-3">${permLabel}</td><td class="px-4 py-3">${statusLabel}</td><td class="px-4 py-3 text-xs text-gray-500">${u.created_at || '-'}</td><td class="px-4 py-3"><div class="flex items-center gap-1"><button onclick="openUserEditModal(${u.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button><button onclick="resetUserPassword(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded">重置密码</button><button onclick="deleteUser(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded ${u.username === 'admin' ? 'opacity-40 cursor-not-allowed' : ''}" ${u.username === 'admin' ? 'disabled' : ''}>删除</button></div></td></tr>`;
+                        return `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td><td class="px-4 py-3 font-medium">${esc(u.username)}${u.username === 'admin' ? ' <span class="text-xs text-red-500 ml-1">(系统)</span>' : ''}</td><td class="px-4 py-3">${esc(u.display_name)}</td><td class="px-4 py-3">${permLabel}</td><td class="px-4 py-3">${statusLabel}</td><td class="px-4 py-3 text-xs text-gray-500">${u.created_at || '-'}</td><td class="px-4 py-3 whitespace-nowrap"><div class="flex items-center gap-1"><button onclick="openUserEditModal(${u.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded whitespace-nowrap">编辑</button><button onclick="resetUserPassword(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded whitespace-nowrap">重置密码</button><button onclick="deleteUser(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded whitespace-nowrap ${u.username === 'admin' ? 'opacity-40 cursor-not-allowed' : ''}" ${u.username === 'admin' ? 'disabled' : ''}>删除</button></div></td></tr>`;
                     }).join('');
             }
         }
@@ -2339,6 +2427,54 @@
             const res = await api(`/api/users/${uid}/reset-pwd`, { method: 'POST', body: JSON.stringify({ password: pwd }) });
             if (res.code === 0) showToast('密码已重置');
             else showToast(res.message, 'error');
+        }
+
+        // ==================== 用户菜单 ====================
+        function toggleUserMenu(e) {
+            e.stopPropagation();
+            const menu = document.getElementById('userMenu');
+            menu.classList.toggle('hidden');
+        }
+        document.addEventListener('click', (e) => {
+            const panel = document.getElementById('userPanel');
+            if (panel && !panel.contains(e.target)) {
+                const menu = document.getElementById('userMenu');
+                if (menu && !menu.classList.contains('hidden')) menu.classList.add('hidden');
+            }
+        });
+
+        // 修改自己的密码
+        function openChangePasswordModal() {
+            document.getElementById('userMenu').classList.add('hidden');
+            document.getElementById('changePwdOld').value = '';
+            document.getElementById('changePwdNew').value = '';
+            document.getElementById('changePwdConfirm').value = '';
+            document.getElementById('changePwdModal').classList.remove('hidden');
+            document.getElementById('changePwdModal').classList.add('flex');
+        }
+        function closeChangePasswordModal() {
+            document.getElementById('changePwdModal').classList.add('hidden');
+            document.getElementById('changePwdModal').classList.remove('flex');
+        }
+        async function submitChangePassword(e) {
+            e.preventDefault();
+            const oldPwd = document.getElementById('changePwdOld').value;
+            const newPwd = document.getElementById('changePwdNew').value;
+            const confirmPwd = document.getElementById('changePwdConfirm').value;
+            if (!oldPwd || !newPwd || !confirmPwd) return showToast('请填写所有字段', 'error');
+            if (newPwd !== confirmPwd) return showToast('两次输入的新密码不一致', 'error');
+            if (newPwd.length < 6) return showToast('新密码至少 6 位', 'error');
+            const res = await api('/api/change-password', {
+                method: 'POST',
+                body: JSON.stringify({ old_password: oldPwd, new_password: newPwd })
+            });
+            if (res.code === 0) {
+                showToast('密码修改成功，请重新登录');
+                closeChangePasswordModal();
+                setTimeout(() => location.href = '/logout', 1000);
+            } else {
+                showToast(res.message || '修改失败', 'error');
+            }
         }
         async function deleteUser(uid, name) {
             if (name === 'admin') return showToast('不能删除管理员', 'error');
