@@ -1,6 +1,6 @@
 # 蓝鲸云效运维工具箱
 
-> 基于 Flask + SQLite 的内部运维工具集，统一管理发版参数、CI/CD 配置、服务凭证、域名及 SSL 证书。
+> 基于 Flask + MySQL 8.0（兼容 SQLite）的内部运维工具集，统一管理发版参数、CI/CD 配置、服务凭证、域名及 SSL 证书。
 
 ---
 
@@ -24,7 +24,7 @@
 | 层级 | 技术 | 说明 |
 |------|------|------|
 | 后端 | Python 3 + Flask | Flask session + werkzeug |
-| 数据库 | SQLite（6 张表） | 单文件，开箱即用 |
+| 数据库 | **双模式：MySQL 8.0（生产）/ SQLite（开发）** | `DB_ENGINE` 一键切换，pymysql 直连 |
 | 前端 | HTML + Tailwind CSS CDN + Vanilla JS | 零构建工具 |
 | 认证 | SHA-256（零依赖） + Flask session | 用户级标签页权限控制 |
 | Excel | pandas + openpyxl | 导入 / 导出 / 模板下载 |
@@ -37,13 +37,15 @@
 ```
 lanqi-svc-params/
 ├── app.py                  # Flask 主应用（路由 + 全部 API）
-├── database.py             # 数据库封装层（6 张表 CRUD）
+├── database.py             # 数据库封装层（双模式：SQLite / MySQL 8.0）
 ├── auth.py                 # 身份认证 + 权限管理（SHA-256）
 ├── excel_utils.py          # Excel 生成工具（导出/模板）
 ├── models.py               # 数据模型类
+├── migrate.py              # SQLite → MySQL 数据迁移脚本
 ├── seed.py                 # 种子数据导入（❌不要轻易运行！）
 ├── requirements.txt        # 依赖清单
-├── data.db                 # SQLite 数据库
+├── .env / .env.example     # 数据库配置（密码放 .env，勿提交）
+├── data.db                 # SQLite 数据库（开发模式 / 迁移数据源）
 ├── static/
 │   └── icons/              # 登录页浮动图标素材
 ├── templates/
@@ -65,10 +67,19 @@ lanqi-svc-params/
 
 ```bash
 cd lanqi-svc-params
-pip install -r requirements.txt   # flask, flask-cors, pandas, openpyxl
+pip install -r requirements.txt   # flask, flask-cors, pandas, openpyxl, pymysql
+
+# 方式 A：MySQL 模式（生产）
+cp .env.example .env && vim .env  # 填写 DB_HOST/DB_PORT/DB_USER/DB_PASS/DB_NAME
 python3 app.py
+
+# 方式 B：SQLite 模式（开发，零配置）
+DB_ENGINE=sqlite python3 app.py
+
 # → http://127.0.0.1:5001 → 跳转到登录页
 ```
+
+> 首次启动自动建表 + 默认 admin 账号。SQLite 旧数据迁移到 MySQL：`python3 migrate.py`（详见 DEPLOY.md）。
 
 ### 3. 默认账号
 
@@ -108,6 +119,8 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 ### 5.4 用户管理（仅管理员）
 
 「系统管理」→「用户管理」页面可以可视化增删用户、重置密码、配置标签页权限（release/credentials/domains 自由组合）。
+
+侧边栏左下角新增**用户面板**：点击头像弹出个人信息（用户名/显示名/权限范围）+ 修改密码 + 退出登录。
 
 ### 5.5 Excel 导入/导出/模板
 
@@ -189,6 +202,18 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 
 ## 八、版本记录
 
+### v1.1 (2026-08-06)
+- 🚀 **数据库升级 MySQL 8.0**：双模式切换（`DB_ENGINE=sqlite|mysql`），pymysql 直连，生产环境数据已迁移
+- 🚀 新增 `migrate.py` 数据迁移脚本（备份 → dry-run → 逐表迁移 → 行数校验）
+- ✨ 新增 `.env` 配置（数据库连接信息，密码不入代码）
+- ✨ 侧边栏左下角新增用户面板（个人信息 + 修改密码 + 退出登录）
+- ✨ 新增 `/api/change-password` 修改密码接口（验证旧密码）
+- 🔧 表格操作列优化：蓝鲸发版参数/域名/用户管理操作按钮横排
+- 🔧 页面自适应屏幕：表格内部滚动、分页器钉底、表头吸顶
+- 🔧 移除侧边栏左下角"数据: xx 条 / xx 模块"小字
+- 🔧 浏览器标题改为「运维工具箱」
+- 🔧 删除弹窗统一重构 + 弹窗互斥管理（修复多弹窗叠加）
+
 ### v1.0 (2026-08-05)
 - ✨ 新增云效创建变更单参数 + 云效运行研发流程参数子标签（各 194 条）
 - ✨ 新增 sha256 身份认证 + 多用户 + 标签页级权限
@@ -207,7 +232,7 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 ## 九、常见问题
 
 **Q: 数据库重置？**
-A: **不建议！** 不要删除 data.db。需要新模块用 `init_db()` 自动建表，新数据用各模块的 `/import` API。
+A: **不建议！** MySQL 模式不要清空 ops_toolbox；SQLite 模式不要删除 data.db。需要新模块用 `init_db()` 自动建表，新数据用各模块的 `/import` API。
 
 **Q: seed.py 可以跑吗？**
 A: **已有数据时不会直接执行**。需要 `python3 seed.py --force` 强行覆盖，且它只影响 `service_params` 表。
@@ -218,6 +243,9 @@ A: admin 登录 → 用户管理 → 新增用户 → 设置权限组合。
 **Q: 如何限制某用户只能看发版管理？**
 A: 编辑该用户的权限字段为 `release`，他登录后就只能看到「发版管理」菜单。
 
+**Q: SQLite 和 MySQL 怎么切换？**
+A: 改 `.env` 里的 `DB_ENGINE`（`mysql` 或 `sqlite`）重启即可；系统环境变量优先级更高。SQLite 数据迁 MySQL 用 `python3 migrate.py`。
+
 ---
 
-_最后更新：2026-08-05_
+_最后更新：2026-08-06_

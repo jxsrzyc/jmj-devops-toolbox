@@ -1,14 +1,142 @@
-"""数据库操作模块 - SQLite"""
+"""数据库操作模块 - 双模式支持 (SQLite / MySQL 8)"""
 
 import os
 import sqlite3
 from contextlib import contextmanager
 
+# ---------- 配置加载 ----------
+def load_env(path=None):
+    """读取 .env 文件（若存在）到环境变量，不覆盖已有环境变量"""
+    if path is None:
+        path = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".env")
+    if not os.path.exists(path):
+        return
+    with open(path, "r", encoding="utf-8") as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            k, v = k.strip(), v.strip().strip('"').strip("'")
+            if k and k not in os.environ:
+                os.environ[k] = v
+
+
+load_env()
+
+DB_ENGINE = os.environ.get("DB_ENGINE", "mysql").lower()  # sqlite | mysql
+DB_HOST = os.environ.get("DB_HOST", "127.0.0.1")
+DB_PORT = int(os.environ.get("DB_PORT", "3306"))
+DB_USER = os.environ.get("DB_USER", "root")
+DB_PASS = os.environ.get("DB_PASS", "")
+DB_NAME = os.environ.get("DB_NAME", "ops_toolbox")
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
 
 
+def is_mysql():
+    return DB_ENGINE == "mysql"
+
+
+def _clean_dt(v):
+    """日期/时间字段空字符串 → None（SQLite 宽容，MySQL 严格模式不接受 ''）"""
+    if v == "":
+        return None
+    return v
+
+
+# ---------- MySQL 连接包装 ----------
+class _MyConn:
+    """pymysql 连接包装器：保持与 sqlite3 Connection 相同的 API
+    （execute/fetchone/fetchall/commit/close/lastrowid/rowcount），
+    并自动把 SQL 占位符 ? 转换为 %s。"""
+
+    def __init__(self):
+        import pymysql
+        self._conn = pymysql.connect(
+            host=DB_HOST, port=DB_PORT, user=DB_USER, password=DB_PASS,
+            database=DB_NAME, charset="utf8mb4",
+            cursorclass=pymysql.cursors.DictCursor,
+            autocommit=False,
+        )
+        self._cur = self._conn.cursor()
+
+    @staticmethod
+    def _fix(sql):
+        return sql.replace("?", "%s")
+
+    def execute(self, sql, params=None):
+        """执行 SQL，返回 cursor（兼容 sqlite3 conn.execute() 链式 fetchone/fetchall）"""
+        sql2 = self._fix(sql)
+        if params is None:
+            self._cur.execute(sql2)
+        elif isinstance(params, (list, tuple)):
+            self._cur.execute(sql2, params)
+        else:
+            self._cur.execute(sql2, (params,))
+        return self._cur
+
+    def executemany(self, sql, seq_of_params):
+        return self._cur.executemany(self._fix(sql), seq_of_params)
+
+    @property
+    def lastrowid(self):
+        return self._cur.lastrowid
+
+    @property
+    def rowcount(self):
+        return self._cur.rowcount
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    def commit(self):
+        return self._conn.commit()
+
+    def rollback(self):
+        return self._conn.rollback()
+
+    def close(self):
+        try:
+            self._cur.close()
+        finally:
+            self._conn.close()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        self.close()
+
+
+@contextmanager
+def get_conn():
+    """获取数据库连接上下文（按 DB_ENGINE 自动切换）"""
+    if is_mysql():
+        conn = _MyConn()
+    else:
+        conn = sqlite3.connect(DB_PATH)
+        conn.row_factory = sqlite3.Row
+        conn.execute("PRAGMA journal_mode=WAL")
+        conn.execute("PRAGMA foreign_keys=ON")
+    try:
+        yield conn
+    finally:
+        conn.close()
+
+
 def init_db():
-    """初始化数据库表"""
+    """初始化数据库表（双模式：sqlite / mysql 自动切换方言）"""
+    if is_mysql():
+        _init_db_mysql()
+    else:
+        _init_db_sqlite()
+
+
+# ---------- SQLite 建表 ----------
+def _init_db_sqlite():
     with get_conn() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS service_params (
@@ -22,12 +150,8 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_module ON service_params(business_module);
-        """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_service ON service_params(service_name);
-        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_module ON service_params(business_module);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_service ON service_params(service_name);")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS service_credentials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -67,12 +191,8 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_domains_root ON domains(root_domain);
-        """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_domains_domain ON domains(domain_name);
-        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_domains_root ON domains(root_domain);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_domains_domain ON domains(domain_name);")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ci_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -84,9 +204,7 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_ci_orders_service ON ci_orders(delivery_service);
-        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_ci_orders_service ON ci_orders(delivery_service);")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ci_devflow (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -98,9 +216,7 @@ def init_db():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_ci_devflow_service ON ci_devflow(delivery_service);
-        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_ci_devflow_service ON ci_devflow(delivery_service);")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -112,12 +228,9 @@ def init_db():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
-        conn.execute("""
-            CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);
-        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);")
         conn.commit()
 
-        # 默认 admin 账号
         from auth import hash_password
         conn.execute("""
             INSERT OR IGNORE INTO users (username, password_hash, display_name, permissions, is_active)
@@ -126,17 +239,126 @@ def init_db():
         conn.commit()
 
 
-@contextmanager
-def get_conn():
-    """获取数据库连接上下文"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA journal_mode=WAL")
-    conn.execute("PRAGMA foreign_keys=ON")
-    try:
-        yield conn
-    finally:
-        conn.close()
+# ---------- MySQL 建表 ----------
+
+# MySQL 不支持 CREATE INDEX IF NOT EXISTS，需先查 information_schema
+def _mysql_ensure_index(conn, table, index, column_sql):
+    row = conn.execute(
+        "SELECT COUNT(*) AS cnt FROM information_schema.statistics WHERE table_schema=%s AND table_name=%s AND index_name=%s",
+        (DB_NAME, table, index)
+    ).fetchone()
+    if row and row["cnt"] == 0:
+        conn.execute(f"CREATE INDEX {index} ON {table} ({column_sql})")
+
+
+def _init_db_mysql():
+    """MySQL 8 建表：
+    - TEXT 类型不能带 DEFAULT → 短文本用 VARCHAR(n) 带默认值，长文本（ssh_key/api_token/notes）用 TEXT 无默认
+    - TIMESTAMP 1970-2038 限制 → 时间字段用 DATETIME
+    - AUTOINCREMENT → AUTO_INCREMENT
+    - INSERT OR IGNORE → INSERT IGNORE
+    """
+    with get_conn() as conn:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS service_params (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                business_module VARCHAR(200) NOT NULL,
+                service_name VARCHAR(200) NOT NULL,
+                create_change_params VARCHAR(500) DEFAULT '',
+                run_devflow_params VARCHAR(500) DEFAULT '',
+                env VARCHAR(50) DEFAULT '中国',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "service_params", "idx_module", "business_module")
+        _mysql_ensure_index(conn, "service_params", "idx_service", "service_name")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS service_credentials (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                service_name VARCHAR(200) NOT NULL,
+                credential_type VARCHAR(50) DEFAULT '用户名密码',
+                access_url VARCHAR(500) DEFAULT '',
+                username VARCHAR(200) DEFAULT '',
+                password VARCHAR(500) DEFAULT '',
+                ssh_key TEXT,
+                api_token TEXT,
+                internal_url VARCHAR(500) DEFAULT '',
+                internal_port INT,
+                external_url VARCHAR(500) DEFAULT '',
+                external_port INT,
+                db_name VARCHAR(200) DEFAULT '',
+                owner VARCHAR(100) DEFAULT '',
+                expires_at DATE,
+                status VARCHAR(20) DEFAULT '正常',
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS domains (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                root_domain VARCHAR(200) NOT NULL,
+                region VARCHAR(50) DEFAULT '',
+                service_name VARCHAR(200) DEFAULT '',
+                domain_name VARCHAR(500) NOT NULL,
+                domain_type VARCHAR(50) DEFAULT '',
+                env VARCHAR(100) DEFAULT '',
+                cert_progress VARCHAR(50) DEFAULT '已完成',
+                cert_expiry DATETIME,
+                notes TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "domains", "idx_domains_root", "root_domain")
+        _mysql_ensure_index(conn, "domains", "idx_domains_domain", "domain_name")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ci_orders (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                delivery_service VARCHAR(300) NOT NULL,
+                env VARCHAR(50) DEFAULT '',
+                branch VARCHAR(300) DEFAULT '',
+                repo_sn VARCHAR(500) DEFAULT '',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "ci_orders", "idx_ci_orders_service", "delivery_service")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS ci_devflow (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                delivery_service VARCHAR(300) NOT NULL,
+                env VARCHAR(50) DEFAULT '',
+                wf_sn VARCHAR(500) DEFAULT '',
+                stage_sn VARCHAR(500) DEFAULT '',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "ci_devflow", "idx_ci_devflow_service", "delivery_service")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS users (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100) NOT NULL UNIQUE,
+                password_hash VARCHAR(128) NOT NULL,
+                display_name VARCHAR(100) DEFAULT '',
+                permissions VARCHAR(200) DEFAULT '*',
+                is_active TINYINT DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "users", "idx_users_username", "username")
+        conn.commit()
+
+        # 默认 admin 账号
+        from auth import hash_password
+        conn.execute("""
+            INSERT IGNORE INTO users (username, password_hash, display_name, permissions, is_active)
+            VALUES ('admin', %s, '管理员', '*', 1)
+        """, (hash_password("admin123"),))
+        conn.commit()
 
 
 class Database:
@@ -253,7 +475,7 @@ class Database:
         vals = [fields.get("service_name", "")]
         for f in allowed[1:]:
             cols.append(f)
-            vals.append(fields.get(f, ""))
+            vals.append(_clean_dt(fields.get(f, "")))
 
         placeholders = ",".join(["?"] * len(cols))
         col_str = ",".join(cols)
@@ -272,6 +494,7 @@ class Database:
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return False
+        updates = {k: _clean_dt(v) for k, v in updates.items()}
         set_clause = ", ".join(f"{k}=?" for k in updates)
         values = list(updates.values()) + [cid]
         with get_conn() as conn:
@@ -345,7 +568,7 @@ class Database:
     def create_domain(self, **fields):
         allowed = ["root_domain", "region", "service_name", "domain_name", "domain_type",
                    "env", "cert_progress", "cert_expiry", "notes"]
-        vals = [fields.get(f, "") for f in allowed]
+        vals = [_clean_dt(v) for v in (fields.get(f, "") for f in allowed)]
         with get_conn() as conn:
             cursor = conn.execute(
                 f"INSERT INTO domains ({','.join(allowed)}) VALUES ({','.join(['?']*len(allowed))})", vals
@@ -358,6 +581,8 @@ class Database:
                    "env", "cert_progress", "cert_expiry", "notes"]
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates: return False
+        # 日期字段空字符串 → None（MySQL 严格模式不接受 ''）
+        updates = {k: _clean_dt(v) for k, v in updates.items()}
         set_clause = ", ".join(f"{k}=?" for k in updates)
         with get_conn() as conn:
             cursor = conn.execute(
@@ -481,6 +706,12 @@ class Database:
             conn.commit()
             return cursor.rowcount > 0
 
+    def _ci_delete_all(self, table):
+        """清空整张 CI 表（导入前使用）"""
+        with get_conn() as conn:
+            conn.execute(f"DELETE FROM {table}")
+            conn.commit()
+
     def _ci_envs(self, table):
         with get_conn() as conn:
             rows = conn.execute(f"SELECT DISTINCT env FROM {table} WHERE env != '' ORDER BY env").fetchall()
@@ -579,6 +810,47 @@ class Database:
             )
             conn.commit()
             return cursor.rowcount > 0
+
+    # ---- 批量操作（导入/导出辅助） ----
+
+    def count_services(self):
+        """统计 service_params 总条数"""
+        with get_conn() as conn:
+            row = conn.execute("SELECT COUNT(*) AS cnt FROM service_params").fetchone()
+            return row["cnt"]
+
+    def delete_all_services(self):
+        """清空 service_params（seed.py 导入前使用）"""
+        with get_conn() as conn:
+            conn.execute("DELETE FROM service_params")
+            conn.commit()
+
+    def delete_domains_by_root(self, root_domain):
+        """按 root_domain 清空域名数据（导入前使用）"""
+        with get_conn() as conn:
+            conn.execute("DELETE FROM domains WHERE root_domain=?", (root_domain,))
+            conn.commit()
+
+    def get_all_domains_for_export(self, root_domain="", keyword="", env="", dtype="", region=""):
+        """查询全部符合条件的域名（不分页，供导出用）"""
+        conditions, params = [], []
+        if root_domain:
+            conditions.append("root_domain = ?"); params.append(root_domain)
+        if region:
+            conditions.append("region = ?"); params.append(region)
+        if keyword:
+            conditions.append("(domain_name LIKE ? OR service_name LIKE ?)")
+            kw = f"%{keyword}%"; params.extend([kw, kw])
+        if env:
+            conditions.append("env = ?"); params.append(env)
+        if dtype:
+            conditions.append("domain_type = ?"); params.append(dtype)
+        where = " WHERE " + " AND ".join(conditions) if conditions else ""
+        with get_conn() as conn:
+            rows = conn.execute(
+                f"SELECT * FROM domains{where} ORDER BY region, domain_type, id", params
+            ).fetchall()
+            return [dict(r) for r in rows]
 
 
 # 初始化数据库 + 单例

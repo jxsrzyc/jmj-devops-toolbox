@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""种子数据导入脚本 - 从 Excel 导入数据到 SQLite"""
+"""种子数据导入脚本 - 从 Excel 导入数据（支持 SQLite / MySQL 双模式）"""
 
 import os
 import sys
@@ -18,16 +18,13 @@ def main():
 
     # ⚠️ 安全检查：seed.py 会清空 service_params 表，需要明确确认或 --force
     force = "--force" in sys.argv
-    db_path = os.path.join(os.path.dirname(__file__), "data.db")
-    if os.path.exists(db_path):
-        import sqlite3
-        existing = sqlite3.connect(db_path).execute("SELECT COUNT(*) FROM service_params").fetchone()[0]
-        if existing > 0 and not force:
-            print(f"⚠️  数据库已存在 {existing} 条 service_params 记录")
-            print("seed.py 会先清空再导入。")
-            print("如确认要清空并重新导入，请加 --force 参数：")
-            print(f"  python3 seed.py --force")
-            sys.exit(1)
+    existing = db.count_services()
+    if existing > 0 and not force:
+        print(f"⚠️  数据库已存在 {existing} 条 service_params 记录")
+        print("seed.py 会先清空再导入。")
+        print("如确认要清空并重新导入，请加 --force 参数：")
+        print(f"  python3 seed.py --force")
+        sys.exit(1)
 
     init_db()
 
@@ -35,11 +32,7 @@ def main():
     df.columns = ["business_module", "service_name", "create_change_params", "run_devflow_params", "env"]
 
     # 清空 service_params（幂等性）— 其他表（credentials/domains/ci_*）保留
-    import sqlite3
-    conn = sqlite3.connect(db_path)
-    conn.execute("DELETE FROM service_params")
-    conn.commit()
-    conn.close()
+    db.delete_all_services()
 
     count = 0
     for _, row in df.iterrows():

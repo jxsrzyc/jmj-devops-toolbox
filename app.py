@@ -370,12 +370,7 @@ def import_domains():
 
         xls = pd.ExcelFile(filepath)
         # 清空同名 root_domain 数据后导入
-        import sqlite3
-        DB = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
-        conn = sqlite3.connect(DB)
-        conn.execute("DELETE FROM domains WHERE root_domain=?", ("jmj1995.com",))
-        conn.commit()
-        conn.close()
+        db.delete_domains_by_root("jmj1995.com")
 
         count = 0
         # 逐个 sheet 读取（每个 sheet 代表一个区域/环境大类）
@@ -586,22 +581,7 @@ def export_domains_xlsx():
     dtype = request.args.get("type", "").strip()
     region = request.args.get("region", "").strip()
 
-    conditions, params = [], []
-    if root: conditions.append("root_domain = ?"); params.append(root)
-    if region: conditions.append("region = ?"); params.append(region)
-    if keyword:
-        conditions.append("(domain_name LIKE ? OR service_name LIKE ?)")
-        kw = f"%{keyword}%"; params.extend([kw, kw])
-    if env: conditions.append("env = ?"); params.append(env)
-    if dtype: conditions.append("domain_type = ?"); params.append(dtype)
-    where = " WHERE " + " AND ".join(conditions) if conditions else ""
-
-    import sqlite3
-    DB = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
-    conn = sqlite3.connect(DB)
-    conn.row_factory = sqlite3.Row
-    rows = conn.execute(f"SELECT * FROM domains{where} ORDER BY region, domain_type, id", params).fetchall()
-    conn.close()
+    rows = db.get_all_domains_for_export(root_domain=root, keyword=keyword, env=env, dtype=dtype, region=region)
 
     headers = ["大区", "服务", "域名", "域名类型", "域名环境", "证书更新进度", "新证书到期时间", "备注"]
     data = [[r["region"], r["service_name"], r["domain_name"], r["domain_type"],
@@ -674,10 +654,8 @@ def import_ci_orders():
         fp = os.path.expanduser("~/Downloads/云效创建变更单.xlsx")
         df = pd.read_excel(fp)
         df.columns = ["delivery_service", "env", "branch", "repo_sn"]
-        db._ci_delete("ci_orders", 0)  # won't actually delete anything
-        # 清空
-        with __import__("sqlite3").connect(__import__("os").environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))) as conn:
-            conn.execute("DELETE FROM ci_orders"); conn.commit()
+        # 清空后导入（幂等覆盖）
+        db._ci_delete_all("ci_orders")
         count = 0
         for _, row in df.iterrows():
             db._ci_create("ci_orders", delivery_service=str(row["delivery_service"]),
@@ -750,8 +728,7 @@ def import_ci_devflow():
         fp = os.path.expanduser("~/Downloads/云效运行研发流程.xlsx")
         df = pd.read_excel(fp)
         df.columns = ["delivery_service", "env", "wf_sn", "stage_sn"]
-        with __import__("sqlite3").connect(__import__("os").environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))) as conn:
-            conn.execute("DELETE FROM ci_devflow"); conn.commit()
+        db._ci_delete_all("ci_devflow")
         count = 0
         for _, row in df.iterrows():
             db._ci_create("ci_devflow", delivery_service=str(row["delivery_service"]),
