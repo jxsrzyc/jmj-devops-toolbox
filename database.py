@@ -155,7 +155,11 @@ def _init_db_sqlite():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS service_credentials (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
+                env TEXT DEFAULT '',
                 service_name TEXT NOT NULL,
+                service_provider TEXT DEFAULT '',
+                app_type TEXT DEFAULT '',
+                version TEXT DEFAULT '',
                 credential_type TEXT DEFAULT '用户名密码',
                 access_url TEXT DEFAULT '',
                 username TEXT DEFAULT '',
@@ -174,6 +178,9 @@ def _init_db_sqlite():
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
+        """)
+        conn.execute("""
+            CREATE INDEX IF NOT EXISTS idx_cred_env ON service_credentials(env);
         """)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS domains (
@@ -225,6 +232,7 @@ def _init_db_sqlite():
                 display_name TEXT DEFAULT '',
                 permissions TEXT DEFAULT '*',
                 is_active INTEGER DEFAULT 1,
+                auth_source TEXT DEFAULT 'local',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
@@ -237,6 +245,17 @@ def _init_db_sqlite():
             VALUES ('admin', ?, '管理员', '*', 1)
         """, (hash_password("admin123"),))
         conn.commit()
+        # 兼容旧库：auth_source 列不存在则补充
+        cols = [r["name"] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+        if "auth_source" not in cols:
+            conn.execute("ALTER TABLE users ADD COLUMN auth_source TEXT DEFAULT 'local'")
+            conn.commit()
+        # 兼容旧库：service_credentials 补充 env/app_type/version 列
+        cred_cols = [r["name"] for r in conn.execute("PRAGMA table_info(service_credentials)").fetchall()]
+        for col, ddl in [("env", "TEXT DEFAULT ''"), ("app_type", "TEXT DEFAULT ''"), ("version", "TEXT DEFAULT ''"), ("service_provider", "TEXT DEFAULT ''")]:
+            if col not in cred_cols:
+                conn.execute(f"ALTER TABLE service_credentials ADD COLUMN {col} {ddl}")
+                conn.commit()
 
 
 # ---------- MySQL 建表 ----------
@@ -276,7 +295,11 @@ def _init_db_mysql():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS service_credentials (
                 id INT AUTO_INCREMENT PRIMARY KEY,
+                env VARCHAR(50) DEFAULT '',
                 service_name VARCHAR(200) NOT NULL,
+                service_provider VARCHAR(100) DEFAULT '',
+                app_type VARCHAR(50) DEFAULT '',
+                version VARCHAR(50) DEFAULT '',
                 credential_type VARCHAR(50) DEFAULT '用户名密码',
                 access_url VARCHAR(500) DEFAULT '',
                 username VARCHAR(200) DEFAULT '',
@@ -296,6 +319,16 @@ def _init_db_mysql():
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
+        # 兼容旧库：service_credentials 补充 env/app_type/version 列（必须在建索引前）
+        for col, ddl in [("env", "VARCHAR(50) DEFAULT ''"), ("app_type", "VARCHAR(50) DEFAULT ''"), ("version", "VARCHAR(50) DEFAULT ''"), ("service_provider", "VARCHAR(100) DEFAULT ''")]:
+            row = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM information_schema.columns WHERE table_schema=%s AND table_name='service_credentials' AND column_name=%s",
+                (DB_NAME, col)
+            ).fetchone()
+            if row and row["cnt"] == 0:
+                conn.execute(f"ALTER TABLE service_credentials ADD COLUMN {col} {ddl}")
+                conn.commit()
+        _mysql_ensure_index(conn, "service_credentials", "idx_cred_env", "env")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS domains (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -346,6 +379,7 @@ def _init_db_mysql():
                 display_name VARCHAR(100) DEFAULT '',
                 permissions VARCHAR(200) DEFAULT '*',
                 is_active TINYINT DEFAULT 1,
+                auth_source VARCHAR(20) DEFAULT 'local',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
@@ -359,6 +393,23 @@ def _init_db_mysql():
             VALUES ('admin', %s, '管理员', '*', 1)
         """, (hash_password("admin123"),))
         conn.commit()
+        # 兼容旧库：auth_source 列不存在则补充
+        row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM information_schema.columns WHERE table_schema=%s AND table_name='users' AND column_name='auth_source'",
+            (DB_NAME,)
+        ).fetchone()
+        if row and row["cnt"] == 0:
+            conn.execute("ALTER TABLE users ADD COLUMN auth_source VARCHAR(20) DEFAULT 'local'")
+            conn.commit()
+        # 兼容旧库：service_credentials 补充 env/app_type/version 列
+        for col, ddl in [("env", "VARCHAR(50) DEFAULT ''"), ("app_type", "VARCHAR(50) DEFAULT ''"), ("version", "VARCHAR(50) DEFAULT ''")]:
+            row = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM information_schema.columns WHERE table_schema=%s AND table_name='service_credentials' AND column_name=%s",
+                (DB_NAME, col)
+            ).fetchone()
+            if row and row["cnt"] == 0:
+                conn.execute(f"ALTER TABLE service_credentials ADD COLUMN {col} {ddl}")
+                conn.commit()
 
 
 class Database:
@@ -436,13 +487,19 @@ class Database:
 
     # ---- 服务凭证 CRUD ----
 
-    def get_credentials(self, keyword="", type="", status="", page=1, page_size=20):
-        """查询凭证列表"""
+    def get_credentials(self, env="", name="", keyword="", type="", status="", page=1, page_size=20):
+        """查询凭证列表（name: 业务名称模糊；keyword: 地址/账号/备注等）"""
         conditions, params = [], []
+        if env:
+            conditions.append("env = ?")
+            params.append(env)
+        if name:
+            conditions.append("service_name LIKE ?")
+            params.append(f"%{name}%")
         if keyword:
-            conditions.append("(service_name LIKE ? OR owner LIKE ? OR notes LIKE ? OR access_url LIKE ?)")
+            conditions.append("(username LIKE ? OR notes LIKE ? OR access_url LIKE ? OR internal_url LIKE ? OR external_url LIKE ?)")
             kw = f"%{keyword}%"
-            params.extend([kw, kw, kw, kw])
+            params.extend([kw, kw, kw, kw, kw])
         if type:
             conditions.append("credential_type = ?")
             params.append(type)
@@ -468,12 +525,12 @@ class Database:
 
     def create_credential(self, **fields):
         """新增凭证"""
-        allowed = ["service_name", "credential_type", "access_url", "username", "password",
-                   "ssh_key", "api_token", "internal_url", "internal_port", "external_url",
-                   "external_port", "db_name", "owner", "expires_at", "status", "notes"]
-        cols = ["service_name"]
-        vals = [fields.get("service_name", "")]
-        for f in allowed[1:]:
+        allowed = ["env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
+                   "username", "password", "ssh_key", "api_token", "internal_url", "internal_port",
+                   "external_url", "external_port", "db_name", "owner", "expires_at", "status", "notes"]
+        cols = ["env", "service_name"]
+        vals = [fields.get("env", ""), fields.get("service_name", "")]
+        for f in allowed[2:]:
             cols.append(f)
             vals.append(_clean_dt(fields.get(f, "")))
 
@@ -488,9 +545,9 @@ class Database:
 
     def update_credential(self, cid, **fields):
         """更新凭证"""
-        allowed = ["service_name", "credential_type", "access_url", "username", "password",
-                   "ssh_key", "api_token", "internal_url", "internal_port", "external_url",
-                   "external_port", "db_name", "owner", "expires_at", "status", "notes"]
+        allowed = ["env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
+                   "username", "password", "ssh_key", "api_token", "internal_url", "internal_port",
+                   "external_url", "external_port", "db_name", "owner", "expires_at", "status", "notes"]
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return False
@@ -511,6 +568,29 @@ class Database:
             cursor = conn.execute("DELETE FROM service_credentials WHERE id=?", (cid,))
             conn.commit()
             return cursor.rowcount > 0
+
+    def get_credential_envs(self):
+        """获取凭证环境列表（去重）"""
+        with get_conn() as conn:
+            rows = conn.execute("SELECT DISTINCT env FROM service_credentials WHERE env != '' ORDER BY env").fetchall()
+            return [r["env"] for r in rows]
+
+    def get_credential_service_names(self):
+        """获取所有已录入的业务名称（去重：忽略大小写/首尾空格，合并拼写大小写差异）"""
+        with get_conn() as conn:
+            rows = conn.execute(
+                "SELECT MIN(service_name) AS name FROM service_credentials "
+                "WHERE service_name != '' "
+                "GROUP BY LOWER(TRIM(service_name)) "
+                "ORDER BY name"
+            ).fetchall()
+            return [r["name"] for r in rows]
+
+    def get_credential_providers(self):
+        """获取所有已录入的服务供应商（去重，用于 datalist）"""
+        with get_conn() as conn:
+            rows = conn.execute("SELECT DISTINCT service_provider FROM service_credentials WHERE service_provider != '' ORDER BY service_provider").fetchall()
+            return [r["service_provider"] for r in rows]
 
     def get_credential_types(self):
         """获取凭证类型列表（去重）"""
@@ -721,19 +801,19 @@ class Database:
 
     def get_users(self):
         with get_conn() as conn:
-            rows = conn.execute("SELECT id, username, display_name, permissions, is_active, created_at FROM users ORDER BY id").fetchall()
+            rows = conn.execute("SELECT id, username, display_name, permissions, is_active, auth_source, created_at FROM users ORDER BY id").fetchall()
             return [dict(r) for r in rows]
 
     def get_user_by_username(self, username):
         with get_conn() as conn:
             return conn.execute("SELECT * FROM users WHERE username=? AND is_active=1", (username,)).fetchone()
 
-    def create_user(self, username, password, display_name="", permissions="release,credentials,domains"):
+    def create_user(self, username, password, display_name="", permissions="release,credentials,domains", auth_source="local"):
         from auth import hash_password
         with get_conn() as conn:
             cursor = conn.execute(
-                "INSERT INTO users (username, password_hash, display_name, permissions) VALUES (?,?,?,?)",
-                (username, hash_password(password), display_name, permissions)
+                "INSERT INTO users (username, password_hash, display_name, permissions, auth_source) VALUES (?,?,?,?,?)",
+                (username, hash_password(password), display_name, permissions, auth_source)
             )
             conn.commit()
             return cursor.lastrowid

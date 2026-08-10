@@ -114,7 +114,26 @@ SQLite 是文件数据库，不能同时被多个 Pod 写入。当前 PVC 配置
 | `DB_PATH` | `./data.db` | SQLite 路径（DB_ENGINE=sqlite 时生效） |
 | `SECRET_KEY` | 内置固定值 | Flask session 加密密钥（生产环境建议覆盖） |
 | `PWD_SALT` | 内置固定值 | SHA-256 密码加盐（生产环境建议覆盖） |
+| `CRED_SECRET_KEY` | 内置派生值 | 服务凭证密码加密密钥（44 字符 urlsafe base64，**生产必须自定义**，泄漏=凭证可解密） |
 | `FLASK_ENV` | `production` (Docker) | Flask 运行模式 |
+
+### LDAP 环境变量（可选，开启后本地+LDAP 双认证）
+
+| 变量 | 默认值 | 说明 |
+|------|--------|------|
+| `LDAP_ENABLE` | `false` | 是否启用 LDAP 认证（`true` 启用） |
+| `LDAP_HOST` | 空 | LDAP 服务器地址 |
+| `LDAP_PORT` | `389` | LDAP 端口（LDAPS 用 `636`） |
+| `LDAP_BASE_DN` | 空 | 用户搜索基准 DN |
+| `LDAP_BIND_USER` | 空 | Bind 服务账号 DN |
+| `LDAP_BIND_PASS` | 空 | Bind 服务账号密码 |
+| `LDAP_AUTH_FILTER` | `(&(objectClass=inetOrgPerson)(uid=%s))` | 登录认证过滤（openldap） |
+| `LDAP_USER_FILTER` | 同 AUTH_FILTER | 用户信息过滤 |
+| `LDAP_TLS` | `false` | 使用 LDAPS（636） |
+| `LDAP_STARTTLS` | `false` | 使用 STARTTLS |
+| `LDAP_DEFAULT_PERMS` | `release` | LDAP 用户首次登录默认权限（默认仅发版管理） |
+
+> **LDAP 认证说明**：本地账号（含 admin）走本地 SHA-256 校验；LDAP 账号首次登录自动创建本地记录（默认仅发版管理权限），之后由管理员按需授权。LDAP 密码不落库；LDAP 服务器异常不影响本地账号登录。
 
 > 配置通过项目根目录 `.env` 文件加载（优先级低于系统环境变量）。**密码请放 .env，不要提交到代码仓库。**
 
@@ -209,4 +228,4 @@ curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/login
 
 ---
 
-_最后更新：2026-08-06_
+_最后更新：2026-08-07（v1.3 凭证模块）_

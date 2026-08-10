@@ -31,23 +31,56 @@ def index():
 
 @app.route("/login", methods=["GET", "POST"])
 def login_page():
-    """登录页面"""
+    """登录页面 — 支持本地账号 + LDAP 账号双认证源"""
     if request.method == "POST":
         data = request.get_json()
         username = data.get("username", "").strip()
         password = data.get("password", "").strip()
         if not username or not password:
             return jsonify({"code": 400, "message": "用户名和密码不能为空"}), 400
+
+        from auth import verify_password, ldap_authenticate, hash_password
+        import secrets
+
         user = db.get_user_by_username(username)
-        if not user:
-            return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
-        from auth import verify_password
-        if not verify_password(password, user["password_hash"]):
-            return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
+        auth_source = user["auth_source"] if user else None
+
+        # 分支 1：本地账号 → 本地 SHA-256 校验
+        if user and auth_source == "local":
+            if not verify_password(password, user["password_hash"]):
+                return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
+
+        # 分支 2：LDAP 账号（已存在本地记录）→ LDAP 校验
+        elif user and auth_source == "ldap":
+            ldap_info = ldap_authenticate(username, password)
+            if not ldap_info:
+                return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
+            # 同步显示名（首次或变更后）
+            if ldap_info.get("display_name") and ldap_info["display_name"] != user["display_name"]:
+                db.update_user(user["id"], display_name=ldap_info["display_name"])
+
+        # 分支 3：本地无此账号 → 尝试 LDAP，成功则 JIT 自动开通
+        elif not user:
+            ldap_info = ldap_authenticate(username, password)
+            if not ldap_info:
+                return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
+            default_perms = os.environ.get("LDAP_DEFAULT_PERMS", "release")
+            display_name = ldap_info.get("display_name") or username
+            # 本地密码置为随机值（LDAP 用户不走本地密码登录）
+            db.create_user(
+                username, secrets.token_hex(16),
+                display_name=display_name,
+                permissions=default_perms,
+                auth_source="ldap",
+            )
+            user = db.get_user_by_username(username)
+
+        # 登录成功 → 写 session
         session["user_id"] = user["id"]
         session["username"] = user["username"]
         session["display_name"] = user["display_name"] or user["username"]
         session["permissions"] = user["permissions"]
+        session["auth_source"] = user.get("auth_source", "local")
         return jsonify({"code": 0, "message": "登录成功", "data": {"username": user["username"]}})
     # GET — 已登录直接跳首页
     if "user_id" in session:
@@ -71,6 +104,7 @@ def api_me():
             "username": session.get("username"),
             "display_name": session.get("display_name"),
             "permissions": session.get("permissions"),
+            "auth_source": session.get("auth_source", "local"),
         }
     })
 
@@ -214,41 +248,59 @@ def import_excel():
 
 @app.route("/api/credentials", methods=["GET"])
 def get_credentials():
-    """查询凭证列表"""
+    """查询凭证列表（支持 env + 业务名称 name + 关键词 keyword + 密码脱敏）"""
+    env = request.args.get("env", "").strip()
+    name = request.args.get("name", "").strip()
     keyword = request.args.get("keyword", "").strip()
     ctype = request.args.get("type", "").strip()
     status = request.args.get("status", "").strip()
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 20))
 
-    items, total = db.get_credentials(keyword=keyword, type=ctype, status=status,
-                                       page=page, page_size=page_size)
+    items, total = db.get_credentials(env=env, name=name, keyword=keyword, type=ctype, status=status,
+                                      page=page, page_size=page_size)
+    # 密码脱敏：列表不返回明文，只返回是否已设置
+    for it in items:
+        it["password"] = "●●●●●●●●" if it.get("password") else ""
     return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
 
 
 @app.route("/api/credentials/<int:cid>", methods=["GET"])
 def get_credential(cid):
-    """获取单条凭证"""
+    """获取单条凭证（密码脱敏返回）"""
     item = db.get_credential_by_id(cid)
     if not item:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
+    if item.get("password"):
+        item["password"] = "●●●●●●●●"
     return jsonify({"code": 0, "data": item})
 
 
 @app.route("/api/credentials", methods=["POST"])
 def create_credential():
-    """新增凭证"""
+    """新增凭证（密码加密存储）"""
+    from crypto import encrypt_password
     data = request.get_json()
     if not data.get("service_name"):
         return jsonify({"code": 400, "message": "缺少必填字段: service_name"}), 400
+    # 密码加密后再入库
+    if data.get("password"):
+        data["password"] = encrypt_password(data["password"])
     cid = db.create_credential(**data)
     return jsonify({"code": 0, "message": "新增成功", "data": {"id": cid}})
 
 
 @app.route("/api/credentials/<int:cid>", methods=["PUT"])
 def update_credential(cid):
-    """更新凭证"""
+    """更新凭证（密码为空不覆盖原密码，非空则加密）"""
+    from crypto import encrypt_password
     data = request.get_json()
+    if "password" in data:
+        if data["password"] in (None, "", "●●●●●●●●"):
+            # 未修改密码：移除字段不更新
+            data.pop("password", None)
+        else:
+            data["password"] = encrypt_password(data["password"])
     ok = db.update_credential(cid, **data)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -262,6 +314,27 @@ def delete_credential(cid):
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "删除成功"})
+
+
+@app.route("/api/credential-envs", methods=["GET"])
+def get_credential_envs():
+    """获取凭证环境列表"""
+    envs = db.get_credential_envs()
+    return jsonify({"code": 0, "data": envs})
+
+
+@app.route("/api/credential-service-names", methods=["GET"])
+def get_credential_service_names():
+    """获取凭证业务名称列表（datalist 下拉搜索）"""
+    names = db.get_credential_service_names()
+    return jsonify({"code": 0, "data": names})
+
+
+@app.route("/api/credential-providers", methods=["GET"])
+def get_credential_providers():
+    """获取服务供应商列表（datalist 下拉搜索）"""
+    providers = db.get_credential_providers()
+    return jsonify({"code": 0, "data": providers})
 
 
 @app.route("/api/credential-types", methods=["GET"])
@@ -478,72 +551,107 @@ def services_template():
 
 @app.route("/api/credentials/import", methods=["POST"])
 def import_credentials_xlsx():
-    """从 xlsx 导入凭证（增量添加）"""
+    """从 开发生产服务器信息.xlsx 导入服务凭证（6 个子表 = 6 个环境）
+
+    ⚠️ 安全：密码列（密码/口令/Password）显式跳过，不读取、不导入。
+    端口列同时写入 internal_port 与 external_port（保持一致，后续可编辑调整）。
+    """
     try:
         import pandas as pd
-        xlsx_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                 "..", "..", "..", "Downloads", "服务凭证导入模板.xlsx")
-        if "filepath" in request.json:
-            xlsx_path = request.json["filepath"]
+        xlsx_path = request.json.get("filepath", "") if request.is_json else ""
+        if not xlsx_path:
+            xlsx_path = os.path.expanduser("~/Downloads/开发生产服务器信息.xlsx")
         filepath = os.path.expanduser(xlsx_path)
         if not os.path.exists(filepath):
             return jsonify({"code": 404, "message": f"找不到文件: {filepath}"}), 404
 
-        df = pd.read_excel(filepath)
-        expected = ["服务名", "凭证类型", "访问链接", "用户名", "密码",
-                    "SSH私钥", "API Token", "内网地址", "内网端口",
-                    "公网地址", "公网端口", "数据库名", "负责人", "过期时间", "状态", "备注"]
-        df.columns = [str(c).strip() for c in df.columns]
-        # 补齐缺失列
-        for col in expected:
-            if col not in df.columns:
-                df[col] = ""
+        xls = pd.ExcelFile(filepath)
+        total_count = 0
+        env_count = {}
 
-        count = 0
-        for _, row in df.iterrows():
-            svc = str(row.get("服务名", "")).strip()
-            if not svc:
+        def _match_col(df, *names):
+            """模糊匹配列名：返回第一个存在的列名，找不到返回 None"""
+            for n in names:
+                if n in df.columns:
+                    return n
+            return None
+
+        def _to_int(v):
+            s = str(v).strip() if v is not None else ""
+            return int(float(s)) if s.replace(".", "").isdigit() else None
+
+        def _to_str(v):
+            """pandas 空单元格(NaN)/None → 空字符串，避免出现 'nan'"""
+            if v is None:
+                return ""
+            s = str(v).strip()
+            return "" if s.lower() in ("nan", "none", "nat") else s
+
+        for env_name in xls.sheet_names:
+            df = pd.read_excel(xls, sheet_name=env_name)
+            df.columns = [str(c).strip() for c in df.columns]
+
+            svc_col = _match_col(df, "业务名称", "服务名", "业务名", "service_name")
+            if not svc_col:
                 continue
-            db.create_credential(
-                service_name=svc,
-                credential_type=str(row.get("凭证类型", "用户名密码")),
-                access_url=str(row.get("访问链接", "")),
-                username=str(row.get("用户名", "")),
-                password=str(row.get("密码", "")),
-                ssh_key=str(row.get("SSH私钥", "")),
-                api_token=str(row.get("API Token", "")),
-                internal_url=str(row.get("内网地址", "")),
-                internal_port=int(row["内网端口"]) if str(row.get("内网端口", "")).strip().isdigit() else None,
-                external_url=str(row.get("公网地址", "")),
-                external_port=int(row["公网端口"]) if str(row.get("公网端口", "")).strip().isdigit() else None,
-                db_name=str(row.get("数据库名", "")),
-                owner=str(row.get("负责人", "")),
-                expires_at=str(row.get("过期时间", "")) or None,
-                status=str(row.get("状态", "正常")) or "正常",
-                notes=str(row.get("备注", "")),
-            )
-            count += 1
+            count = 0
+            for _, row in df.iterrows():
+                svc = _to_str(row.get(svc_col))
+                if not svc:
+                    continue
+                # 列匹配（不同子表字段不统一，逐个模糊匹配）
+                app_type_col = _match_col(df, "应用类型")
+                version_col = _match_col(df, "版本")
+                access_url_col = _match_col(df, "服务连接地址", "服务地址", "连接地址")
+                int_url_col = _match_col(df, "内网连接地址", "内网地址", "私网地址")
+                ext_url_col = _match_col(df, "web访问链接", "Web访问链接", "公网地址", "地址")
+                port_col = _match_col(df, "端口", "服务连接端口", "连接端口")
+                user_col = _match_col(df, "账号", "用户名", "用户")
+                notes_col = _match_col(df, "备注")
 
-        return jsonify({"code": 0, "message": f"导入成功，共 {count} 条凭证"})
+                # 端口：同时写入内网/公网端口（保持一致，后续可编辑调整）
+                port = _to_int(row.get(port_col)) if port_col else None
+
+                db.create_credential(
+                    env=env_name,
+                    service_name=svc,
+                    app_type=_to_str(row.get(app_type_col)) if app_type_col else "",
+                    version=_to_str(row.get(version_col)) if version_col else "",
+                    access_url=_to_str(row.get(access_url_col)) if access_url_col else "",
+                    internal_url=_to_str(row.get(int_url_col)) if int_url_col else "",
+                    external_url=_to_str(row.get(ext_url_col)) if ext_url_col else "",
+                    internal_port=port,
+                    external_port=port,
+                    username=_to_str(row.get(user_col)) if user_col else "",
+                    # ⚠️ 密码列显式跳过，不导入（敏感信息由用户手动录入）
+                    notes=_to_str(row.get(notes_col)) if notes_col else "",
+                )
+                count += 1
+            if count:
+                env_count[env_name] = count
+                total_count += count
+
+        return jsonify({"code": 0, "message": f"导入成功，共 {total_count} 条凭证", "data": env_count})
     except Exception as e:
         return jsonify({"code": 500, "message": f"导入失败: {str(e)}"}), 500
 
 
 @app.route("/api/credentials/export", methods=["GET"])
 def export_credentials_xlsx():
-    """导出当前筛选的凭证为 xlsx"""
+    """导出当前筛选的凭证为 xlsx（密码列导出为 ●●●●，不含明文）"""
+    env = request.args.get("env", "").strip()
+    name = request.args.get("name", "").strip()
     keyword = request.args.get("keyword", "").strip()
     ctype = request.args.get("type", "").strip()
     status = request.args.get("status", "").strip()
 
-    items = db.get_credentials(keyword=keyword, type=ctype, status=status, page=1, page_size=10000)[0]
-    headers = ["服务名", "凭证类型", "访问链接", "用户名", "密码",
-               "SSH私钥", "API Token", "内网地址", "内网端口",
-               "公网地址", "公网端口", "数据库名", "负责人", "过期时间", "状态", "备注"]
-    data = [[r["service_name"], r["credential_type"], r["access_url"], r["username"], r["password"],
-             r["ssh_key"], r["api_token"], r["internal_url"], r["internal_port"],
-             r["external_url"], r["external_port"], r["db_name"], r["owner"],
-             format_dt(r["expires_at"]), r["status"], r["notes"]] for r in items]
+    items = db.get_credentials(env=env, name=name, keyword=keyword, type=ctype, status=status, page=1, page_size=10000)[0]
+    headers = ["环境", "业务名称", "应用类型", "版本", "服务连接地址", "用户名", "密码",
+               "内网地址", "内网端口", "公网地址", "公网端口", "备注"]
+    data = [[r["env"], r["service_name"], r["app_type"], r["version"], r["access_url"], r["username"],
+             "●●●●●●●●" if r["password"] else "",
+             r["internal_url"], r["internal_port"],
+             r["external_url"], r["external_port"], r["notes"]] for r in items]
     fname = f"服务凭证_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     return excel_response(headers, data, fname, sheet_name="服务凭证")
 

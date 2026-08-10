@@ -6,7 +6,7 @@
 
 ## 一、项目简介
 
-本项目把分散在多个 Excel 表格中的运维参数集中到 Web 端，支持可视化筛选、批量复制、导入导出。目前包含 **发版管理**（3 个子标签）、**服务凭证管理**、**域名管理**，以及管理员专属的**用户管理**模块，带完整的 SHA-256 身份认证系统。
+本项目把分散在多个 Excel 表格中的运维参数集中到 Web 端，支持可视化筛选、批量复制、导入导出。目前包含 **发版管理**（3 个子标签）、**服务凭证管理**、**域名管理**，以及管理员专属的**用户管理**模块，带完整的 **SHA-256 本地认证 + 公司 LDAP 双认证源**。
 
 | 模块 | 记录数 | 数据来源 |
 |------|--------|----------|
@@ -26,7 +26,7 @@
 | 后端 | Python 3 + Flask | Flask session + werkzeug |
 | 数据库 | **双模式：MySQL 8.0（生产）/ SQLite（开发）** | `DB_ENGINE` 一键切换，pymysql 直连 |
 | 前端 | HTML + Tailwind CSS CDN + Vanilla JS | 零构建工具 |
-| 认证 | SHA-256（零依赖） + Flask session | 用户级标签页权限控制 |
+| 认证 | **SHA-256 本地认证 + LDAP 双认证源** | 本地账号 + 公司 LDAP 账号均可登录 |
 | Excel | pandas + openpyxl | 导入 / 导出 / 模板下载 |
 | 登录页 | Canvas 物理引擎 | 真实 PNG 图标 + 碰撞 + 鼠标轨迹 |
 
@@ -38,7 +38,7 @@
 lanqi-svc-params/
 ├── app.py                  # Flask 主应用（路由 + 全部 API）
 ├── database.py             # 数据库封装层（双模式：SQLite / MySQL 8.0）
-├── auth.py                 # 身份认证 + 权限管理（SHA-256）
+├── auth.py                 # 身份认证 + 权限管理（SHA-256 本地 + LDAP）
 ├── excel_utils.py          # Excel 生成工具（导出/模板）
 ├── models.py               # 数据模型类
 ├── migrate.py              # SQLite → MySQL 数据迁移脚本
@@ -108,9 +108,19 @@ DB_ENGINE=sqlite python3 app.py
 
 每个子标签都支持：筛选（关键词 + 环境） + 增删改 + Excel 三件套。
 
-### 5.2 服务凭证管理
+### 5.2 服务凭证管理（6 个环境子标签 · 侧边栏）
 
-18 个字段：服务名/凭证类型/访问链接/用户名/密码/SSH密钥/API Token/内外网地址/数据库名/负责人/过期时间等，支持过期提醒和状态筛选。
+侧边栏「服务凭证管理」可展开，下挂 **6 个环境子标签** + 「全部」：
+- 超融合电信开发环境 / 超融合南沙生产环境 / 预生产环境 / 国内生产环境 / 新加坡生产环境 / 北美生产环境
+
+**双搜索框**：
+- **业务名称** 框 — 仅匹配业务名称字段
+- **关键词** 框 — 模糊匹配账号/地址/备注等字段
+
+- 统一字段：业务名称/应用类型/版本/服务连接地址/内网地址/内网端口/公网地址/公网端口/账号/密码/备注（各环境没有的字段留空）
+- 🔐 **密码加密存储**（AES-256-GCM / Fernet），列表只显示 `●●●●●●●●`，导出自动脱敏，导入 Excel 时**跳过密码列**
+- 端口导入时**内外网端口保持一致**（同一端口），后续可在编辑弹窗中分别调整
+- Excel 导入读取 `~/Downloads/开发生产服务器信息.xlsx`（6 个子表自动映射到 6 个环境）
 
 ### 5.3 域名管理
 
@@ -118,11 +128,26 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 
 ### 5.4 用户管理（仅管理员）
 
-「系统管理」→「用户管理」页面可以可视化增删用户、重置密码、配置标签页权限（release/credentials/domains 自由组合）。
+「系统管理」→「用户管理」页面可以可视化增删用户、重置密码、配置标签页权限（release/credentials/domains 自由组合），表格中标识每个用户的认证方式（**本地** / **LDAP**）。
 
-侧边栏左下角新增**用户面板**：点击头像弹出个人信息（用户名/显示名/权限范围）+ 修改密码 + 退出登录。
+侧边栏左下角新增**用户面板**：点击头像弹出个人信息（用户名/显示名/权限范围）+ 修改密码（LDAP 用户不显示）+ 退出登录。
 
-### 5.5 Excel 导入/导出/模板
+### 5.5 LDAP 单点登录
+
+支持**公司 LDAP 账号**和**本地手动创建账号**双认证源登录：
+
+| 场景 | 行为 |
+|------|------|
+| 本地账号（如 admin） | 走本地 SHA-256 校验，完全不受影响 |
+| LDAP 账号首次登录 | 自动在 users 表创建记录（JIT 开通），**默认仅发版管理权限**，管理员可后续调整 |
+| LDAP 账号再次登录 | 直接 LDAP 校验，显示名自动同步 |
+
+- 配置在 `.env`：`LDAP_ENABLE / LDAP_HOST / LDAP_PORT / LDAP_BASE_DN / LDAP_BIND_USER / LDAP_BIND_PASS / LDAP_AUTH_FILTER / LDAP_USER_FILTER / LDAP_TLS / LDAP_STARTTLS / LDAP_DEFAULT_PERMS`
+- AuthFilter 支持占位符：openldap `(&(uid=%s))` / AD `(&(sAMAccountName=%s))`
+- LDAP 密码不落库，本地密码置随机值（不走本地校验）
+- LDAP 服务器异常时不影响本地账号登录（认证带异常兜底）
+
+### 5.6 Excel 导入/导出/模板
 
 所有模块都在右上角「Excel 操作」下拉菜单：
 
@@ -132,7 +157,7 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 📋 下载导入模板     ← 含表头 + 示例数据的空模板
 ```
 
-### 5.6 登录页
+### 5.7 登录页
 
 - **20+ 个真实 PNG 运维图标**（K8s/AI/安全/数据库/Docker/网关/终端等）自由漂浮
 - 重力物理引擎（可开关）+ 鼠标拖动图标 + 粒子轨迹
@@ -153,13 +178,13 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 云效运行研发流程：id, delivery_service, env, wf_sn, stage_sn, created_at, updated_at
 
 ### `service_credentials`
-服务凭证（18 字段）：id, service_name, credential_type, access_url, username, password, ssh_key, api_token, internal_url, internal_port, external_url, external_port, db_name, owner, expires_at, status, notes, created_at, updated_at
+服务凭证（6 环境统一表）：id, **env**, service_name(业务名称), **service_provider(服务供应商)**, **app_type, version**, username(账号), **password(加密存储)**, internal_url, internal_port, external_url, external_port, notes, created_at, updated_at
 
 ### `domains`
 域名管理：id, root_domain, region, service_name, domain_name, domain_type, env, cert_progress, cert_expiry, notes, created_at, updated_at
 
 ### `users`
-用户认证：id, username, password_hash (SHA-256), display_name, permissions, is_active, created_at
+用户认证：id, username, password_hash (SHA-256), display_name, permissions, is_active, **auth_source (local/ldap)**, created_at
 
 ---
 
@@ -201,6 +226,34 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 ---
 
 ## 八、版本记录
+
+### v1.5 (2026-08-07)
+- 🎨 服务凭证新增 **「服务供应商」列**（位于业务名称后），删除「服务连接地址」列
+- 🎨 地址列改为**固定宽度 18rem + 自动换行**（`break-all`），完整展示不再被截断
+- 🎨 **业务名称**搜索框改为 `<input list="datalist">` 下拉搜索（可输入可选择已有），参考蓝鲸发版参数的下拉选择体验
+- ✨ 新增 `service_credentials.service_provider` 字段（数据库双模式 ALTER 兼容）
+- ✨ 新增 `/api/credential-service-names` 和 `/api/credential-providers` 两个 API（用于 datalist 自动补全）
+- 🐛 修复编辑按钮失效的根因：域名弹窗 domFormModal 缺 `</div>` 嵌套，导致 credFormModal 等被嵌套在 display:none 父级里（lxml 验证）
+
+### v1.4 (2026-08-07)
+- 🎨 服务凭证管理 **6 环境子标签移到左侧侧边栏**（与域名管理一致的展开式菜单），页面顶部不再有切换按钮
+- 🎨 筛选区拆为 **业务名称 + 关键词** 两个独立搜索框（前者匹配 service_name，后者匹配地址/账号/备注）
+- 🐛 修复服务凭证改造导致的 `get_credentials` 函数签名漏加 `env` 参数 → 500 错误
+- 🐛 修复 LDAP 服务中断（服务器进程挂掉）的问题，重启后 zhouyicheng 等 LDAP 账号恢复
+
+### v1.3 (2026-08-07)
+- 🚀 **服务凭证管理重构为 6 环境子标签**（电信开发/南沙生产/预生产/国内生产/新加坡生产/北美生产）
+- 🔐 **密码 AES-256 加密存储**（Fernet），列表脱敏显示、导出脱敏、导入跳过密码列
+- ✨ 新增 `crypto.py` 加密模块 + `CRED_SECRET_KEY` 环境变量
+- ✨ Excel 导入自动映射 6 子表 → 6 环境（字段模糊匹配），端口内外网保持一致
+- ✨ 凭证 API 支持 env 筛选 + 新增 `/api/credential-envs`
+
+### v1.2 (2026-08-07)
+- 🚀 **接入公司 LDAP 单点登录**：本地账号 + LDAP 账号双认证源
+- 🚀 LDAP 用户首次登录自动开通（JIT），**默认仅发版管理权限**，显示名自动同步
+- 🚀 users 表新增 `auth_source` 字段（local/ldap），用户管理页显示认证方式
+- ✨ LDAP 配置走 `.env`（LDAP_* 系列），AuthFilter 支持 openldap / AD 两种格式
+- ✨ LDAP 密码不落库；LDAP 服务器异常不影响本地账号登录
 
 ### v1.1 (2026-08-06)
 - 🚀 **数据库升级 MySQL 8.0**：双模式切换（`DB_ENGINE=sqlite|mysql`），pymysql 直连，生产环境数据已迁移
@@ -248,4 +301,4 @@ A: 改 `.env` 里的 `DB_ENGINE`（`mysql` 或 `sqlite`）重启即可；系统�
 
 ---
 
-_最后更新：2026-08-06_
+_最后更新：2026-08-07（v1.3 凭证模块）_
