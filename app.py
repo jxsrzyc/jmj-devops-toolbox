@@ -547,6 +547,216 @@ def services_template():
     return excel_response(headers, example, fname, sheet_name="发版参数(请按此格式填写)")
 
 
+# ---------- 网络工具 ----------
+
+import nettools
+
+
+def _validate_net_host():
+    """从请求参数取 host 并校验，返回 (ok, host, error_json)"""
+    data = request.get_json(silent=True) or {}
+    host = (data.get("host") or request.args.get("host", "")).strip()
+    ok, msg, host = nettools.validate_host(host)
+    if not ok:
+        return False, None, jsonify({"code": 400, "message": msg}), 400
+    return True, host, None, None
+
+
+@app.route("/api/nettools/ip", methods=["POST"])
+@login_required
+def nettools_ip():
+    """IP 归属地查询"""
+    ok, host, err, code = _validate_net_host()
+    if not ok:
+        return err, code
+    return jsonify(nettools.ip_lookup(host))
+
+
+@app.route("/api/nettools/ping", methods=["POST"])
+@login_required
+def nettools_ping():
+    """PING 检测"""
+    ok, host, err, code = _validate_net_host()
+    if not ok:
+        return err, code
+    data = request.get_json(silent=True) or {}
+    count = int(data.get("count", 4))
+    timeout = int(data.get("timeout", 5))
+    count = max(1, min(count, 10))
+    timeout = max(1, min(timeout, 10))
+    return jsonify(nettools.ping_detect(host, count=count, timeout=timeout))
+
+
+@app.route("/api/nettools/tcping", methods=["POST"])
+@login_required
+def nettools_tcping():
+    """TCPing 端口连通性测试"""
+    ok, host, err, code = _validate_net_host()
+    if not ok:
+        return err, code
+    data = request.get_json(silent=True) or {}
+    port = int(data.get("port", 80))
+    timeout = int(data.get("timeout", 3))
+    port = max(1, min(port, 65535))
+    timeout = max(1, min(timeout, 10))
+    return jsonify(nettools.tcping(host, port, timeout))
+
+
+@app.route("/api/nettools/dns", methods=["POST"])
+@login_required
+def nettools_dns():
+    """DNS 记录查询"""
+    ok, host, err, code = _validate_net_host()
+    if not ok:
+        return err, code
+    data = request.get_json(silent=True) or {}
+    rtype = (data.get("type") or "A").upper()
+    dns_server = (data.get("dns_server") or "").strip() or None
+    return jsonify(nettools.dns_query(host, rtype, dns_server))
+
+
+@app.route("/api/nettools/route", methods=["POST"])
+@login_required
+def nettools_route():
+    """路由查询（Traceroute）"""
+    ok, host, err, code = _validate_net_host()
+    if not ok:
+        return err, code
+    data = request.get_json(silent=True) or {}
+    max_hops = int(data.get("max_hops", 30))
+    max_hops = max(3, min(max_hops, 64))
+    return jsonify(nettools.route_trace(host, max_hops=max_hops))
+
+
+@app.route("/api/nettools/mtr", methods=["POST"])
+@login_required
+def nettools_mtr():
+    """MTR 路由去程"""
+    ok, host, err, code = _validate_net_host()
+    if not ok:
+        return err, code
+    data = request.get_json(silent=True) or {}
+    count = int(data.get("count", 10))
+    count = max(3, min(count, 30))
+    return jsonify(nettools.mtr_trace(host, count=count))
+
+
+@app.route("/api/nettools/cdn", methods=["POST"])
+@login_required
+def nettools_cdn():
+    """CDN 服务商识别"""
+    ok, host, err, code = _validate_net_host()
+    if not ok:
+        return err, code
+    return jsonify(nettools.cdn_lookup(host))
+
+
+@app.route("/api/nettools/whois", methods=["POST"])
+@login_required
+def nettools_whois():
+    """Whois 域名注册信息查询（仅格式校验，允许内网/公司私有域名查询公共注册库）"""
+    data = request.get_json(silent=True) or {}
+    host = (data.get("host") or request.args.get("host", "")).strip()
+    ok, msg, host = nettools.validate_host_fmt(host)
+    if not ok:
+        return jsonify({"code": 400, "message": msg}), 400
+    return jsonify(nettools.whois_query(host))
+
+
+@app.route("/api/nettools/ssl", methods=["POST"])
+@login_required
+def nettools_ssl():
+    """SSL 证书信息 + TLS 协议支持检测（仅格式校验，运维常查公司私有域名证书）"""
+    data = request.get_json(silent=True) or {}
+    host = (data.get("host") or request.args.get("host", "")).strip()
+    ok, msg, host = nettools.validate_host_fmt(host)
+    if not ok:
+        return jsonify({"code": 400, "message": msg}), 400
+    port = int(data.get("port", 443))
+    port = max(1, min(port, 65535))
+    return jsonify(nettools.ssl_inspect(host, port))
+
+
+# ---------- 运维小工具 ----------
+
+import opsutils
+
+
+@app.route("/api/utils/cidr", methods=["POST"])
+@login_required
+def utils_cidr():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.cidr_calc(data.get("cidr", "")))
+
+
+@app.route("/api/utils/timestamp", methods=["POST"])
+@login_required
+def utils_timestamp():
+    data = request.get_json(silent=True) or {}
+    tz = int(data.get("tz", 8))
+    return jsonify(opsutils.timestamp_convert(data.get("value", ""), tz))
+
+
+@app.route("/api/utils/json", methods=["POST"])
+@login_required
+def utils_json():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.json_format(data.get("text", ""), int(data.get("indent", 2))))
+
+
+@app.route("/api/utils/encode", methods=["POST"])
+@login_required
+def utils_encode():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.encode_hash(data.get("text", ""), data.get("action", "base64_encode"), data.get("algo", "sha256")))
+
+
+@app.route("/api/utils/webhook", methods=["POST"])
+@login_required
+def utils_webhook():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.webhook_test(data.get("url", ""), data.get("method", "POST"),
+                                          data.get("headers") or {}, data.get("body", "")))
+
+
+@app.route("/api/utils/batch-tcping", methods=["POST"])
+@login_required
+def utils_batch_tcping():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.batch_tcping(data.get("items", [])))
+
+
+@app.route("/api/utils/http-health", methods=["POST"])
+@login_required
+def utils_http_health():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.http_health(data.get("url", ""), int(data.get("timeout", 10))))
+
+
+@app.route("/api/utils/cert-monitor", methods=["POST"])
+@login_required
+def utils_cert_monitor():
+    data = request.get_json(silent=True) or {}
+    domains = data.get("domains", [])
+    if isinstance(domains, str):
+        domains = [d.strip() for d in domains.splitlines() if d.strip()]
+    return jsonify(opsutils.cert_monitor(domains))
+
+
+@app.route("/api/utils/yaml-check", methods=["POST"])
+@login_required
+def utils_yaml_check():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.yaml_check(data.get("text", "")))
+
+
+@app.route("/api/utils/curl", methods=["POST"])
+@login_required
+def utils_curl():
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.curl_debug(data.get("command", "")))
+
+
 # ---------- 服务凭证 ----------
 
 @app.route("/api/credentials/import", methods=["POST"])

@@ -13,6 +13,8 @@ PERMISSIONS = {
     "release": "发版管理",
     "credentials": "服务凭证管理",
     "domains": "域名管理",
+    "nettools": "网络工具",
+    "utils": "运维小工具",
 }
 
 ALL_PERMISSIONS = list(PERMISSIONS.keys())
