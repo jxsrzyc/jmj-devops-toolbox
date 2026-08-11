@@ -1,5 +1,5 @@
 ---
-# ConfigMap — 应用配置
+# ConfigMap — 应用配置（含 LDAP，可自定义对接任意 LDAP/AD）
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -8,8 +8,26 @@ metadata:
     app: lanqi-svc-params
 data:
   TZ: "Asia/Shanghai"
-  DB_PATH: "/app/data/data.db"
   FLASK_ENV: "production"
-  # 数据库引擎（重要：database.py 默认 DB_ENGINE=mysql，K8s 内无 MySQL 必须显式 sqlite）
-  # 如需使用 MySQL，改为 mysql 并配置下方 Secret 中的 DB_HOST/DB_PORT/DB_USER/DB_PASS/DB_NAME
-  DB_ENGINE: "sqlite"
+  # 数据库引擎：
+  #   mysql  — 连接共享 MySQL（推荐，数据与本地一致，多副本安全）
+  #   sqlite — 单副本本地文件（PVC 持久化，空库需重新导入）
+  DB_ENGINE: "mysql"
+
+  # ===== LDAP 认证（可选，默认关闭；开启后 本地账号 + LDAP 双认证）=====
+  # 对接其他 LDAP/AD：只需改下面 HOST/PORT/BASE_DN/FILTER（代码全部走环境变量，无需改代码）
+  LDAP_ENABLE: "false"          # true 启用
+  LDAP_HOST: "ldap.example.com" # 你的 LDAP 服务器地址
+  LDAP_PORT: "389"              # 636=LDAPS / 389=LDAP / STARTTLS 用 389
+  LDAP_BASE_DN: "dc=example,dc=com"
+  # Bind 服务账号 DN（用于搜索用户；匿名可搜索则留空）
+  LDAP_BIND_USER: "cn=admin,dc=example,dc=com"
+  # 认证过滤（%s 为登录用户名占位）：
+  #   OpenLDAP: (&(objectClass=inetOrgPerson)(uid=%s))
+  #   AD:       (&(objectClass=user)(sAMAccountName=%s))
+  LDAP_AUTH_FILTER: "(&(objectClass=inetOrgPerson)(uid=%s))"
+  LDAP_USER_FILTER: "(&(objectClass=inetOrgPerson)(uid=%s))"
+  LDAP_TLS: "false"             # 使用 LDAPS（636）
+  LDAP_STARTTLS: "false"        # 使用 STARTTLS
+  # LDAP 用户首次登录默认权限（可选：release / release,credential / *）
+  LDAP_DEFAULT_PERMS: "release"

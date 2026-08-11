@@ -1,7 +1,7 @@
 ---
 # Deployment — 滚动更新 + 健康检查
-# ⚠️ SQLite 模式必须 replicas: 1（SQLite 文件不支持多副本并发写）
-#   如需多副本高可用，请迁移到 MySQL（DB_ENGINE=mysql + Secret 中 DB_* 配置）
+# MySQL 模式（DB_ENGINE=mysql）：多副本安全，可水平扩展
+# SQLite 模式（DB_ENGINE=sqlite）：必须 replicas: 1 + PVC 挂载
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -9,7 +9,7 @@ metadata:
   labels:
     app: lanqi-svc-params
 spec:
-  replicas: 1
+  replicas: 2
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -26,7 +26,6 @@ spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
-        fsGroup: 1000
       containers:
         - name: lanqi-svc-params
           # ⚠️ 部署前替换为你的镜像仓库地址 + 版本 tag（勿用 latest 上生产）
@@ -39,7 +38,31 @@ spec:
             - configMapRef:
                 name: lanqi-svc-params-config
           env:
-            # 生产密钥来自 Secret（覆盖 ConfigMap / 内置默认值）
+            - name: DB_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: lanqi-svc-params-secret
+                  key: DB_HOST
+            - name: DB_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: lanqi-svc-params-secret
+                  key: DB_PORT
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: lanqi-svc-params-secret
+                  key: DB_USER
+            - name: DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: lanqi-svc-params-secret
+                  key: DB_PASS
+            - name: DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: lanqi-svc-params-secret
+                  key: DB_NAME
             - name: SECRET_KEY
               valueFrom:
                 secretKeyRef:
@@ -55,6 +78,12 @@ spec:
                 secretKeyRef:
                   name: lanqi-svc-params-secret
                   key: CRED_SECRET_KEY
+            # LDAP Bind 密码（敏感，放 Secret）
+            - name: LDAP_BIND_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: lanqi-svc-params-secret
+                  key: LDAP_BIND_PASS
           resources:
             requests:
               memory: "128Mi"
@@ -76,10 +105,3 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
-          volumeMounts:
-            - name: data
-              mountPath: /app/data
-      volumes:
-        - name: data
-          persistentVolumeClaim:
-            claimName: lanqi-svc-params-pvc
