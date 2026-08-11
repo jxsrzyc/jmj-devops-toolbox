@@ -4,6 +4,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: lanqi-svc-params
+  namespace: lanqi-svc-params
   labels:
     app: lanqi-svc-params
 spec:

@@ -6,6 +6,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: lanqi-svc-params
+  namespace: lanqi-svc-params
   labels:
     app: lanqi-svc-params
 spec:
@@ -105,3 +106,12 @@ spec:
             initialDelaySeconds: 5
             periodSeconds: 10
             timeoutSeconds: 5
+          # PVC 挂载：SQLite 模式（DB_ENGINE=sqlite）数据持久化到卷；
+          # MySQL 模式（DB_ENGINE=mysql）数据在共享库，此卷空挂载无副作用
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: lanqi-svc-params-pvc

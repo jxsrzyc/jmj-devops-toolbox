@@ -4,6 +4,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: lanqi-svc-params-config
+  namespace: lanqi-svc-params
   labels:
     app: lanqi-svc-params
 data:
