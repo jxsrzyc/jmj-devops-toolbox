@@ -37,6 +37,8 @@ python3 app.py
 # → 默认账号: admin / admin123
 ```
 
+> **依赖安装**：`pip install -r requirements.txt`（含 dnspython）。网络工具模块的 MTR 路由在 macOS 需 `brew install mtr`、Linux 需 `yum/apt install mtr`（Windows 自动降级为 pathping）。
+
 ### 1.3 常用操作
 
 | 操作 | 命令 |

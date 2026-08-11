@@ -5,3 +5,5 @@ openpyxl>=3.1
 pymysql>=1.1
 ldap3>=2.9
 cryptography>=42.0
+dnspython>=2.4
+pyyaml>=6.0

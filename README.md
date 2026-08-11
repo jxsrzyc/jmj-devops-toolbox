@@ -126,13 +126,54 @@ DB_ENGINE=sqlite python3 app.py
 
 jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/higress/nginx/alb/供应商），8 种环境。SSL 证书到期统计（正常/30天内过期/已过期）。
 
-### 5.4 用户管理（仅管理员）
+### 5.4 网络工具（9 个子标签 · 跨平台）
 
-「系统管理」→「用户管理」页面可以可视化增删用户、重置密码、配置标签页权限（release/credentials/domains 自由组合），表格中标识每个用户的认证方式（**本地** / **LDAP**）。
+侧边栏「网络工具」可展开，下挂 **9 个子工具**（全部支持 Windows / macOS / Linux）：
+
+| 子工具 | 说明 | 技术实现 |
+|--------|------|---------|
+| IP 查询 | IP/域名归属地、运营商、ASN | 第三方免费 API（ip-api.com） |
+| PING 检测 | ICMP 连通性、延迟、丢包率 | 系统 ping 命令（Windows `-n` / macOS `-c`） |
+| TCPing | TCP 端口连通性、握手耗时 | 纯 Python socket（跨平台） |
+| DNS 查询 | A/AAAA/CNAME/MX/NS/TXT 等多记录 | dnspython + 多公共 DNS |
+| 路由查询 | Traceroute 逐跳追踪 | 系统 traceroute/tracert 命令 |
+| MTR 路由 | 去程丢包率与延迟分析 | macOS/Linux: mtr -j；Windows: pathping 降级 |
+| CDN 查询 | CDN 服务商识别 | CNAME 特征规则库 + IP ASN 归属库 |
+| Whois 查询 | 域名注册信息（注册商/注册/到期/状态） | RDAP 公共 API（无 key、跨平台统一） |
+| SSL 检测 | TLS 证书信息 + 协议版本支持矩阵 | 纯 Python socket/ssl + cryptography 解析 |
+
+**安全设计**：输入校验（域名/IP 白名单 + 内网/回环黑名单防 SSRF）、subprocess 强制超时、`shell=False`、权限控制（`nettools` 权限，可在用户管理配置）。
+
+### 5.5 运维小工具（10 个子标签）
+
+侧边栏「运维小工具」可展开，下挂 **10 个子工具**（权限 `utils`，可在用户管理配置）：
+
+| 子工具 | 说明 | 技术实现 |
+|--------|------|---------|
+| CIDR 子网计算器 | 网络/广播/可用主机/掩码计算 | Python `ipaddress` |
+| 时间戳换算 | Unix 时间戳 ⇄ 人类时间（双向、时区可选） | Python datetime |
+| JSON 格式化 | 美化/压缩/语法校验 | Python json |
+| 编解码/哈希 | Base64/URL 编解码 + MD5/SHA1/256/512 | Python base64/hashlib |
+| Webhook 测试 | 向任意 URL 发送测试请求看响应 | urllib + 防 SSRF 校验 |
+| 批量端口连通检查 | 表格批量 TCPing（最多 50 条） | 复用 nettools.tcping |
+| HTTP 健康检查 | URL 状态码/耗时/响应头/返回体 | urllib |
+| 证书批量到期监控 | 批量 SSL 证书剩余天数（最多 100 条） | 复用 nettools.ssl_inspect |
+| K8s Yaml 检测 | YAML 语法 + 资源必填字段/规范检查（多文档） | pyyaml |
+| Curl 请求调试 | 粘贴 curl 命令执行看响应 | 安全重组（仅 http/https + 参数白名单） |
+| 文本比较 | 逐行 Diff 对比（粘贴/上传，忽略空白/大小写） | 纯前端 LCS 算法 |
+| 文本去重 | 按分隔符（换行/逗号/分号/Tab/自定义）去重 | 纯前端 Set 去重 |
+| 生成器 | 密码 / 密码短语 / 用户名 三合一 | 纯前端 crypto 安全随机 + 内置 5000 词库 |
+| 生成器历史记录 | 弹窗式（最近 20 条，localStorage） | 纯前端，集成在生成器页面右上角 |
+
+**安全设计**：curl/webhook/http 仅允许 http(s) 且禁止内网/回环目标（防 SSRF）；curl 参数白名单（-X/-H/-d/-u/-k/-s/-w 等），`-o` 仅允许 /dev/null。
+
+### 5.7 用户管理（仅管理员）
+
+「系统管理」→「用户管理」页面可以可视化增删用户、重置密码、配置标签页权限（release/credentials/domains/nettools 自由组合），表格中标识每个用户的认证方式（**本地** / **LDAP**）。
 
 侧边栏左下角新增**用户面板**：点击头像弹出个人信息（用户名/显示名/权限范围）+ 修改密码（LDAP 用户不显示）+ 退出登录。
 
-### 5.5 LDAP 单点登录
+### 5.8 LDAP 单点登录
 
 支持**公司 LDAP 账号**和**本地手动创建账号**双认证源登录：
 
@@ -157,7 +198,7 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 📋 下载导入模板     ← 含表头 + 示例数据的空模板
 ```
 
-### 5.7 登录页
+### 5.9 登录页
 
 - **20+ 个真实 PNG 运维图标**（K8s/AI/安全/数据库/Docker/网关/终端等）自由漂浮
 - 重力物理引擎（可开关）+ 鼠标拖动图标 + 粒子轨迹
@@ -226,6 +267,31 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 ---
 
 ## 八、版本记录
+
+### v2.4 (2026-08-11)
+- 🚀 运维小工具新增 **生成器**（密码/密码短语/用户名 三合一 Tab 页）和 **生成器历史记录**（localStorage 最近 20 条）
+- 🔐 密码生成用 `crypto.getRandomValues`（密码学安全），必填字符（数字/符号最少）+ Fisher-Yates 洗牌；易混淆字符移除 `0OoIl1L|$&*`
+- ✨ 密码短语/用户名基于内置 5000 常用词库（Google 10000 常用词过滤敏感词）
+
+### v2.3 (2026-08-10)
+- 🚀 运维小工具新增 **文本比较**（LCS 逐行 diff，支持粘贴/上传/忽略空白/忽略大小写/仅显差异）和 **文本去重**（支持换行/逗号/分号/Tab/空格/自定义分隔符 + 忽略大小写/排序/过滤空项）
+- ✨ 两个工具纯前端实现（无 API 请求）；文本比较支持 A⇄B 对调、复制差异；去重展示移除项明细
+
+### v2.2 (2026-08-10)
+- 🚀 **新增「运维小工具」模块**（侧边栏可展开，10 个子标签）：CIDR / 时间戳 / JSON / 编解码哈希 / Webhook / 批量端口 / HTTP健康 / 证书批量到期监控 / K8s Yaml检测 / Curl调试
+- 🔒 安全：curl/webhook/http 防 SSRF（仅 http(s) + 内网拦截）；curl 参数白名单
+- ✨ 新增 `opsutils.py` 模块 + `utils` 权限（用户管理可配置）+ 依赖 `pyyaml`
+
+### v2.1 (2026-08-10)
+- 🚀 网络工具新增 **Whois 查询**（RDAP 公共 API）和 **SSL 检测**（证书信息 + TLS 协议矩阵）2 个子工具（共 9 个）
+- ✨ Whois/SSL 使用「仅格式校验」模式：允许查询公司内网解析的私有域名（运维刚需），RDAP 查公共注册库不触达目标主机
+
+### v2.0 (2026-08-10)
+- 🚀 **新增「网络工具」模块**（侧边栏可展开，7 个子标签）：IP查询 / PING检测 / TCPing / DNS查询 / 路由查询 / MTR路由 / CDN查询
+- 🔒 安全设计：内网/回环 IP 黑名单（防 SSRF）、subprocess 强制超时、shell=False
+- 🌐 全部工具跨平台（Windows `ping -n`/`tracert`/`pathping`；macOS/Linux `ping -c`/`traceroute`/`mtr`）
+- ✨ 新增 `nettools.py` 模块 + `nettools` 权限（用户管理可配置）+ 依赖 `dnspython`
+- ✨ IP 查询走第三方免费 API（ip-api.com）；CDN 识别 = CNAME 特征规则库 + ASN 归属库
 
 ### v1.5 (2026-08-07)
 - 🎨 服务凭证新增 **「服务供应商」列**（位于业务名称后），删除「服务连接地址」列

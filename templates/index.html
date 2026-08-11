@@ -168,6 +168,108 @@
             </div>
             {% endif %}
 
+            {% if has_perm('nettools') %}
+            <!-- 网络工具（可展开） -->
+            <a href="#" onclick="toggleNetMenu(); return false;"
+                class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
+                data-page="nettools" id="netMenuToggle">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                </svg>
+                网络工具
+                <svg id="netMenuArrow" class="w-3 h-3 ml-auto transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </a>
+            <!-- 网络工具子菜单 -->
+            <div id="netSubmenu" class="hidden ml-9 border-l border-gray-200">
+                <a href="#" onclick="switchNetTab('ip'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="ip" id="netSub-ip">IP 查询</a>
+                <a href="#" onclick="switchNetTab('ping'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="ping" id="netSub-ping">PING 检测</a>
+                <a href="#" onclick="switchNetTab('tcping'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="tcping" id="netSub-tcping">TCPing</a>
+                <a href="#" onclick="switchNetTab('dns'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="dns" id="netSub-dns">DNS 查询</a>
+                <a href="#" onclick="switchNetTab('route'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="route" id="netSub-route">路由查询</a>
+                <a href="#" onclick="switchNetTab('mtr'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="mtr" id="netSub-mtr">MTR 路由</a>
+                <a href="#" onclick="switchNetTab('cdn'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="cdn" id="netSub-cdn">CDN 查询</a>
+                <a href="#" onclick="switchNetTab('whois'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="whois" id="netSub-whois">Whois 查询</a>
+                <a href="#" onclick="switchNetTab('ssl'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-net-tab="ssl" id="netSub-ssl">SSL 检测</a>
+            </div>
+            {% endif %}
+
+            {% if has_perm('utils') %}
+            <!-- 运维小工具（可展开） -->
+            <a href="#" onclick="toggleUtilsMenu(); return false;"
+                class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
+                data-page="opsutils" id="utilsMenuToggle">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                运维小工具
+                <svg id="utilsMenuArrow" class="w-3 h-3 ml-auto transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </a>
+            <!-- 运维小工具子菜单 -->
+            <div id="utilsSubmenu" class="hidden ml-9 border-l border-gray-200">
+                <a href="#" onclick="switchUtilsTab('cidr'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="cidr" id="utilsSub-cidr">CIDR 子网计算器</a>
+                <a href="#" onclick="switchUtilsTab('timestamp'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="timestamp" id="utilsSub-timestamp">时间戳换算</a>
+                <a href="#" onclick="switchUtilsTab('json'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="json" id="utilsSub-json">JSON 格式化</a>
+                <a href="#" onclick="switchUtilsTab('encode'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="encode" id="utilsSub-encode">编解码/哈希</a>
+                <a href="#" onclick="switchUtilsTab('webhook'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="webhook" id="utilsSub-webhook">Webhook 测试</a>
+                <a href="#" onclick="switchUtilsTab('batch'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="batch" id="utilsSub-batch">批量端口连通检查</a>
+                <a href="#" onclick="switchUtilsTab('health'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="health" id="utilsSub-health">HTTP 健康检查</a>
+                <a href="#" onclick="switchUtilsTab('cert'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="cert" id="utilsSub-cert">证书批量到期监控</a>
+                <a href="#" onclick="switchUtilsTab('yaml'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="yaml" id="utilsSub-yaml">K8s Yaml 检测</a>
+                <a href="#" onclick="switchUtilsTab('curl'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="curl" id="utilsSub-curl">Curl 请求调试</a>
+                <a href="#" onclick="switchUtilsTab('diff'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="diff" id="utilsSub-diff">文本比较</a>
+                <a href="#" onclick="switchUtilsTab('dedup'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="dedup" id="utilsSub-dedup">文本去重</a>
+                <a href="#" onclick="switchUtilsTab('generator'); return false;"
+                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-utils-tab="generator" id="utilsSub-generator">生成器</a>
+                </div>
+            {% endif %}
+
             <p class="px-5 py-1.5 mt-4 text-[11px] font-medium text-gray-400 uppercase tracking-wider">系统管理</p>
 
             {% if permissions == '*' %}
@@ -736,6 +838,559 @@
             </div>
         </div>
 
+                <!-- 网络工具：IP 查询 -->
+        <div id="page-netip" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">IP 查询</h2><p class="text-sm text-gray-500">查询 IP 或域名的归属地、运营商、ASN 等信息（第三方免费 API）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">IP 或域名</label>
+                        <input id="netIpInput" type="text" placeholder="如: 8.8.8.8 或 www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netIpQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netIpResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：PING 检测 -->
+        <div id="page-netping" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">PING 检测</h2><p class="text-sm text-gray-500">ICMP 连通性测试，返回延迟、丢包率（跨平台）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">主机名 / IP</label>
+                        <input id="netPingHost" type="text" placeholder="如: 8.8.8.8 或 www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="w-28">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">次数</label>
+                        <input id="netPingCount" type="number" value="4" min="1" max="10" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netPingQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">开始检测</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netPingResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：TCPing -->
+        <div id="page-nettcping" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">TCPing</h2><p class="text-sm text-gray-500">TCP 端口连通性测试，测量握手耗时（跨平台）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">主机名 / IP</label>
+                        <input id="netTcpingHost" type="text" placeholder="如: www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="w-32">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">端口</label>
+                        <input id="netTcpingPort" type="number" value="80" min="1" max="65535" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netTcpingQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">开始测试</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netTcpingResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：DNS 查询 -->
+        <div id="page-netdns" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">DNS 查询</h2><p class="text-sm text-gray-500">多公共 DNS 解析记录查询（A/AAAA/CNAME/MX/NS/TXT 等）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">域名</label>
+                        <input id="netDnsHost" type="text" placeholder="如: www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="w-32">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">记录类型</label>
+                        <select id="netDnsType" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="A">A</option><option value="AAAA">AAAA</option><option value="CNAME">CNAME</option>
+                            <option value="MX">MX</option><option value="NS">NS</option><option value="TXT">TXT</option>
+                            <option value="SOA">SOA</option><option value="PTR">PTR</option><option value="SRV">SRV</option>
+                        </select>
+                    </div>
+                    <div class="w-44">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">DNS 服务器</label>
+                        <select id="netDnsServer" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="">全部公共 DNS</option>
+                            <option value="8.8.8.8">Google 8.8.8.8</option>
+                            <option value="1.1.1.1">Cloudflare 1.1.1.1</option>
+                            <option value="114.114.114.114">114 114.114.114.114</option>
+                            <option value="223.5.5.5">阿里 223.5.5.5</option>
+                            <option value="192.168.0.246">内部 DNS 192.168.0.246</option>
+                            <option value="172.18.90.50">内部 DNS 172.18.90.50</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netDnsQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netDnsResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：路由查询 -->
+        <div id="page-netroute" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">路由查询</h2><p class="text-sm text-gray-500">Traceroute 路由追踪，查看数据包经过的每一跳（跨平台）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">主机名 / IP</label>
+                        <input id="netRouteHost" type="text" placeholder="如: www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="w-32">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">最大跳数</label>
+                        <input id="netRouteHops" type="number" value="30" min="3" max="64" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netRouteQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">开始追踪</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netRouteResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：MTR 路由 -->
+        <div id="page-netmtr" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">MTR 路由</h2><p class="text-sm text-gray-500">去程路由丢包率与延迟分析（macOS/Linux: mtr；Windows: pathping）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">主机名 / IP</label>
+                        <input id="netMtrHost" type="text" placeholder="如: www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="w-32">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">探测次数</label>
+                        <input id="netMtrCount" type="number" value="10" min="3" max="30" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netMtrQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">开始分析</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netMtrResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：CDN 查询 -->
+        <div id="page-netcdn" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">CDN 查询</h2><p class="text-sm text-gray-500">识别域名使用的 CDN 服务商（CNAME 特征 + ASN 归属分析）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">域名</label>
+                        <input id="netCdnHost" type="text" placeholder="如: www.taobao.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netCdnQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">识别</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netCdnResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：Whois 查询 -->
+        <div id="page-netwhois" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">Whois 查询</h2><p class="text-sm text-gray-500">域名注册信息查询（注册商/注册日期/到期日期/状态等，RDAP 公共 API）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">域名</label>
+                        <input id="netWhoisHost" type="text" placeholder="如: jmj1995.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netWhoisQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netWhoisResult" class="flex-1"></div>
+        </div>
+
+        <!-- 网络工具：SSL 检测 -->
+        <div id="page-netssl" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">SSL 检测</h2><p class="text-sm text-gray-500">TLS 证书信息 + 协议版本支持检测（跨平台）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">主机名 / IP</label>
+                        <input id="netSslHost" type="text" placeholder="如: www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="w-32">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">端口</label>
+                        <input id="netSslPort" type="number" value="443" min="1" max="65535" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="netSslQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">检测</button>
+                    </div>
+                </div>
+            </div>
+            <div id="netSslResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：CIDR 子网计算器 -->
+        <div id="page-utcidr" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">CIDR 子网计算器</h2><p class="text-sm text-gray-500">网络地址/可用主机数/广播地址/掩码计算</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">CIDR 网段</label>
+                        <input id="utCidrInput" type="text" placeholder="如: 10.0.0.0/24 或 192.168.1.0/255.255.255.0" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="utCidrCalc()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">计算</button>
+                    </div>
+                </div>
+            </div>
+            <div id="utCidrResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：时间戳换算 -->
+        <div id="page-uttimestamp" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">时间戳换算</h2><p class="text-sm text-gray-500">Unix 时间戳 ⇄ 人类时间（双向）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">时间戳 或 日期时间</label>
+                        <input id="utTsInput" type="text" placeholder="如: 1754726400 或 2026-08-10 12:00:00" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="w-28">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">时区</label>
+                        <select id="utTsTz" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="8" selected>UTC+8 (北京)</option><option value="0">UTC+0</option><option value="-5">UTC-5</option>
+                        </select>
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="utTsConvert()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">换算</button>
+                    </div>
+                </div>
+            </div>
+            <div id="utTsResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：JSON 格式化 -->
+        <div id="page-utjson" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">JSON 格式化</h2><p class="text-sm text-gray-500">美化排版 / 压缩 / 语法校验</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <label class="block text-xs font-medium text-gray-500 mb-1">JSON 内容</label>
+                <textarea id="utJsonInput" rows="8" placeholder='{"a": 1, "b": [1,2,3]}' class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="utJsonRun('pretty')" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">格式化（美化）</button>
+                    <button onclick="utJsonRun('compact')" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">压缩</button>
+                    <button onclick="utJsonRun('validate')" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">仅校验</button>
+                </div>
+            </div>
+            <div id="utJsonResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：编解码/哈希 -->
+        <div id="page-utencode" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">编解码 / 哈希</h2><p class="text-sm text-gray-500">Base64 / URL 编解码 / MD5 / SHA 系列</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <label class="block text-xs font-medium text-gray-500 mb-1">内容</label>
+                <textarea id="utEncInput" rows="4" placeholder="输入要处理的内容..." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                <div class="flex flex-wrap gap-2 mt-3">
+                    <button onclick="utEncRun('base64_encode')" class="px-3 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700">Base64 编码</button>
+                    <button onclick="utEncRun('base64_decode')" class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 border border-gray-300">Base64 解码</button>
+                    <button onclick="utEncRun('url_encode')" class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 border border-gray-300">URL 编码</button>
+                    <button onclick="utEncRun('url_decode')" class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 border border-gray-300">URL 解码</button>
+                    <button onclick="utEncRun('md5')" class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 border border-gray-300">MD5</button>
+                    <button onclick="utEncRun('sha1')" class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 border border-gray-300">SHA1</button>
+                    <button onclick="utEncRun('sha256')" class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 border border-gray-300">SHA256</button>
+                    <button onclick="utEncRun('sha512')" class="px-3 py-2 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200 border border-gray-300">SHA512</button>
+                </div>
+            </div>
+            <div id="utEncResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：Webhook 测试 -->
+        <div id="page-utwebhook" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">Webhook 测试</h2><p class="text-sm text-gray-500">向任意 URL 发送测试请求，查看响应</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3 mb-3">
+                    <div class="w-28">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">方法</label>
+                        <select id="utWhMethod" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option>POST</option><option>GET</option><option>PUT</option><option>DELETE</option><option>PATCH</option>
+                        </select>
+                    </div>
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">URL</label>
+                        <input id="utWhUrl" type="text" placeholder="如: https://oapi.dingtalk.com/robot/send?access_token=xxx" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                </div>
+                <label class="block text-xs font-medium text-gray-500 mb-1">请求头（每行一个，如: Content-Type: application/json）</label>
+                <textarea id="utWhHeaders" rows="2" placeholder="Content-Type: application/json" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none mb-3"></textarea>
+                <label class="block text-xs font-medium text-gray-500 mb-1">请求体（JSON）</label>
+                <textarea id="utWhBody" rows="4" placeholder='{"msgtype": "text", "text": {"content": "测试"}}' class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="utWhSend()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">发送</button>
+                </div>
+            </div>
+            <div id="utWhResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：批量端口连通检查 -->
+        <div id="page-utbatch" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">批量端口连通检查</h2><p class="text-sm text-gray-500">表格形式批量 TCPing（每行一个 主机:端口，最多 50 条）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <label class="block text-xs font-medium text-gray-500 mb-1">主机:端口（每行一个）</label>
+                <textarea id="utBatchInput" rows="6" placeholder="10.0.1.100:3306&#10;10.0.1.101:6379&#10;www.baidu.com:443" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="utBatchRun()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">批量检查</button>
+                </div>
+            </div>
+            <div id="utBatchResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：HTTP 健康检查 -->
+        <div id="page-uthealth" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">HTTP 健康检查</h2><p class="text-sm text-gray-500">URL 状态码/响应时间/响应头/返回体</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col sm:flex-row gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">URL</label>
+                        <input id="utHealthUrl" type="text" placeholder="如: https://www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex items-end gap-2">
+                        <button onclick="utHealthRun()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">检查</button>
+                    </div>
+                </div>
+            </div>
+            <div id="utHealthResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：证书批量到期监控 -->
+        <div id="page-utcert" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">证书批量到期监控</h2><p class="text-sm text-gray-500">批量检测域名 SSL 证书剩余天数（每行一个域名，最多 100 条）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex gap-3">
+                    <div class="flex-1">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">域名列表（每行一个）</label>
+                        <textarea id="utCertInput" rows="6" placeholder="www.baidu.com&#10;jmj1995.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                    </div>
+                    <div class="w-40 flex flex-col justify-end">
+                        <button onclick="utCertRun()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">批量检测</button>
+                        <p class="text-[11px] text-gray-400 mt-2">提示：每个域名约需 2-6 秒（TLS 探测），100 个约 5-10 分钟</p>
+                    </div>
+                </div>
+            </div>
+            <div id="utCertResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：K8s Yaml 检测 -->
+        <div id="page-utyaml" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">K8s Yaml 检测</h2><p class="text-sm text-gray-500">YAML 语法校验 + 资源必填字段检查（支持多文档）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <label class="block text-xs font-medium text-gray-500 mb-1">YAML 内容（支持 --- 多文档）</label>
+                <textarea id="utYamlInput" rows="12" placeholder="apiVersion: apps/v1&#10;kind: Deployment&#10;metadata:&#10;  name: nginx&#10;..." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="utYamlRun()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">检测</button>
+                </div>
+            </div>
+            <div id="utYamlResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：Curl 请求调试 -->
+        <div id="page-utcurl" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">Curl 请求调试</h2><p class="text-sm text-gray-500">粘贴 curl 命令执行并查看响应（仅支持 http/https，安全过滤）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <label class="block text-xs font-medium text-gray-500 mb-1">curl 命令</label>
+                <textarea id="utCurlInput" rows="5" placeholder='curl -X POST https://api.example.com/v1/test -H "Content-Type: application/json" -d \'{"a":1}\'' class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                <div class="flex gap-2 mt-3">
+                    <button onclick="utCurlRun()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">执行</button>
+                </div>
+            </div>
+            <div id="utCurlResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：文本比较 -->
+        <div id="page-utdiff" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">文本比较</h2><p class="text-sm text-gray-500">逐行 Diff 对比（支持粘贴或上传文件）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-xs font-medium text-gray-500">文本 A</label>
+                            <label class="text-xs text-blue-600 cursor-pointer hover:underline">上传文件<input type="file" id="utDiffFileA" class="hidden" accept=".txt,.log,.conf,.yaml,.yml,.json,.md,.csv"></label>
+                        </div>
+                        <textarea id="utDiffA" rows="10" placeholder="粘贴文本 A 或上传文件..." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                    </div>
+                    <div>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="text-xs font-medium text-gray-500">文本 B</label>
+                            <label class="text-xs text-blue-600 cursor-pointer hover:underline">上传文件<input type="file" id="utDiffFileB" class="hidden" accept=".txt,.log,.conf,.yaml,.yml,.json,.md,.csv"></label>
+                        </div>
+                        <textarea id="utDiffB" rows="10" placeholder="粘贴文本 B 或上传文件..." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                    </div>
+                </div>
+                <div class="flex flex-wrap items-center gap-4 mt-3">
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDiffTrim" class="rounded"> 忽略行首尾空白</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDiffCase" class="rounded"> 忽略大小写</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDiffOnlyDiff" class="rounded"> 仅显示差异行</label>
+                    <button onclick="utDiffRun()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">比较</button>
+                    <button onclick="utDiffSwap()" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">A ⇄ B 对调</button>
+                </div>
+            </div>
+            <div id="utDiffResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：文本去重 -->
+        <div id="page-utdedup" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">文本去重</h2><p class="text-sm text-gray-500">按指定分隔符拆分并去重（支持粘贴或上传文件）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="text-xs font-medium text-gray-500">输入文本</label>
+                    <label class="text-xs text-blue-600 cursor-pointer hover:underline">上传文件<input type="file" id="utDedupFile" class="hidden" accept=".txt,.log,.csv,.conf,.list"></label>
+                </div>
+                <textarea id="utDedupInput" rows="8" placeholder="粘贴内容或上传文件..." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                <div class="flex flex-wrap items-center gap-4 mt-3">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-600">分隔符</label>
+                        <select id="utDedupSep" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="newline" selected>换行</option>
+                            <option value="comma">逗号 ,</option>
+                            <option value="semicolon">分号 ;</option>
+                            <option value="tab">Tab</option>
+                            <option value="space">空格</option>
+                            <option value="custom">自定义...</option>
+                        </select>
+                        <input id="utDedupCustomSep" type="text" placeholder="自定义分隔符" class="hidden w-24 px-2 py-1.5 border border-gray-300 rounded-lg text-sm outline-none">
+                    </div>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDedupTrim" class="rounded" checked> 去除项首尾空白</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDedupCase" class="rounded"> 忽略大小写</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDedupEmpty" class="rounded"> 过滤空项</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDedupSort" class="rounded"> 结果排序</label>
+                    <button onclick="utDedupRun()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">去重</button>
+                </div>
+            </div>
+            <div id="utDedupResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：生成器 -->
+        <div id="page-utgenerator" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">生成器</h2><p class="text-sm text-gray-500">密码 / 密码短语 / 用户名 三合一生成器（crypto 安全随机）</p></div>
+            </div>
+            <!-- Tab 切换 -->
+            <div class="flex items-center justify-between mb-5">
+                <div class="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+                    <button onclick="genSwitchTab('pwd')" id="genTab-pwd" class="px-4 py-2 text-sm font-medium rounded-md bg-white text-blue-600 shadow-sm">密码</button>
+                    <button onclick="genSwitchTab('phrase')" id="genTab-phrase" class="px-4 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">密码短语</button>
+                    <button onclick="genSwitchTab('user')" id="genTab-user" class="px-4 py-2 text-sm font-medium rounded-md text-gray-600 hover:bg-gray-50">用户名</button>
+                </div>
+                <button onclick="openGenHistoryModal()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-200 shadow-sm">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    历史记录 <span id="genHistoryCount" class="ml-1 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-xs">0</span>
+                </button>
+            </div>
+
+            <!-- Tab: 密码 -->
+            <div id="genPanel-pwd" class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
+                <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div class="col-span-2">
+                        <label class="text-xs font-medium text-gray-500">长度 <span id="genPwdLenVal" class="text-blue-600 font-semibold">16</span></label>
+                        <input id="genPwdLen" type="range" min="5" max="128" value="16" class="w-full">
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="genPwdUpper" class="rounded" checked> 大写 A-Z</label>
+                    <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="genPwdLower" class="rounded" checked> 小写 a-z</label>
+                    <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="genPwdDigit" class="rounded" checked> 数字 0-9</label>
+                    <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="genPwdSymbol" class="rounded" checked> 特殊字符 !@#$%^&*</label>
+                    <div class="flex items-center gap-2"><label class="text-sm text-gray-700">数字最少</label><input id="genPwdMinDigit" type="number" value="1" min="0" max="10" class="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"></div>
+                    <div class="flex items-center gap-2"><label class="text-sm text-gray-700">符号最少</label><input id="genPwdMinSym" type="number" value="1" min="0" max="10" class="w-20 px-2 py-1 border border-gray-300 rounded-lg text-sm"></div>
+                    <label class="flex items-center gap-2 text-sm text-gray-700 col-span-2"><input type="checkbox" id="genPwdAmb" class="rounded" checked> 避免易混淆字符（移除 0OoIl1L|$&*）</label>
+                </div>
+                <div class="flex items-center gap-3 mt-4">
+                    <div id="genPwdResult" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 font-mono text-lg text-gray-900 break-all min-h-[48px]"></div>
+                    <button onclick="genPwdGenerate()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">生成</button>
+                    <button onclick="genCopy('genPwdResult')" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">复制</button>
+                </div>
+            </div>
+
+            <!-- Tab: 密码短语 -->
+            <div id="genPanel-phrase" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
+                <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div class="col-span-2">
+                        <label class="text-xs font-medium text-gray-500">单词个数 <span id="genPhraseCountVal" class="text-blue-600 font-semibold">6</span></label>
+                        <input id="genPhraseCount" type="range" min="3" max="20" value="6" class="w-full">
+                    </div>
+                    <div class="flex items-center gap-2"><label class="text-sm text-gray-700">分隔符</label><input id="genPhraseSep" type="text" value="-" maxlength="2" class="w-16 px-2 py-1 border border-gray-300 rounded-lg text-sm text-center"></div>
+                    <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="genPhraseCap" class="rounded"> 首字母大写</label>
+                    <label class="flex items-center gap-2 text-sm text-gray-700 col-span-2"><input type="checkbox" id="genPhraseNum" class="rounded" checked> 尾部追加 2 位数字</label>
+                </div>
+                <div class="flex items-center gap-3 mt-4">
+                    <div id="genPhraseResult" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 font-mono text-lg text-gray-900 break-all min-h-[48px]"></div>
+                    <button onclick="genPhraseGenerate()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">生成</button>
+                    <button onclick="genCopy('genPhraseResult')" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">复制</button>
+                </div>
+            </div>
+
+            <!-- Tab: 用户名 -->
+            <div id="genPanel-user" class="hidden bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-5">
+                <div class="grid grid-cols-2 gap-x-6 gap-y-3">
+                    <div class="flex items-center gap-2">
+                        <label class="text-sm text-gray-700">类型</label>
+                        <select id="genUserType" class="px-3 py-1.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="word" selected>随机单词</option>
+                            <option value="wordnum">单词+数字</option>
+                        </select>
+                    </div>
+                    <label class="flex items-center gap-2 text-sm text-gray-700"><input type="checkbox" id="genUserCap" class="rounded"> 首字母大写</label>
+                    <label class="flex items-center gap-2 text-sm text-gray-700 col-span-2"><input type="checkbox" id="genUserNum" class="rounded" checked> 包含数字</label>
+                </div>
+                <div class="flex items-center gap-3 mt-4">
+                    <div id="genUserResult" class="flex-1 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3 font-mono text-lg text-gray-900 break-all min-h-[48px]"></div>
+                    <button onclick="genUserGenerate()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">生成</button>
+                    <button onclick="genCopy('genUserResult')" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">复制</button>
+                </div>
+            </div>
+        </div>
+
         <!-- 用户管理页面 -->
         <div id="page-users" class="p-6 flex-1 flex flex-col min-h-0 hidden">
             <div class="flex items-center justify-between mb-6">
@@ -828,13 +1483,18 @@
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">权限（逗号分隔，留空 = 仅 release）</label>
                         <select id="userFormPermissions" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                             <option value="*">* 全部权限（管理员）</option>
-                            <option value="release,credentials,domains">release,credentials,domains（全部）</option>
+                            <option value="release,credentials,domains,nettools,utils">release,credentials,domains,nettools,utils（全部）</option>
                             <option value="release">release（仅发版管理）</option>
                             <option value="credentials">credentials（仅服务凭证）</option>
                             <option value="domains">domains（仅域名）</option>
+                            <option value="nettools">nettools（仅网络工具）</option>
+                            <option value="utils">utils（仅运维小工具）</option>
                             <option value="release,credentials">release,credentials</option>
                             <option value="release,domains">release,domains</option>
                             <option value="credentials,domains">credentials,domains</option>
+                            <option value="release,nettools">release,nettools</option>
+                            <option value="credentials,nettools">credentials,nettools</option>
+                            <option value="nettools,utils">nettools,utils（运维向）</option>
                         </select>
                     </div>
                 </div>
@@ -1153,8 +1813,9 @@
         </div>
     </div>
 
+    <script>window.WORDLIST=["the","and","for","that","this","with","you","not","are","from","your","all","have","new","more","was","will","home","can","about","page","has","search","free","but","our","one","other","time","they","site","may","what","which","their","news","out","use","any","there","see","only","his","when","contact","here","business","who","web","also","now","help","get","view","online","first","been","would","how","were","services","some","these","click","its","like","service","than","find","price","date","back","top","people","had","list","name","just","over","state","year","day","into","email","two","health","world","next","used","work","last","most","products","music","buy","data","make","them","should","product","system","post","her","city","add","policy","number","such","please","support","message","after","best","software","then","jan","good","video","well","where","info","rights","public","books","high","school","through","each","links","she","review","years","order","very","privacy","book","items","company","read","group","need","many","user","said","does","set","under","general","research","january","mail","full","map","reviews","program","life","know","games","way","days","part","could","great","united","hotel","real","item","center","ebay","must","store","travel","comments","made","report","off","member","details","line","terms","before","hotels","did","send","right","type","because","local","those","using","results","office","national","car","design","take","posted","internet","address","within","states","area","want","phone","dvd","shipping","reserved","subject","between","forum","family","long","based","code","show","even","black","check","special","prices","website","index","being","women","much","sign","file","link","open","today","south","case","project","same","pages","version","section","own","found","sports","house","related","security","both","county","american","photo","game","members","power","while","care","network","down","computer","systems","three","total","place","end","download","him","without","per","access","think","north","current","posts","big","media","law","control","water","history","pictures","size","art","personal","since","guide","shop","board","location","change","white","text","small","rating","rate","children","during","usa","return","students","shopping","account","times","sites","level","digital","profile","previous","form","events","love","old","john","main","call","hours","image","title","non","another","why","shall","property","class","still","money","quality","every","listing","content","country","private","little","visit","save","tools","low","reply","customer","december","compare","movies","include","college","value","article","york","man","card","jobs","provide","food","source","author","press","learn","sale","around","print","course","job","canada","process","teen","room","stock","training","too","credit","point","join","science","men","advanced","west","sales","look","english","left","team","estate","box","select","windows","photos","gay","thread","week","category","note","live","large","gallery","table","register","however","june","october","november","market","library","really","action","start","series","model","features","air","industry","plan","human","provided","yes","required","second","hot","cost","movie","forums","march","better","say","july","yahoo","going","medical","test","friend","come","dec","server","study","cart","staff","articles","san","feedback","again","play","looking","issues","april","never","users","complete","street","topic","comment","things","working","against","standard","tax","person","below","mobile","less","got","blog","party","payment","login","student","let","programs","offers","legal","above","recent","park","stores","side","act","problem","red","give","memory","social","august","quote","language","story","sell","options","rates","create","key","body","young","america","field","few","east","paper","single","age","club","example","girls","password","latest","road","gift","question","changes","night","hard","texas","oct","pay","four","poker","status","browse","issue","range","building","seller","court","february","always","result","audio","light","write","war","nov","offer","blue","groups","easy","given","files","event","release","analysis","request","fax","china","making","picture","needs","possible","might","yet","month","major","star","areas","future","space","hand","sun","cards","problems","london","meeting","rss","become","interest","child","keep","enter","share","similar","garden","schools","million","added","listed","baby","learning","energy","run","delivery","net","popular","term","film","stories","put","journal","reports","try","welcome","central","images","notice","original","head","radio","until","cell","color","self","council","away","includes","track","archive","once","others","format","least","society","months","log","safety","friends","sure","faq","trade","edition","cars","messages","tell","further","updated","able","having","provides","david","fun","already","green","studies","close","common","drive","specific","several","gold","feb","living","sep","called","short","arts","lot","ask","display","limited","powered","means","director","daily","beach","past","natural","whether","due","five","upon","period","planning","database","says","official","weather","mar","land","average","done","window","france","pro","region","island","record","direct","records","district","calendar","costs","style","url","front","update","parts","aug","ever","early","miles","sound","resource","present","either","ago","document","word","works","material","bill","apr","written","talk","federal","hosting","rules","final","adult","tickets","thing","centre","via","cheap","kids","finance","true","minutes","else","mark","third","rock","gifts","europe","reading","topics","bad","tips","plus","auto","cover","usually","edit","together","videos","percent","fast","function","fact","unit","getting","global","tech","meet","far","economic","player","projects","lyrics","often","submit","germany","amount","watch","included","feel","though","bank","risk","thanks","deals","various","words","linux","jul","james","weight","town","heart","received","choose","archives","points","magazine","error","camera","jun","girl","toys","clear","golf","receive","domain","methods","chapter","makes","policies","loan","wide","beauty","manager","india","position","taken","sort","listings","models","michael","known","half","cases","step","florida","simple","quick","none","wireless","license","paul","friday","lake","whole","annual","later","basic","sony","shows","google","church","method","purchase","active","response","practice","hardware","figure","fire","holiday","chat","enough","designed","along","among","death","writing","speed","html","loss","face","brand","discount","higher","effects","created","remember","oil","bit","yellow","increase","kingdom","base","near","thought","stuff","french","storage","japan","doing","loans","shoes","entry","stay","nature","orders","africa","summary","turn","mean","growth","notes","agency","king","monday","european","activity","copy","although","drug","pics","western","income","force","cash","overall","bay","river","package","contents","seen","players","engine","port","album","regional","stop","supplies","started","bar","views","plans","double","dog","build","screen","exchange","types","soon","lines","continue","across","benefits","needed","season","apply","someone","held","anything","printer","believe","effect","asked","eur","mind","sunday","casino","pdf","lost","tour","menu","volume","cross","anyone","mortgage","hope","silver","wish","inside","solution","mature","role","rather","weeks","addition","came","supply","nothing","certain","usr","running","lower","union","jewelry","clothing","mon","com","fine","names","robert","homepage","hour","gas","skills","six","bush","islands","advice","career","military","rental","decision","leave","british","teens","pre","huge","sat","woman","zip","bid","kind","sellers","middle","move","cable","taking","values","division","coming","tuesday","object","lesbian","machine","logo","length","actually","nice","score","client","returns","capital","follow","sample","sent","shown","saturday","england","culture","band","flash","lead","george","choice","went","starting","fri","thursday","courses","consumer","airport","foreign","artist","outside","levels","channel","letter","mode","phones","ideas","fund","summer","allow","degree","contract","button","releases","wed","homes","super","male","matter","custom","virginia","almost","took","located","multiple","asian","editor","inn","cause","song","cnet","ltd","los","focus","late","fall","featured","idea","rooms","female","inc","win","thomas","primary","cancer","numbers","reason","tool","browser","spring","answer","voice","friendly","schedule","purpose","feature","bed","comes","police","everyone","approach","cameras","brown","physical","hill","maps","medicine","deal","hold","ratings","chicago","forms","glass","happy","tue","smith","wanted","thank","safe","unique","survey","prior","sport","ready","feed","animal","sources","mexico","regular","secure","simply","evidence","station","round","paypal","favorite","option","master","valley","recently","probably","thu","rentals","sea","built","blood","cut","improve","hall","larger","anti","networks","earth","parents","nokia","impact","transfer","kitchen","strong","tel","carolina","wedding","hospital","ground","overview","ship","owners","disease","paid","italy","perfect","hair","kit","classic","basis","command","cities","william","express","award","distance","tree","peter","ensure","thus","wall","involved","extra","partners","budget","rated","guides","success","maximum","existing","quite","selected","boy","amazon","patients","warning","wine","horse","vote","forward","flowers","stars","lists","owner","retail","animals","useful","directly","ways","est","son","rule","mac","housing","takes","iii","gmt","bring","catalog","searches","max","trying","mother","told","xml","traffic","joined","input","strategy","feet","agent","valid","bin","modern","senior","ireland","teaching","door","grand","testing","trial","charge","units","instead","canadian","cool","normal","wrote","ships","entire","leading","metal","positive","fitness","chinese","opinion","asia","football","abstract","uses","output","funds","greater","likely","develop","artists","java","guest","seems","pass","trust","van","contains","session","multi","republic","fees","vacation","century","academic","skin","graphics","indian","prev","ads","mary","expected","ring","grade","dating","pacific","mountain","pop","filter","mailing","vehicle","longer","consider","int","northern","behind","panel","floor","german","buying","match","proposed","default","require","iraq","boys","outdoor","deep","morning","allows","rest","protein","plant","reported","hit","pool","mini","politics","partner","authors","boards","faculty","parties","fish","mission","eye","string","sense","modified","pack","released","stage","internal","goods","born","unless","richard","detailed","japanese","race","approved","target","except","usb","ability","maybe","moving","brands","places","php","pretty","spain","southern","yourself","etc","winter","battery","youth","pressure","boston","debt","keywords","medium","core","break","purposes","sets","dance","wood","msn","itself","defined","papers","playing","awards","fee","studio","reader","virtual","device","answers","rent","las","remote","dark","external","apple","min","offered","theory","enjoy","remove","aid","surface","minimum","visual","host","variety","teachers","isbn","martin","manual","block","subjects","agents","repair","fair","civil","steel","songs","fixed","wrong","hands","finally","updates","desktop","classes","paris","ohio","gets","sector","capacity","requires","jersey","fat","fully","father","electric","saw","quotes","officer","driver","dead","respect","unknown","mike","trip","pst","worth","poor","teacher","eyes","workers","farm","georgia","peace","campus","tom","showing","creative","coast","benefit","progress","funding","devices","lord","grant","sub","agree","fiction","hear","watches","careers","beyond","goes","families","led","museum","fan","blogs","wife","accepted","former","ten","hits","zone","complex","cat","die","jack","flat","flow","agencies","parent","spanish","michigan","columbia","setting","scale","stand","economy","highest","helpful","monthly","critical","frame","musical","angeles","path","employee","chief","gives","bottom","packages","detail","laws","changed","pet","heard","begin","colorado","royal","clean","switch","russian","largest","african","guy","titles","relevant","justice","connect","bible","dev","cup","basket","applied","weekly","vol","demand","suite","vegas","square","chris","advance","skip","diet","army","auction","gear","lee","allowed","correct","charles","nation","selling","lots","piece","sheet","firm","seven","older","illinois","elements","species","jump","cells","module","resort","facility","random","pricing","dvds","minister","motion","looks","fashion","visitors","monitor","trading","forest","calls","whose","coverage","couple","giving","chance","vision","ball","ending","clients","actions","listen","discuss","accept","naked","goal","sold","wind","clinical","sciences","markets","lowest","highly","appear","lives","currency","leather","palm","patient","actual","stone","bob","commerce","perhaps","persons","fit","tests","village","accounts","amateur","met","pain","xbox","factors","coffee","www","settings","buyer","cultural","steve","easily","oral","ford","poster","edge","root","closed","holidays","ice","pink","zealand","balance","graduate","replies","shot","initial","label","thinking","scott","llc","sec","canon","league","waste","minute","bus","provider","optional","cold","sections","chair","fishing","effort","phase","fields","bag","fantasy","letters","motor","context","install","shirt","apparel","foot","mass","crime","count","breast","ibm","johnson","quickly","dollars","websites","religion","claim","driving","surgery","patch","heat","wild","measures","kansas","miss","chemical","doctor","task","reduce","brought","himself","nor","enable","exercise","bug","santa","mid","leader","diamond","israel","soft","servers","alone","meetings","seconds","jones","arizona","keyword","flight","congress","fuel","username","walk","produced","italian","wait","pocket","saint","rose","freedom","argument","creating","jim","drugs","joint","premium","fresh","attorney","upgrade","factor","growing","stream","pick","hearing","eastern","auctions","therapy","entries","dates","signed","upper","serious","prime","samsung","limit","began","louis","steps","errors","shops","del","efforts","informed","thoughts","creek","worked","quantity","urban","sorted","myself","tours","platform","load","labor","admin","nursing","defense","machines","tags","heavy","covered","recovery","joe","guys","merchant","expert","protect","drop","solid","cds","became","orange","vehicles","prevent","theme","rich","campaign","marine","guitar","finding","examples","ipod","saying","spirit","claims","motorola","seem","affairs","touch","intended","towards","goals","hire","election","suggest","branch","charges","serve","reasons","magic","mount","smart","talking","gave","ones","latin","avoid","manage","corner","rank","oregon","element","birth","virus","abuse","requests","separate","quarter","tables","define","racing","facts","kong","column","plants","faith","chain","identify","avenue","missing","died","domestic","sitemap","moved","houston","reach","mental","viewed","moment","extended","sequence","inch","attack","sorry","centers","opening","damage","lab","reserve","recipes","cvs","gamma","plastic","produce","snow","placed","truth","counter","failure","follows","weekend","dollar","camp","ontario","des","films","bridge","native","fill","williams","movement","printing","baseball","owned","approval","draft","chart","played","contacts","jesus","readers","clubs","lcd","jackson","equal","matching","offering","shirts","profit","leaders","posters","variable","ave","expect","parking","compared","workshop","russia","gone","codes","kinds","seattle","golden","teams","fort","lighting","senate","forces","funny","brother","gene","turned","portable","tried","disc","returned","pattern","boat","named","theatre","laser","earlier","sponsor","icon","warranty","indiana","harry","objects","ends","delete","evening","assembly","nuclear","taxes","mouse","signal","criminal","issued","brain","sexual","powerful","dream","obtained","false","cast","flower","felt","passed","supplied","falls","pic","soul","aids","opinions","promote","stated","stats","hawaii","appears","carry","flag","decided","covers","hello","designs","maintain","tourism","priority","adults","clips","savings","graphic","atom","payments","binding","brief","ended","winning","eight","iron","straight","script","served","wants","prepared","void","dining","alert","atlanta","dakota","tag","mix","disk","queen","vhs","credits","clearly","fix","handle","sweet","desk","criteria","pubmed","dave","diego","hong","vice","truck","behavior","enlarge","ray","revenue","measure","changing","votes","duty","looked","bear","gain","festival","ocean","flights","experts","signs","lack","depth","iowa","whatever","logged","laptop","vintage","train","exactly","dry","explore","maryland","spa","concept","nearly","eligible","checkout","reality","forgot","handling","origin","knew","gaming","feeds","billion","scotland","faster","dallas","bought","con","ups","nations","route","followed","broken","frank","alaska","zoom","blow","battle","anime","speak","protocol","query","clip","equity","speech","wire","rural","shared","sounds","tape","judge","spam","acid","bytes","cent","forced","fight","height","null","zero","speaker","filed","obtain","offices","designer","remain","managed","failed","marriage","roll","korea","banks","secret","bath","kelly","leads","negative","austin","toronto","theater","springs","missouri","andrew","var","perform","healthy","font","assets","injury","joseph","ministry","drivers","lawyer","figures","married","proposal","sharing","portal","waiting","birthday","beta","fail","gratis","banking","brian","toward","won","slightly","assist","conduct","lingerie","calling","jazz","serving","bags","profiles","miami","comics","matters","houses","doc","postal","wear","controls","breaking","combined","ultimate","wales","minor","finish","noted","mom","reduced","physics","rare","spent","extreme","samples","davis","daniel","bars","reviewed","row","forecast","removed","helps","singles","cycle","amounts","contain","accuracy","dual","rise","usd","sleep","bird","pharmacy","brazil","creation","static","scene","hunter","lady","crystal","famous","writer","chairman","violence","fans","oklahoma","speakers","drink","academy","dynamic","gender","eat","dell","cleaning","seat","concerns","vendor","intel","officers","aim","bids","referred","supports","regions","junior","toll","les","cape","ann","rings","meaning","tip","mine","ladies","henry","ticket","guess","agreed","whom","ski","soccer","math","import","posting","presence","instant","viewing","majority","christ","dan","dogs","aspects","austria","ahead","moon","scheme","utility","preview","fly","manner","matrix","devel","despite","strength","turkey","proper","degrees","delta","fear","seeking","inches","phoenix","shares","daughter","standing","comfort","colors","wars","cisco","ordering","kept","alpha","appeal","cruise","bonus","hey","bookmark","specials","beat","disney","adobe","smoking","bbc","becomes","drives","arms","alabama","tea","improved","trees","avg","achieve","dress","dealer","sky","utah","nearby","rom","carried","happen","exposure","hide","gambling","refer","miller","outdoors","clothes","caused","luxury","babes","frames","indeed","toy","circuit","layer","printed","slow","removal","easier","src","hip","printers","faqs","nine","adding","kentucky","mostly","eric","spot","taylor","prints","spend","factory","interior","revised","grow","optical","relative","amazing","clock","dot","hiv","identity","suites","feeling","hidden","victoria","serial","relief","revision","ratio","pda","rain","onto","dsl","planet","copies","recipe","zum","permit","seeing","proof","dna","diff","tennis","bass","bedroom","empty","instance","hole","pets","ride","licensed","orlando","tim","bureau","maine","sql","pair","ideal","specs","recorded","don","pieces","finished","parks","dinner","lawyers","sydney","stress","cream","runs","trends","yeah","discover","patterns","boxes","hills","fourth","advisor","evil","aware","wilson","shape","irish","stations","gps","remains","acc","greatest","firms","euro","operator","generic","usage","cap","ink","charts","mixed","census","peak","exist","wheel","transit","salt","compact","poetry","lights","tracking","angel","bell","keeping","attempt","matches","width","noise","engines","forget","array","accurate","stephen","climate","pin","alcohol","greek","managing","sister","raw","walking","explain","smaller","newest","gnu","happened","jeff","extent","sharp","lesbians","ben","lane","kill","aol","export","managers","aircraft","modules","sweden","conflict","versions","employer","occur","knows","describe","concern","backup","citizens","heritage","holding","trouble","spread","coach","kevin","expand","audience","assigned","jordan","ages","plug","cook","affect","virgin","raised","hat","directed","dealers","sporting","helping","perl","affected","lib","bike","totally","plate","expenses","indicate","blonde","anderson","utc","der","lose","organic","seek","albums","cheats","guests","hosted","diseases","tony","nevada","kits","thailand","agenda","anyway","tracks","advisory","cam","logic","template","prince","circle","soil","grants","anywhere","atlantic","wet","edward","investor","ram","leaving","wildlife","matt","cooking","speaking","sponsors","fox","respond","sizes","plain","exit","entered","iran","arm","keys","launch","wave","checking","costa","belgium","holy","acts","guidance","mesh","trail","symbol","crafts","highway","buddy","observed","dean","setup","poll","booking","glossary","fiscal","styles","denver","unix","filled","bond","channels","ericsson","appendix","notify","blues","pub","portion","scope","supplier","cables","cotton","biology","dental","killed","border","ancient","debate","starts","causes","arkansas","leisure","learned","notebook","explorer","historic","attached","opened","husband","disabled","crazy","upcoming","britain","concert","scores","comedy","adopted","weblog","linear","bears","jean","hop","carrier","edited","constant","visa","mouth","jewish","meter","linked","portland","concepts","gun","reflect","pure","deliver","wonder","lessons","fruit","begins","reform","lens","alerts","treated","draw","mysql","relating","assume","alliance","confirm","warm","neither","lewis","howard","offline","leaves","engineer","replace","babe","checks","reached","becoming","safari","sugar","crew","legs","sam","stick","allen","pdt","relation","enabled","genre","slide","montana","tested","rear","enhance","exact","bound","adapter","node","formal","lock","hockey","storm","micro","colleges","laptops","mile","showed","editors","mens","threads","bowl","supreme","brothers","presents","ref","tank","dolls","estimate","navy","kid","cancel","limits","weapons","paint","delay","pilot","outlet","czech","novel","pan","ultra","winner","idaho","episode","potter","dish","plays","bulletin","modify","oxford","adam","truly","epinions","painting","universe","patent","slot","psp","eating","planned","watching","lodge","mirror","sterling","sessions","kernel","stocks","buyers","journals","gray","jennifer","antonio","charged","broad","taiwan","und","chosen","demo","greece","swiss","sarah","clark","hate","terminal","nights","behalf","liquid","rice","nebraska","loop","salary","foods","gourmet","guard","properly","orleans","saving","nfl","empire","resume","twenty","newly","raise","prepare","avatar","gary","illegal","vary","hundreds","rome","arab","lincoln","helped","premier","tomorrow","milk","decide","consent","drama","visiting","downtown","keyboard","contest","bands","boot","suitable","millions","lunch","audit","push","chamber","guinea","findings","muscle","iso","clicking","polls","typical","tower","yours","sum","misc","chicken","attend","shower","alan","sending","jason","tonight","dear","holdem","shell","province","catholic","oak","vat","governor","beer","seemed","swimming","spyware","formula","solar","jose","catch","jane","pakistan","reliable","sir","doubt","earn","finder","unable","periods","tasks","attacks","kim","const","doors","symptoms","resorts","biggest","memorial","visitor","twin","forth","insert","gateway","dont","alumni","drawing","ordered","fighting","happens","spy","romance","bruce","split","themes","powers","heaven","bits","pregnant","twice","focused","egypt","bargain","cellular","norway","vermont","asking","blocks","normally","hunting","diabetes","suit","shift","chip","res","sit","bodies","cutting","wow","simon","writers","marks","flexible","loved","mapping","numerous","birds","char","indexed","superior","saved","paying","cartoon","shots","moore","granted","choices","carbon","spending","magnetic","registry","crisis","outlook","massive","denmark","employed","bright","treat","header","poverty","formed","piano","echo","que","grid","sheets","patrick","puerto","displays","plasma","allowing","earnings","voip","mystery","journey","delaware","bidding","risks","banner","charter","fig","barbara","counties","ports","dreams","blogger","stands","teach","occurred","rapid","pull","hairy","reverse","deposit","seminar","latina","nasa","wheels","specify","dutch","formats","tab","depends","boots","holds","router","concrete","editing","poland","folder","womens","css","upload","pulse","voting","courts","notices","detroit","metro","toshiba","strip","pearl","accident","nick","resident","plot","qty","possibly","airline","regard","pump","exists","smooth","strike","flashing","narrow","threat","surveys","sitting","putting","vietnam","trailer","anne","castle","gardens","missed","malaysia","antique","labels","willing","bio","acting","heads","stored","exam","logos","antiques","density","hundred","ryan","strange","beds","mention","pcs","grey","parallel","honda","amended","operate","bills","bold","bathroom","stable","opera","von","doctors","lesson","cinema","asset","scan","drinking","reaction","blank","enhanced","entitled","severe","generate","deluxe","humor","aged","monitors","lived","duration","bulk","pursuant","sci","fabric","edt","visits","tight","domains","pmid","contrast","flying","sin","berlin","cute","para","siemens","adoption","meant","capture","pounds","buffalo","plane","seed","desire","camping","meets","welfare","peer","caught","marked","driven","measured","medline","bottle","marshall","massage","rubber","closing","tampa","thousand","meat","legend","grace","susan","ing","adams","python","monster","alex","bang","villa","bone","columns","bugs","hamilton","ftp","cookies","inner","tutorial","med","entity","cruises","gate","holder","portugal","lawrence","roman","duties","valuable","tone","ethics","forever","dragon","busy","captain","imagine","brings","heating","leg","neck","wing","scripts","abc","stereo","taste","dealing","commit","tiny","rail","airlines","liberal","livecam","jay","trips","gap","sides","tube","turns","cache","belt","jacket","oracle","matthew","lease","aviation","hobbies","proud","excess","disaster","console","commands","giant","achieved","injuries","shipped","seats","biz","alarm","voltage","anthony","nintendo","usual","loading","stamps","appeared","franklin","angle","rob","vinyl","mining","ongoing","worst","imaging","betting","liberty","wyoming","era","convert","analyst","garage","exciting","thongs","gcc","ringtone","finland","morgan","derived","pleasure","honor","asp","oriented","eagle","desktops","pants","columbus","nurse","prayer","quiet","luck","postage","producer","dial","cheese","comic","jet","crown","par","maker","crack","picks","gang","semester","fetish","applies","casinos","smoke","apache","filters","craft","cake","apart","fellow","blind","lounge","mad","semi","coins","andy","gross","strongly","cafe","hilton","ken","proteins","horror","exp","familiar","capable","douglas","debian","till","pen","epson","shoe","elected","carrying","victory","sand","madison","joy","editions","cpu","mainly","ethnic","ran","actor","finds","seal","fifth","citizen","vertical","prize","occurs","jon","absolute","consists","anytime","lies","pipe","soldiers","guardian","lecture","layout","ill","classics","lbs","lay","horses","lol","dirty","deck","wayne","donate","taught","worker","alive","temple","prove","wings","breaks","genetic","waters","promise","thin","prefer","ridge","cabinet","modem","harris","mph","bringing","sick","dose","evaluate","tiffany","tropical","collect","bet","toyota","streets","vector","shaved","turning","buffer","purple","larry","def","lets","mutual","pipeline","syntax","prison","skill","chairs","everyday","moves","inquiry","ethernet","checked","exhibit","throw","trend","sierra","visible","cats","desert","oldest","rhode","nba","mercury","steven","handbook","greg","navigate","worse","summit","victims","epa","spaces","burning","escape","coupons","somewhat","receiver","cialis","boats","glance","scottish","arcade","richmond","ron","russell","tells","obvious","fiber","graph","covering","platinum","judgment","bedrooms","talks","filing","foster","modeling","passing","awarded","trials","tissue","clinton","masters","bonds","alberta","folk","org","commons","fraud","spectrum","arrival","okay","pottery","emphasis","roger","aspect","awesome","mexican","counts","priced","hist","crash","lift","desired","inter","closer","assumes","heights","shadow","riding","firefox","lisa","expense","grove","venture","clinic","korean","healing","princess","mall","entering","packet","spray","studios","dad","buttons","funded","thompson","winners","extend","roads","pat","dublin","rolling","fell","yard","memories","nelson","arrived","creates","faces","tourist","mayor","murder","sean","adequate","senator","yield","grades","cartoons","pour","digest","reg","lodging","tion","dust","hence","wiki","entirely","replaced","radar","rescue","losses","combat","reducing","stopped","lakes","closely","diary","kings","shooting","kent","adds","nsw","ear","flags","pci","baker","launched","shock","walls","abroad","ebony","tie","ward","drawn","arthur","ian","visited","roof","walker","suggests","kiss","beast","operated","targets","overseas","dodge","counsel","pizza","invited","yards","gordon","mod","farmers","queries","bmw","rush","ukraine","absence","nearest","cluster","vendors","mpeg","whereas","yoga","serves","woods","surprise","lamp","rico","partial","shoppers","phil","couples","ranking","jokes","cst","http","ceo","simpson","twiki","sublime","palace","glad","wins","verify","globe","trusted","copper","rack","rep","dicke","kerry","receipt","supposed","ordinary","nobody","ghost","mit","applying","boss","pride","knowing","reporter","keith","champion","cloudy","linda","ross","chile","anna","plenty","solo","sentence","throat","ignore","maria","uniform","wealth","tall","vacuum","dancing","brass","writes","plaza","pdas","outcomes","survival","quest","publish","sri","toe","trans","jonathan","whenever","nova","lifetime","api","pioneer","booty","acrobat","plates","acres","venue","athletic","thermal","essays","vital","telling","fairly","coastal","config","charity","excel","modes","campbell","wake","stupid","harbor","hungary","traveler","urw","segment","realize","lan","enemy","puzzle","rising","aluminum","wells","wishlist","opens","insight","sms","secrets","lucky","latter","thick","trailers","repeat","syndrome","philips","penalty","drum","glasses","enables","nec","iraqi","builder","vista","jessica","chips","terry","flood","foto","ease","arena","pupils","stewart","tabs","outcome","expanded","casual","grown","polish","lovely","extras","centres","jerry","clause","smile","lands","troops","indoor","bulgaria","armed","broker","charger","believed","pine","cooling","tend","gulf","rick","trucks","divorce","laura","shopper","tokyo","partly","nikon","candy","pills","tiger","donald","folks","sensor","exposed","telecom","hunt","angels","deputy","sealed","thai","loaded","fred","scenes","boost","spanking","mill","founded","chronic","icons","moral","den","catering","aud","finger","keeps","pound","locate","trained","burn","roses","labs","bread","tobacco","wooden","motors","tough","roberts","incident","gonna","dynamics","lie","crm","decrease","chest","pension","billy","revenues","emerging","worship","craig","herself","churches","damages","reserves","solve","shorts","minority","diverse","amp","johnny","sole","recorder","facing","nancy","tones","passion","sight","laid","clay","defence","patches","weak","refund","usc","towns","trembl","divided","blvd","amd","wise","emails","cyprus","odds","insider","seminars","makers","hearts","worry","eve","carter","legacy","marc","pleased","danger","vitamin","widely","phrase","genuine","raising","paradise","hybrid","reads","roles","sons","leaf","pad","glory","bigger","billing","diesel","versus","combine","exceed","rod","saudi","fault","cuba","hrs","silk","kate","babies","karen","compiled","romantic","revealed","albert","examine","jimmy","graham","bristol","margaret","compaq","sad","wolf","slowly","rugby","cal","portions","infant","sectors","samuel","fluid","grounds","fits","kick","regards","meal","hurt","unlike","equation","baskets","pot","wright","img","barry","proven","cached","warren","slip","studied","reviewer","involves","rpm","profits","devil","grass","comply","marie","florist","cherry","deutsch","kenya","webcam","cuts","funeral","nutten","earrings","enjoyed","chapters","pee","charlie","quebec","dennis","mars","francis","tvs","sized","manga","noticed","socket","silent","literary","egg","mhz","signals","caps","pill","theft","swing","symbols","lat","meta","humans","analog","facial","choosing","talent","dated","seeker","wisdom","shoot","boundary","mint","packard","offset","payday","philip","elite","spin","holders","believes","swedish","poems","deadline","robot","witness","collins","equipped","stages","sur","winds","powder","broadway","acquired","assess","wash","stones","entrance","gnome","roots","losing","attempts","gadgets","noble","glasgow","impacts","rev","gospel","shore","loves","induced","knight","loose","aims","linking","appeals","earned","illness","islamic","ieee","pending","parker","lebanon","corp","kennedy","teenage","soap","triple","cooper","nyc","vincent","jam","secured","unusual","answered","slots","disorder","routine","toolbar","rocks","titans","wearing","axis","sought","genes","mounted","habitat","firewall","median","guns","scanner","herein","animated","judicial","rio","hero","integer","bachelor","attitude","engaged","falling","basics","montreal","carpet","struct","lenses","binary","genetics","attended","punk","dropped","duke","walter","pace","besides","wage","arc","hosts","moments","atlas","strings","dawn","feels","torture","carl","deleted","coat","mitchell","mrs","rica","ralph","warner","app","embedded","inkjet","wizard","corps","actors","liver","liable","brochure","morris","petition","eminem","recall","antenna","picked","assumed","belief","killing","bikini","memphis","shoulder","decor","lookup","texts","harvard","brokers","roy","ion","diameter","ottawa","doll","podcast","seasons","peru","refine","bidder","singer","evans","herald","literacy","fails","aging","nike","fed","plugin","diving","invite","alice","latinas","suppose","reed","involve","moderate","terror","younger","thirty","mice","opposite","rapidly","dealtime","ban","temp","intro","mercedes","zus","clerk","vast","mills","outline","tramadol","holland","receives","jeans","fonts","ent","odd","wrap","refers","mood","favor","veterans","quiz","sigma","xhtml","occasion","victim","demands","sleeping","careful","ext","beam","arrive","sunset","tracked","moreover","minimal","lottery","tops","framed","aside","licence","michelle","essay","amy","dialogue","camps","declared","aaron","handheld","trace","disposal","shut","florists","packs","switches","romania","ncaa","thou","consult","phd","greatly","blogging","mask","cycling","midnight","commonly","inform","turkish","coal","cry","pentium","quantum","murray","intent","zoo","largely","pleasant","announce","spoke","aka","arrow","sampling","rough","weird","tee","lion","inspired","holes","weddings","blade","suddenly","oxygen","cookie","meals","canyon","goto","meters","merely","passes","pointer","stretch","durham","permits","muslim","neil","sleeve","netscape","cleaner","cricket","beef","feeding","stroke","township","rankings","cad","hats","robin","robinson","strap","sharon","crowd","tcp","surf","olympic","remained","dir","entities","customs","rainbow","hook","roulette","decline","gloves","israeli","medicare","cord","skiing","cloud","valve","val","hewlett","explains","proceed","flickr","feelings","knife","jamaica","shelf","timing","liked","adopt","denied","fotos","britney","freeware","donation","outer","crop","deaths","rivers","tales","katrina","islam","nodes","thumbs","seeds","cited","lite","ghz","hub","targeted","skype","realized","twelve","founder","decade","gamecube","dispute","tired","titten","adverse","excerpt","eng","steam","drinks","ace","voices","acute","climbing","stood","sing","tons","perfume","carol","honest","albany","restore","stack","somebody","sue","hang","gbp","curve","creator","amber","museums","coding","tracker","passage","trunk","hiking","pierre","jelsoft","headset","oakland","colombia","waves","camel","lamps","hood","suicide","archived","chi","arabia","juice","chase","logical","sauce","fame","extract","panama","payable","courtesy","rfc","athens","judges","seo","retired","isp","remarks","detected","decades","walked","arising","nissan","bracelet","ins","eggs","juvenile","afraid","acoustic","railway","cassette","pointed","jpg","causing","mistake","norton","locked","fusion","mineral","ruby","steering","beads","fortune","canvas","parish","claimed","screens","cemetery","planner","croatia","flows","stadium","mins","fewer","coupon","nurses","ssl","stem","proxy","lanka","opt","edwards","drew","contests","flu","mlb","costume","tagged","berkeley","voted","killer","bikes","gates","adjusted","rap","tune","bishop","pulled","corn","shaped","seasonal","farmer","counters","puts","grew","tin","slave","cultures","norfolk","coaching","examined","trek","encoding","oem","heroes","painted","lycos","zdnet","artwork","cosmetic","resulted","portrait","ethical","carriers","mobility","floral","builders","ties","struggle","schemes","neutral","fisher","rat","spears","bedding","joining","heading","equally","bearing","brad","combo","seniors","worlds","guilty","haven","tablet","jury","dos","tail","charm","lawn","violent","basin","soup","ranch","crossing","cottage","drunk","crimes","resolved","mozilla","byte","toner","nose","latex","branches","anymore","oclc","delhi","holdings","alien","locator","plc","broke","nepal","zimbabwe","juan","msg","browsing","resolve","cod","melissa","moscow","thesis","thru","jews","nylon","discs","rocky","bargains","frequent","trim","nigeria","ceiling","pixels","ensuring","hispanic","gen","anybody","diamonds","espn","fleet","untitled","bunch","totals","marriott","singing","afford","starring","referral","nhl","optimal","quit","distinct","lung","turner","sucking","cents","reuters","gel","todd","spoken","omega","stayed","civic","manuals","doug","sees","watched","saver","thereof","grill","redeem","rogers","grain","aaa","regime","wanna","wishes","bull","depend","differ","ranging","monica","repairs","breath","cole","mart","candle","hanging","colored","tale","verified","lynn","formerly","situated","std","seeks","herbal","loving","strictly","routing","docs","stanley","retailer","vitamins","elegant","gains","renewal","vid","opposed","deemed","scoring","brooklyn","sisters","critics","spots","hacker","madrid","margin","coin","solely","fake","salon","norman","fda","turbo","headed","voters","cure","madonna","arch","murphy","thinks","thats","hdtv","soldier","phillips","asin","aimed","justin","bomb","harm","interval","mirrors","tricks","reset","brush","thy","expansys","panels","repeated","assault","spare","deer","kodak","tongue","bowling","tri","danish","pal","monkey","filename","skirt","florence","invest","honey","analyzes","drawings","scenario","lovers","atomic","approx","arabic","gauge","junction","faced","mat","rachel","solving","weekends","produces","oven","ted","chains","kingston","sixth","engage","deviant","noon","quoted","adapters","farms","imports","cheat","bronze","sandy","suspect","macro","sender","crucial","gym","kde","adjacent","tuition","spouse","exotic","viewer","signup","threats","puzzles","reaching","damaged","cams","receptor","laugh","joel","surgical","destroy","citation","pitch","autos","premises","perry","proved","imperial","dozen","benjamin","teeth","cloth","studying","stamp","lotus","salmon","olympus","proc","cargo","tan","salem","mate","starter","upgrades","likes","butter","pepper","weapon","luggage","burden","chef","tapes","zones","races","isle","stylish","slim","maple","luke","grocery","offshore","depot","kenneth","comp","alt","pie","blend","harrison","julie","cbs","emission","pete","spec","finest","realty","janet","bow","penn","apparent","phpbb","autumn","probe","midi","toilet","ranked","jackets","routes","packed","excited","outreach","helen","mounting","recover","tied","lopez","balanced","timely","talked","debug","delayed","chuck","hon","dale","explicit","villas","ebook","exclude","peeing","brooks","newton","oils","sept","anxiety","bingo","whilst","spatial","unto","ceramic","prompt","precious","minds","annually","scanners","atm","xanax","pays","fingers","sunny","ebooks","delivers","necklace","leeds","cedar","arranged","lang","theaters","advocacy","raleigh","stud","fold","threaded","qualify","blair","hopes","cms","mason","diagram","burns","pumps","footwear","vic","beijing","peoples","victor","mario","pos","attach","licenses","utils","removing","advised","spider","phys","ranges","pairs","trails","hudson","isolated","calgary","interim","assisted","divine","approve","chose","compound","abortion","dialog","venues","blast","wellness","calcium","newport","pole","indians","shield","harvest","membrane","prague","previews","locally","pickup","mothers","nascar","iceland","candles","mega","bend","sailing","moms","sacred","morocco","chrome","tommy","refused","brake","exterior","greeting","ecology","oliver","congo","glen","botswana","nav","delays","olive","cyber","verizon","scored","clone","velocity","lambda","relay","composed","tears","oasis","baseline","cab","angry","silicon","compete","ist","lover","belong","honolulu","beatles","lips","pond","rolls","thomson","barnes","malta","daddy","ferry","rabbit","seating","dam","cnn","lil","das","exports","omaha","tire","chad","electron","loads","heather","passport","motel","unions","treasury","warrant","sys","solaris","frozen","occupied","josh","royalty","scales","rally","observer","sunshine","strain","drag","ceremony","somehow","arrested","icq","ripe","yamaha","rely","hebrew","gained","dying","laundry","stuck","solomon","placing","stops","homework","adjust","assessed","enabling","filling","imposed","silence","scsi","focuses","soviet","treaty","vocal","trainer","organ","stronger","volumes","advances","lemon","toxic","dns","darkness","pty","nuts","nail","bizrate","vienna","implied","span","stanford","sox","joke","packing","statute","rejected","satisfy","shelter","chapel","gamespot","layers","guided","bahamas","powell","mixture","bench","univ","tub","rider","radius","logging","hampton","borders","pads","butts","inns","bobby","sheep","railroad","lectures","wines","nursery","harder","cups","ash","cheapest","travesti","stuart","salvador","ali","salad","monroe","tender","foam"];</script>
+
     <script>
-        // ==================== 工具函数 ====================
         const $ = (sel) => document.querySelector(sel);
         function showToast(msg, type = 'success') {
             const t = $('#toast'), c = $('#toastContent');
@@ -2691,6 +3352,873 @@
             }
         }
 
+        // ==================== 网络工具 ====================
+        let netActiveTab = 'ip';
+
+        function toggleNetMenu() {
+            const sub = $('#netSubmenu');
+            const arrow = $('#netMenuArrow');
+            sub.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+            // 切到网络工具页（保持当前子标签）
+            switchPage('nettools');
+            document.querySelectorAll('[data-page]').forEach(l => l.classList.remove('active'));
+            document.getElementById('netMenuToggle').classList.add('active');
+        }
+
+        function switchNetTab(tab) {
+            netActiveTab = tab;
+            // 先切页（switchPage 会清 active），再设置高亮
+            document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
+            const page = document.getElementById(`page-net${tab}`);
+            if (page) page.classList.remove('hidden');
+            // 高亮子标签 + 父菜单
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('[data-net-tab]').forEach(el => el.classList.remove('active'));
+            const el = document.getElementById(`netSub-${tab}`);
+            if (el) el.classList.add('active');
+            document.getElementById('netMenuToggle').classList.add('active');
+            // 展开子菜单
+            document.getElementById('netSubmenu').classList.remove('hidden');
+            document.getElementById('netMenuArrow').classList.add('rotate-180');
+        }
+
+        // --- 网络工具通用辅助 ---
+        function netBusy(btnId, busy) {
+            const btn = document.getElementById(btnId);
+            if (btn) {
+                btn.disabled = busy;
+                btn.textContent = busy ? '执行中...' : btn.dataset.orig || btn.textContent;
+            }
+        }
+
+        function netErrorBox(msg) {
+            return `<div class="bg-red-50 border border-red-200 rounded-xl p-4 text-sm text-red-700">⚠️ ${esc(msg)}</div>`;
+        }
+        // 通用结果盒：内部可滚动（防止响应体过长撑爆页面）
+        function utilsResultBox(html) {
+            return `<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 max-h-[70vh] overflow-auto">${html}</div>`;
+        }
+        function netLoading() {
+            return `<div class="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-400">执行中，请稍候...</div>`;
+        }
+
+        // --- IP 查询 ---
+        async function netIpQuery() {
+            const host = $('#netIpInput').value.trim();
+            if (!host) return showToast('请输入 IP 或域名', 'error');
+            $('#netIpResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/ip', { method: 'POST', body: JSON.stringify({ host }) });
+                if (res.code !== 0) { $('#netIpResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                const rows = [
+                    ['IP 地址', d.ip], ['国家', d.country], ['省份', d.region], ['城市', d.city],
+                    ['运营商 ISP', d.isp], ['组织', d.org], ['ASN', d.as], ['AS 名称', d.asname],
+                    ['经纬度', (d.lat != null && d.lon != null) ? `${d.lat}, ${d.lon}` : '-'],
+                    ['时区', d.timezone], ['反向解析', d.reverse || '-'],
+                    ['移动网络', d.mobile ? '是' : '否'], ['代理', d.proxy ? '是' : '否'], ['托管机房', d.hosting ? '是' : '否'],
+                ];
+                $('#netIpResult').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-200 font-medium text-gray-900">归属信息</div>
+                    <div class="divide-y divide-gray-100">${rows.map(([k, v]) => `<div class="flex px-4 py-2.5 text-sm">
+                        <span class="w-28 text-gray-500 flex-shrink-0">${k}</span><span class="text-gray-900 break-all">${esc(v ?? '-')}</span></div>`).join('')}
+                    </div></div>`;
+            } catch (e) {
+                $('#netIpResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- PING 检测 ---
+        async function netPingQuery() {
+            const host = $('#netPingHost').value.trim();
+            const count = parseInt($('#netPingCount').value) || 4;
+            if (!host) return showToast('请输入主机名或 IP', 'error');
+            $('#netPingResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/ping', { method: 'POST', body: JSON.stringify({ host, count }) });
+                if (res.code !== 0) { $('#netPingResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                const ok = d.success;
+                const lossColor = d.loss >= 50 ? 'text-red-600' : d.loss > 0 ? 'text-yellow-600' : 'text-green-600';
+                $('#netPingResult').innerHTML = `
+                <div class="grid grid-cols-4 gap-4 mb-4">
+                    <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500">状态</p>
+                        <p class="text-xl font-bold ${ok ? 'text-green-600' : 'text-red-600'} mt-1">${ok ? '✓ 可达' : '✗ 不可达'}</p></div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500">丢包率</p>
+                        <p class="text-xl font-bold ${lossColor} mt-1">${d.loss ?? '-'}%</p></div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500">平均延迟</p>
+                        <p class="text-xl font-bold text-gray-900 mt-1">${d.avg != null ? d.avg + ' ms' : '-'}</p></div>
+                    <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500">TTL</p>
+                        <p class="text-xl font-bold text-gray-900 mt-1">${d.ttl ?? '-'}</p></div>
+                </div>
+                ${d.samples && d.samples.length ? `<div class="bg-white rounded-xl border border-gray-200 p-4 mb-4"><p class="text-xs text-gray-500 mb-2">延迟明细 (ms) — min ${d.min} / max ${d.max} / avg ${d.avg}</p>
+                    <div class="flex items-end gap-1 h-20">${d.samples.map(s => `<div class="flex-1 bg-blue-500 rounded-t" style="height:${Math.max(4, s)}px" title="${s}ms"></div>`).join('')}</div></div>` : ''}
+                <div class="bg-gray-900 rounded-xl p-4"><pre class="text-green-400 text-xs whitespace-pre-wrap break-all max-h-[60vh] overflow-y-auto">${esc(d.output)}</pre></div>`;
+            } catch (e) {
+                $('#netPingResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- TCPing ---
+        async function netTcpingQuery() {
+            const host = $('#netTcpingHost').value.trim();
+            const port = parseInt($('#netTcpingPort').value) || 80;
+            if (!host) return showToast('请输入主机名或 IP', 'error');
+            $('#netTcpingResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/tcping', { method: 'POST', body: JSON.stringify({ host, port }) });
+                if (res.code !== 0) { $('#netTcpingResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                const ok = d.reachable;
+                $('#netTcpingResult').innerHTML = `
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center gap-4 mb-4">
+                        <span class="px-3 py-1.5 rounded-lg text-sm font-medium ${ok ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${ok ? '✓ 端口开放' : '✗ 端口不通'}</span>
+                        <span class="text-sm text-gray-600">${esc(d.host)}:${d.port}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="border border-gray-100 rounded-lg p-4"><p class="text-xs text-gray-500">TCP 握手耗时</p><p class="text-2xl font-bold text-gray-900 mt-1">${d.connect_ms != null ? d.connect_ms + ' ms' : '-'}</p></div>
+                        <div class="border border-gray-100 rounded-lg p-4"><p class="text-xs text-gray-500">说明</p><p class="text-sm text-gray-700 mt-1">${esc(d.message || (ok ? '连接成功' : '端口未开放'))}</p></div>
+                    </div>
+                </div>`;
+            } catch (e) {
+                $('#netTcpingResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- DNS 查询 ---
+        async function netDnsQuery() {
+            const host = $('#netDnsHost').value.trim();
+            const type = $('#netDnsType').value;
+            const dns_server = $('#netDnsServer').value;
+            if (!host) return showToast('请输入域名', 'error');
+            $('#netDnsResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/dns', { method: 'POST', body: JSON.stringify({ host, type, dns_server: dns_server || null }) });
+                if (res.code !== 0) { $('#netDnsResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                const cards = d.results.map(r => `
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="px-4 py-2.5 border-b border-gray-200 flex items-center justify-between bg-gray-50">
+                            <span class="text-sm font-medium text-gray-900">${esc(r.server)}</span>
+                            <span class="px-2 py-0.5 rounded text-xs ${r.status === 'ok' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">${r.status === 'ok' ? `✓ ${(r.records || []).length} 条记录` : '✗ 查询失败'}</span>
+                        </div>
+                        <div class="p-4">${r.status === 'ok'
+                            ? (r.records && r.records.length ? r.records.map(v => `<div class="font-mono text-sm text-gray-800 py-1 border-b border-gray-50 break-all">${esc(v)}</div>`).join('') : `<p class="text-sm text-gray-400">无记录</p>`)
+                            : `<p class="text-sm text-red-600">${esc(r.message || '解析失败')}</p>`}</div>
+                    </div>`).join('');
+                $('#netDnsResult').innerHTML = `<div class="grid grid-cols-2 gap-4">${cards}</div>`;
+            } catch (e) {
+                $('#netDnsResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- 路由查询 ---
+        async function netRouteQuery() {
+            const host = $('#netRouteHost').value.trim();
+            const max_hops = parseInt($('#netRouteHops').value) || 30;
+            if (!host) return showToast('请输入主机名或 IP', 'error');
+            $('#netRouteResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/route', { method: 'POST', body: JSON.stringify({ host, max_hops }) });
+                if (res.code !== 0) { $('#netRouteResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                $('#netRouteResult').innerHTML = `<div class="bg-gray-900 rounded-xl p-4">
+                    <div class="text-green-400 text-xs mb-2">Traceroute: ${esc(d.host)}</div>
+                    <pre class="text-green-400 text-xs whitespace-pre-wrap break-all max-h-[60vh] overflow-y-auto">${esc(d.output)}</pre></div>`;
+            } catch (e) {
+                $('#netRouteResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- MTR 路由 ---
+        async function netMtrQuery() {
+            const host = $('#netMtrHost').value.trim();
+            const count = parseInt($('#netMtrCount').value) || 10;
+            if (!host) return showToast('请输入主机名或 IP', 'error');
+            $('#netMtrResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/mtr', { method: 'POST', body: JSON.stringify({ host, count }) });
+                if (res.code !== 0) { $('#netMtrResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                // mtr JSON 模式：渲染表格
+                if (d.mode === 'mtr' && d.report) {
+                    const hubs = (d.report.hubs || []).map((h, i) => `
+                        <tr class="border-b border-gray-100">
+                            <td class="px-3 py-2 text-gray-400 text-xs">${i + 1}</td>
+                            <td class="px-3 py-2 font-mono text-xs text-gray-800 break-all">${esc(h.host || '*')}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">${h.loss != null ? h.loss + '%' : '-'}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">${h.snt ?? '-'}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">${h.last != null ? h.last + ' ms' : '-'}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">${h.avg != null ? h.avg + ' ms' : '-'}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">${h.best != null ? h.best + ' ms' : '-'}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">${h.wrst != null ? h.wrst + ' ms' : '-'}</td>
+                            <td class="px-3 py-2 text-xs text-gray-600">${h.stdev != null ? h.stdev + ' ms' : '-'}</td>
+                        </tr>`).join('');
+                    $('#netMtrResult').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-200 font-medium text-gray-900">MTR 路由报告 — ${esc(d.host)}</div>
+                        <div class="overflow-x-auto"><table class="w-full text-sm">
+                            <thead class="bg-gray-50"><tr>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">跳数</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">主机</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">丢包%</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">发送</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">最后</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">平均</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">最好</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">最差</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">标准差</th>
+                            </tr></thead><tbody>${hubs || '<tr><td colspan="9" class="px-4 py-8 text-center text-gray-400">无数据</td></tr>'}</tbody></table></div></div>`;
+                } else {
+                    $('#netMtrResult').innerHTML = `<div class="bg-gray-900 rounded-xl p-4">
+                        <div class="text-green-400 text-xs mb-2">MTR: ${esc(d.host)} ${d.mode ? '(' + esc(d.mode) + ')' : ''}</div>
+                        <pre class="text-green-400 text-xs whitespace-pre-wrap break-all max-h-[60vh] overflow-y-auto">${esc(d.output || JSON.stringify(d.report || '', null, 2))}</pre></div>`;
+                }
+            } catch (e) {
+                $('#netMtrResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- CDN 查询 ---
+        async function netCdnQuery() {
+            const host = $('#netCdnHost').value.trim();
+            if (!host) return showToast('请输入域名', 'error');
+            $('#netCdnResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/cdn', { method: 'POST', body: JSON.stringify({ host }) });
+                if (res.code !== 0) { $('#netCdnResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                const isCdn = d.cdn && !d.cdn.startsWith('未识别');
+                $('#netCdnResult').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                    <div class="flex items-center gap-4 mb-5">
+                        <span class="px-3 py-1.5 rounded-lg text-sm font-medium ${isCdn ? 'bg-blue-100 text-blue-700' : 'bg-gray-100 text-gray-600'}">${isCdn ? '✓ 检测到 CDN' : '未识别到 CDN'}</span>
+                        <span class="text-sm text-gray-600">${esc(d.host)}</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4 mb-4">
+                        <div class="border border-gray-100 rounded-lg p-4"><p class="text-xs text-gray-500">CDN 服务商</p><p class="text-lg font-bold text-gray-900 mt-1">${esc(d.cdn)}</p></div>
+                        <div class="border border-gray-100 rounded-lg p-4"><p class="text-xs text-gray-500">识别依据</p><p class="text-lg font-bold text-gray-900 mt-1">${esc(d.detected_by || '-')}</p></div>
+                        <div class="border border-gray-100 rounded-lg p-4"><p class="text-xs text-gray-500">解析 IP</p><p class="text-sm text-gray-700 mt-1 font-mono break-all">${esc(d.resolved_ip)}</p></div>
+                        <div class="border border-gray-100 rounded-lg p-4"><p class="text-xs text-gray-500">IP 归属组织</p><p class="text-sm text-gray-700 mt-1 break-all">${esc(d.ip_org || '-')}</p></div>
+                    </div>
+                    ${d.cname_chain && d.cname_chain.length ? `<div class="bg-gray-50 rounded-lg p-3 text-xs"><p class="text-gray-500 mb-1">CNAME 链${d.matched_cname ? '（高亮为匹配项）' : ''}</p><p class="font-mono text-gray-700 break-all">${d.cname_chain.map(c => `<span class="${c === d.matched_cname ? 'text-blue-600 font-semibold' : ''}">${esc(c)}</span>`).join(' → ')}</p></div>` : ''}
+                </div>`;
+            } catch (e) {
+                $('#netCdnResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- Whois 查询 ---
+        function fmtRdapDate(s) {
+            if (!s) return '-';
+            return s.replace('T', ' ').slice(0, 19) + ' UTC';
+        }
+        async function netWhoisQuery() {
+            const host = $('#netWhoisHost').value.trim();
+            if (!host) return showToast('请输入域名', 'error');
+            $('#netWhoisResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/whois', { method: 'POST', body: JSON.stringify({ host }) });
+                if (res.code !== 0) { $('#netWhoisResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                const rd = d.rdap || {};
+                // 事件：注册/到期/更新
+                const events = {};
+                (rd.events || []).forEach(e => { events[e.eventAction] = e.eventDate; });
+                // 注册商（entities 第一个 vcardArray）
+                let registrar = '-', nameServers = [];
+                const entities = rd.entities || [];
+                for (const ent of entities) {
+                    const vcard = ent.vcardArray && ent.vcardArray[1];
+                    if (vcard) {
+                        for (const item of vcard) {
+                            if (item[0] === 'fn') registrar = item[3] || '-';
+                        }
+                    }
+                }
+                const ns = rd.nameservers || [];
+                nameServers = ns.map(n => n.ldhName).filter(Boolean);
+                const rows = [
+                    ['域名', rd.ldhName || host],
+                    ['注册商', registrar],
+                    ['域名状态', (rd.status || []).join('，') || '-'],
+                    ['注册日期', fmtRdapDate(events.registration)],
+                    ['到期日期', fmtRdapDate(events.expiration)],
+                    ['最后更新', fmtRdapDate(events['last changed'])],
+                    ['名称服务器', nameServers.join('，') || '-'],
+                    ['数据来源', d.source || '-'],
+                ];
+                const notAfter = events.expiration ? new Date(events.expiration) : null;
+                let expiryBadge = '';
+                if (notAfter) {
+                    const days = Math.ceil((notAfter - new Date()) / 86400000);
+                    expiryBadge = days < 0 ? '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">已过期 ' + (-days) + ' 天</span>'
+                        : days <= 30 ? '<span class="px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">' + days + ' 天后到期</span>'
+                        : '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">' + days + ' 天后到期</span>';
+                }
+                $('#netWhoisResult').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                    <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between"><span class="font-medium text-gray-900">注册信息</span>${expiryBadge}</div>
+                    <div class="divide-y divide-gray-100">${rows.map(([k, v]) => `<div class="flex px-4 py-2.5 text-sm">
+                        <span class="w-28 text-gray-500 flex-shrink-0">${k}</span><span class="text-gray-900 break-all">${esc(v)}</span></div>`).join('')}
+                    </div></div>`;
+            } catch (e) {
+                $('#netWhoisResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // --- SSL 检测 ---
+        async function netSslQuery() {
+            const host = $('#netSslHost').value.trim();
+            const port = parseInt($('#netSslPort').value) || 443;
+            if (!host) return showToast('请输入主机名或 IP', 'error');
+            $('#netSslResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/nettools/ssl', { method: 'POST', body: JSON.stringify({ host, port }) });
+                if (res.code !== 0) { $('#netSslResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                const c = d.cert;
+                // 到期预警
+                let days = null;
+                if (c.not_after) {
+                    const exp = new Date(c.not_after);
+                    days = Math.ceil((exp - new Date()) / 86400000);
+                }
+                const daysBadge = days == null ? '' : days < 0
+                    ? '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">已过期 ' + (-days) + ' 天</span>'
+                    : days <= 7 ? '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">⚠ ' + days + ' 天后到期</span>'
+                    : days <= 30 ? '<span class="px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">' + days + ' 天后到期</span>'
+                    : '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">' + days + ' 天后到期</span>';
+                const certRows = [
+                    ['通用名称 CN', c.subject_cn || '-'], ['组织', c.subject_o || '-'],
+                    ['颁发者', (c.issuer_cn || '-') + (c.issuer_o ? ' (' + c.issuer_o + ')' : '')],
+                    ['有效期从', c.not_before ? c.not_before.slice(0, 19).replace('T', ' ') + ' UTC' : '-'],
+                    ['有效期至', (c.not_after ? c.not_after.slice(0, 19).replace('T', ' ') + ' UTC' : '-') + daysBadge],
+                    ['序列号', c.serial || '-'],
+                    ['签名算法', c.signature_algorithm || '-'],
+                    ['证书版本', c.version || '-'],
+                    ['SHA-256 指纹', c.fingerprint_sha256 || '-'],
+                    ['当前握手', (c.tls_version_used || '-') + ' / ' + (c.cipher_used || '-')],
+                ];
+                const tlsRows = (d.tls_matrix || []).map(t => `<tr class="border-b border-gray-100">
+                    <td class="px-3 py-2 text-sm text-gray-700">${esc(t.version)}</td>
+                    <td class="px-3 py-2 text-sm">${t.supported
+                        ? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">✓ 支持</span>'
+                        : '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">✗ 不支持</span>'}</td>
+                    <td class="px-3 py-2 text-xs text-gray-500 font-mono break-all">${esc(t.cipher || '-')}</td></tr>`).join('');
+                $('#netSslResult').innerHTML = `
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                        <div class="px-4 py-3 border-b border-gray-200 font-medium text-gray-900">证书信息</div>
+                        <div class="divide-y divide-gray-100">${certRows.map(([k, v]) => `<div class="flex px-4 py-2.5 text-sm">
+                            <span class="w-28 text-gray-500 flex-shrink-0">${k}</span><span class="text-gray-900 break-all">${v}</span></div>`).join('')}</div>
+                    </div>
+                    <div class="flex flex-col gap-4">
+                        <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                            <div class="px-4 py-3 border-b border-gray-200 font-medium text-gray-900">TLS 协议支持</div>
+                            <table class="w-full text-sm"><thead class="bg-gray-50"><tr>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">版本</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">状态</th>
+                                <th class="px-3 py-2 text-left text-xs font-medium text-gray-500">加密套件</th></tr></thead>
+                                <tbody>${tlsRows || '<tr><td colspan="3" class="px-4 py-8 text-center text-gray-400">无数据</td></tr>'}</tbody></table>
+                        </div>
+                        <div class="bg-white rounded-xl border border-gray-200 p-4">
+                            <p class="text-xs text-gray-500 mb-2">SAN 域名（共 ${c.san ? c.san.length : 0} 个）</p>
+                            <div class="flex flex-wrap gap-1.5">${(c.san || []).map(s => `<span class="px-2 py-0.5 rounded bg-gray-100 text-xs text-gray-700">${esc(s)}</span>`).join('') || '-'}</div>
+                        </div>
+                    </div>
+                </div>`;
+            } catch (e) {
+                $('#netSslResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+
+        // ==================== 运维小工具 ====================
+        let utilsActiveTab = 'cidr';
+
+        function toggleUtilsMenu() {
+            const sub = $('#utilsSubmenu');
+            const arrow = $('#utilsMenuArrow');
+            sub.classList.toggle('hidden');
+            arrow.classList.toggle('rotate-180');
+            switchPage('opsutils');
+            document.querySelectorAll('[data-page]').forEach(l => l.classList.remove('active'));
+            document.getElementById('utilsMenuToggle').classList.add('active');
+        }
+
+        function switchUtilsTab(tab) {
+            utilsActiveTab = tab;
+            document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
+            const page = document.getElementById(`page-ut${tab}`);
+            if (page) page.classList.remove('hidden');
+            document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
+            document.querySelectorAll('[data-utils-tab]').forEach(el => el.classList.remove('active'));
+            const el = document.getElementById(`utilsSub-${tab}`);
+            if (el) el.classList.add('active');
+            document.getElementById('utilsMenuToggle').classList.add('active');
+            document.getElementById('utilsSubmenu').classList.remove('hidden');
+            document.getElementById('utilsMenuArrow').classList.add('rotate-180');
+            // 生成器相关：进入时更新历史计数徽章 + 默认生成一次
+            if (tab === 'generator') { genHistoryUpdateBadge(); genSwitchTab(genActiveTab); }
+        }
+
+        function utResultBox(html) { return `<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 max-h-[70vh] overflow-auto">${html}</div>`; }
+
+        // --- CIDR ---
+        async function utCidrCalc() {
+            const cidr = $('#utCidrInput').value.trim();
+            if (!cidr) return showToast('请输入 CIDR', 'error');
+            const res = await api('/api/utils/cidr', { method: 'POST', body: JSON.stringify({ cidr }) });
+            if (res.code !== 0) { $('#utCidrResult').innerHTML = netErrorBox(res.message); return; }
+            const d = res.data;
+            const rows = [['网段', d.network + '/' + d.prefixlen], ['网络地址', d.network], ['广播地址', d.broadcast],
+                ['子网掩码', d.netmask], ['通配符掩码', d.wildcard], ['IP 版本', d.version],
+                ['总地址数', d.total_hosts], ['可用主机数', d.usable_hosts],
+                ['可用起始', d.first_host], ['可用结束', d.last_host]];
+            $('#utCidrResult').innerHTML = utResultBox(`<div class="divide-y divide-gray-100">${rows.map(([k, v]) => `<div class="flex px-2 py-2 text-sm"><span class="w-28 text-gray-500">${k}</span><span class="text-gray-900 font-mono">${esc(v)}</span></div>`).join('')}</div>`);
+        }
+
+        // --- 时间戳 ---
+        async function utTsConvert() {
+            const value = $('#utTsInput').value.trim();
+            const tz = parseInt($('#utTsTz').value);
+            if (!value) return showToast('请输入时间戳或日期', 'error');
+            const res = await api('/api/utils/timestamp', { method: 'POST', body: JSON.stringify({ value, tz }) });
+            if (res.code !== 0) { $('#utTsResult').innerHTML = netErrorBox(res.message); return; }
+            const d = res.data;
+            const rows = Object.entries(d).filter(([k]) => !['type'].includes(k));
+            $('#utTsResult').innerHTML = utResultBox(`<div class="mb-3 text-sm text-gray-500">${d.type}</div><div class="divide-y divide-gray-100">${rows.map(([k, v]) => `<div class="flex px-2 py-2 text-sm"><span class="w-32 text-gray-500">${k}</span><span class="text-gray-900 font-mono">${esc(String(v))}</span></div>`).join('')}</div>`);
+        }
+
+        // --- JSON ---
+        async function utJsonRun(mode) {
+            const text = $('#utJsonInput').value;
+            if (!text.trim()) return showToast('请输入 JSON', 'error');
+            const res = await api('/api/utils/json', { method: 'POST', body: JSON.stringify({ text, indent: 2 }) });
+            if (res.code !== 0) { $('#utJsonResult').innerHTML = netErrorBox(res.message); return; }
+            const d = res.data;
+            let out = '';
+            if (mode === 'pretty') out = `<div class="text-sm text-gray-500 mb-2">类型: ${esc(d.type)}</div><pre class="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto overflow-y-auto max-h-[60vh]">${esc(d.pretty)}</pre>`;
+            else if (mode === 'compact') out = `<div class="text-sm text-gray-500 mb-2">压缩后</div><pre class="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto overflow-y-auto max-h-[60vh]">${esc(d.compact)}</pre>`;
+            else out = `<div class="flex items-center gap-2 text-green-600"><svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg> JSON 语法正确（类型: ${esc(d.type)}）</div>`;
+            $('#utJsonResult').innerHTML = utResultBox(out);
+        }
+
+        // --- 编解码/哈希 ---
+        async function utEncRun(action) {
+            const text = $('#utEncInput').value;
+            if (!text) return showToast('请输入内容', 'error');
+            const res = await api('/api/utils/encode', { method: 'POST', body: JSON.stringify({ text, action }) });
+            if (res.code !== 0) { $('#utEncResult').innerHTML = netErrorBox(res.message); return; }
+            const d = res.data;
+            $('#utEncResult').innerHTML = utResultBox(`<div class="text-sm text-gray-500 mb-2">${esc(action)} 结果</div><pre class="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto overflow-y-auto max-h-[60vh]">${esc(d.result)}</pre>`);
+        }
+
+        // --- Webhook ---
+        async function utWhSend() {
+            const url = $('#utWhUrl').value.trim();
+            const method = $('#utWhMethod').value;
+            const headers = {};
+            $('#utWhHeaders').value.split('\n').forEach(line => {
+                const idx = line.indexOf(':');
+                if (idx > 0) headers[line.slice(0, idx).trim()] = line.slice(idx + 1).trim();
+            });
+            const body = $('#utWhBody').value;
+            if (!url) return showToast('请输入 URL', 'error');
+            $('#utWhResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/utils/webhook', { method: 'POST', body: JSON.stringify({ url, method, headers, body }) });
+                if (res.code !== 0) { $('#utWhResult').innerHTML = netErrorBox(res.data && res.data.error || res.message); return; }
+                const d = res.data;
+                if (d.error) { $('#utWhResult').innerHTML = netErrorBox(d.error); return; }
+                $('#utWhResult').innerHTML = utResultBox(`
+                    <div class="flex items-center gap-3 mb-4">
+                        <span class="px-3 py-1.5 rounded-lg text-sm font-medium ${d.status < 400 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">HTTP ${d.status}</span>
+                        <span class="text-sm text-gray-600">耗时 ${d.cost_ms} ms</span>
+                    </div>
+                    <details class="mb-3"><summary class="text-sm text-gray-600 cursor-pointer">响应头 (${Object.keys(d.headers).length})</summary>
+                        <pre class="bg-gray-50 rounded-lg p-3 text-xs mt-2 overflow-x-auto">${esc(Object.entries(d.headers).map(([k, v]) => k + ': ' + v).join('\n'))}</pre></details>
+                    <div class="text-sm text-gray-500 mb-1">响应体</div>
+                    <pre class="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto overflow-y-auto max-h-[60vh]">${esc(d.body)}</pre>`);
+            } catch (e) { $('#utWhResult').innerHTML = netErrorBox(e.message); }
+        }
+
+        // --- 批量端口 ---
+        async function utBatchRun() {
+            const lines = $('#utBatchInput').value.split('\n').map(s => s.trim()).filter(Boolean);
+            if (!lines.length) return showToast('请输入 主机:端口', 'error');
+            const items = lines.map(l => {
+                const idx = l.lastIndexOf(':');
+                return { host: idx > 0 ? l.slice(0, idx).trim() : l, port: idx > 0 ? parseInt(l.slice(idx + 1)) : 80 };
+            });
+            $('#utBatchResult').innerHTML = netLoading();
+            const res = await api('/api/utils/batch-tcping', { method: 'POST', body: JSON.stringify({ items }) });
+            if (res.code !== 0) { $('#utBatchResult').innerHTML = netErrorBox(res.message); return; }
+            const rows = res.data.map((r, i) => `<tr class="border-b border-gray-100">
+                <td class="px-3 py-2 text-gray-400 text-xs">${i + 1}</td>
+                <td class="px-3 py-2 text-sm text-gray-800 font-mono">${esc(r.host)}:${r.port}</td>
+                <td class="px-3 py-2 text-sm">${r.reachable ? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">✓ 通</span>' : '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">✗ 不通</span>'}</td>
+                <td class="px-3 py-2 text-sm text-gray-600">${r.connect_ms != null ? r.connect_ms + ' ms' : '-'}</td>
+                <td class="px-3 py-2 text-xs text-gray-500 break-all">${esc(r.error || r.message || '')}</td></tr>`).join('');
+            $('#utBatchResult').innerHTML = utResultBox(`<table class="w-full text-sm"><thead class="bg-gray-50"><tr>${['#','主机:端口','结果','耗时','说明'].map(h => `<th class="px-3 py-2 text-left text-xs font-medium text-gray-500">${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`);
+        }
+
+        // --- HTTP 健康检查 ---
+        async function utHealthRun() {
+            const url = $('#utHealthUrl').value.trim();
+            if (!url) return showToast('请输入 URL', 'error');
+            $('#utHealthResult').innerHTML = netLoading();
+            const res = await api('/api/utils/http-health', { method: 'POST', body: JSON.stringify({ url }) });
+            if (res.code !== 0) { $('#utHealthResult').innerHTML = netErrorBox(res.message); return; }
+            const d = res.data;
+            if (d.error) { $('#utHealthResult').innerHTML = netErrorBox(d.error); return; }
+            $('#utHealthResult').innerHTML = utResultBox(`
+                <div class="flex items-center gap-3 mb-4">
+                    <span class="px-3 py-1.5 rounded-lg text-sm font-medium ${d.status < 400 ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}">HTTP ${d.status}</span>
+                    <span class="text-sm text-gray-600">耗时 ${d.cost_ms} ms</span>
+                    <span class="text-sm text-gray-500 font-mono truncate">${esc(d.final_url || url)}</span>
+                </div>
+                <details class="mb-3"><summary class="text-sm text-gray-600 cursor-pointer">响应头</summary><pre class="bg-gray-50 rounded-lg p-3 text-xs mt-2 overflow-x-auto">${esc(Object.entries(d.headers).map(([k, v]) => k + ': ' + v).join('\n'))}</pre></details>
+                <div class="text-sm text-gray-500 mb-1">响应体</div><pre class="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto overflow-y-auto max-h-[60vh]">${esc(d.body)}</pre>`);
+        }
+
+        // --- 证书批量监控 ---
+        async function utCertRun() {
+            const domains = $('#utCertInput').value.split('\n').map(s => s.trim()).filter(Boolean);
+            if (!domains.length) return showToast('请输入域名', 'error');
+            $('#utCertResult').innerHTML = netLoading();
+            const res = await api('/api/utils/cert-monitor', { method: 'POST', body: JSON.stringify({ domains }) });
+            if (res.code !== 0) { $('#utCertResult').innerHTML = netErrorBox(res.message); return; }
+            const rows = res.data.map((r, i) => {
+                let badge = '-';
+                if (r.days_left != null) {
+                    badge = r.days_left < 0 ? `<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">已过期 ${-r.days_left} 天</span>`
+                        : r.days_left <= 7 ? `<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">⚠ ${r.days_left} 天</span>`
+                        : r.days_left <= 30 ? `<span class="px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">${r.days_left} 天</span>`
+                        : `<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">${r.days_left} 天</span>`;
+                }
+                return `<tr class="border-b border-gray-100">
+                    <td class="px-3 py-2 text-gray-400 text-xs">${i + 1}</td>
+                    <td class="px-3 py-2 text-sm text-gray-800 font-mono break-all">${esc(r.domain)}</td>
+                    <td class="px-3 py-2 text-sm">${r.subject_cn ? esc(r.subject_cn) : (r.error ? '<span class="text-red-600 text-xs">' + esc(r.error) + '</span>' : '-')}</td>
+                    <td class="px-3 py-2 text-xs text-gray-600">${r.not_after ? esc(r.not_after.slice(0, 10)) : '-'}</td>
+                    <td class="px-3 py-2 text-sm">${badge}</td>
+                    <td class="px-3 py-2 text-xs text-gray-500">${esc(r.tls || '-')}</td></tr>`;
+            }).join('');
+            $('#utCertResult').innerHTML = utResultBox(`<table class="w-full text-sm"><thead class="bg-gray-50"><tr>${['#','域名','CN / 错误','到期日期','剩余','TLS'].map(h => `<th class="px-3 py-2 text-left text-xs font-medium text-gray-500">${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`);
+        }
+
+        // --- K8s Yaml 检测 ---
+        async function utYamlRun() {
+            const text = $('#utYamlInput').value;
+            if (!text.trim()) return showToast('请输入 YAML', 'error');
+            $('#utYamlResult').innerHTML = netLoading();
+            const res = await api('/api/utils/yaml-check', { method: 'POST', body: JSON.stringify({ text }) });
+            if (res.code !== 0) { $('#utYamlResult').innerHTML = netErrorBox(res.message); return; }
+            const cards = res.data.results.map(r => {
+                const icon = r.ok ? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">✓ 通过</span>' : '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">✗ 有问题</span>';
+                return `<div class="border border-gray-200 rounded-xl overflow-hidden mb-3">
+                    <div class="px-4 py-2.5 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                        <span class="text-sm font-medium text-gray-900">文档 #${r.doc} — ${esc(r.kind)}${r.name ? ' / ' + esc(r.name) : ''}</span>${icon}</div>
+                    <div class="p-4">${r.ok ? '<p class="text-sm text-green-600">检查通过，未发现问题</p>' : `<ul class="space-y-1">${r.issues.map(i => `<li class="text-sm text-red-600 flex items-start gap-2"><svg class="w-4 h-4 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>${esc(i)}</li>`).join('')}</ul>`}</div></div>`;
+            }).join('');
+            $('#utYamlResult').innerHTML = utResultBox(cards);
+        }
+
+        // --- Curl 调试 ---
+        async function utCurlRun() {
+            const command = $('#utCurlInput').value.trim();
+            if (!command) return showToast('请输入 curl 命令', 'error');
+            $('#utCurlResult').innerHTML = netLoading();
+            const res = await api('/api/utils/curl', { method: 'POST', body: JSON.stringify({ command }) });
+            if (res.code !== 0) { $('#utCurlResult').innerHTML = netErrorBox(res.message); return; }
+            const d = res.data;
+            $('#utCurlResult').innerHTML = utResultBox(`
+                <div class="text-sm text-gray-500 mb-2">exit code: ${d.exit_code}</div>
+                <pre class="bg-gray-900 text-green-400 rounded-lg p-4 text-xs overflow-x-auto overflow-y-auto max-h-[60vh]">${esc(d.output)}</pre>`);
+        }
+
+        // --- 文本比较 (Diff) ---
+        function utDiffNorm(line, trim, caseIns) {
+            let s = line;
+            if (trim) s = s.trim();
+            if (caseIns) s = s.toLowerCase();
+            return s;
+        }
+        // LCS 行级 diff：返回 [{type: 'same'|'del'|'add', text}]
+        function lcsDiff(aLines, bLines, trim, caseIns) {
+            const n = aLines.length, m = bLines.length;
+            // 构建 LCS 长度表（优化：用行哈希匹配，避免超大矩阵）
+            const keyA = aLines.map(l => utDiffNorm(l, trim, caseIns));
+            const keyB = bLines.map(l => utDiffNorm(l, trim, caseIns));
+            const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+            for (let i = n - 1; i >= 0; i--) {
+                for (let j = m - 1; j >= 0; j--) {
+                    dp[i][j] = keyA[i] === keyB[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+                }
+            }
+            // 回溯
+            const result = [];
+            let i = 0, j = 0;
+            while (i < n && j < m) {
+                if (keyA[i] === keyB[j]) { result.push({ type: 'same', text: aLines[i] }); i++; j++; }
+                else if (dp[i + 1][j] >= dp[i][j + 1]) { result.push({ type: 'del', text: aLines[i] }); i++; }
+                else { result.push({ type: 'add', text: bLines[j] }); j++; }
+            }
+            while (i < n) { result.push({ type: 'del', text: aLines[i] }); i++; }
+            while (j < m) { result.push({ type: 'add', text: bLines[j] }); j++; }
+            return result;
+        }
+        function utDiffReadFile(inputId, textareaId) {
+            const f = document.getElementById(inputId).files[0];
+            if (!f) return showToast('请先选择文件', 'error');
+            const reader = new FileReader();
+            reader.onload = e => { document.getElementById(textareaId).value = e.target.result; showToast(`已载入 ${f.name}`, 'success'); };
+            reader.readAsText(f);
+        }
+        function utDiffSwap() {
+            const a = $('#utDiffA').value, b = $('#utDiffB').value;
+            $('#utDiffA').value = b; $('#utDiffB').value = a;
+        }
+        async function utDiffRun() {
+            const a = $('#utDiffA').value, b = $('#utDiffB').value;
+            if (!a.trim() && !b.trim()) return showToast('请输入或上传文本', 'error');
+            const trim = $('#utDiffTrim').checked, caseIns = $('#utDiffCase').checked, onlyDiff = $('#utDiffOnlyDiff').checked;
+            const aLines = a.replace(/\r\n/g, '\n').split('\n');
+            const bLines = b.replace(/\r\n/g, '\n').split('\n');
+            const diff = lcsDiff(aLines, bLines, trim, caseIns);
+            const stats = { same: 0, del: 0, add: 0 };
+            diff.forEach(d => stats[d.type]++);
+            const rows = diff.filter(d => !onlyDiff || d.type !== 'same').map(d => {
+                const cls = d.type === 'same' ? 'bg-white text-gray-700' : d.type === 'del' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700';
+                const prefix = d.type === 'same' ? '  ' : d.type === 'del' ? '─' : '+';
+                return `<div class="flex font-mono text-xs leading-relaxed ${cls}"><span class="w-6 flex-shrink-0 select-none text-gray-400">${prefix}</span><pre class="flex-1 whitespace-pre-wrap break-all m-0">${esc(d.text)}</pre></div>`;
+            }).join('');
+            $('#utDiffResult').innerHTML = utilsResultBox(`
+                <div class="flex items-center gap-4 mb-3 text-sm">
+                    <span class="text-gray-600">共 ${diff.length} 行</span>
+                    <span class="text-gray-600">相同 <b class="text-gray-800">${stats.same}</b></span>
+                    <span class="text-red-600">删除 <b>${stats.del}</b></span>
+                    <span class="text-green-600">新增 <b>${stats.add}</b></span>
+                    <button onclick="copyText(this.dataset.t)" data-t="${esc(JSON.stringify(diff.filter(d => d.type === 'del' || d.type === 'add').map(d => d.text).join('\n')))}" class="ml-auto px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border border-gray-300">复制差异</button>
+                </div>
+                <div class="border border-gray-200 rounded-lg overflow-y-auto max-h-[50vh]">${rows || '<p class="p-4 text-gray-400 text-sm">两文本完全相同</p>'}</div>`);
+        }
+        document.getElementById('utDiffFileA').addEventListener('change', () => utDiffReadFile('utDiffFileA', 'utDiffA'));
+        document.getElementById('utDiffFileB').addEventListener('change', () => utDiffReadFile('utDiffFileB', 'utDiffB'));
+
+        // --- 文本去重 (Dedup) ---
+        function utDedupGetSep() {
+            const v = $('#utDedupSep').value;
+            if (v === 'custom') return $('#utDedupCustomSep').value || ',';
+            return { newline: '\n', comma: ',', semicolon: ';', tab: '\t', space: ' ' }[v] || '\n';
+        }
+        async function utDedupRun() {
+            const input = $('#utDedupInput').value;
+            if (!input.trim()) return showToast('请输入或上传文本', 'error');
+            const sep = utDedupGetSep();
+            const trim = $('#utDedupTrim').checked, caseIns = $('#utDedupCase').checked,
+                  filterEmpty = $('#utDedupEmpty').checked, sortOut = $('#utDedupSort').checked;
+            let items = input.split(sep);
+            const total = items.length;
+            if (trim) items = items.map(s => s.trim());
+            if (filterEmpty) items = items.filter(s => s !== '');
+            const seen = new Set();
+            const result = [], removed = [];
+            for (const it of items) {
+                const key = caseIns ? it.toLowerCase() : it;
+                if (seen.has(key)) { removed.push(it); } else { seen.add(key); result.push(it); }
+            }
+            if (sortOut) result.sort((a, b) => a.localeCompare(b, 'zh-CN'));
+            const out = result.join(sep);
+            $('#utDedupResult').innerHTML = utilsResultBox(`
+                <div class="flex items-center gap-4 mb-3 text-sm">
+                    <span class="text-gray-600">原始 <b>${total}</b> 项</span>
+                    <span class="text-gray-600">去重后 <b class="text-gray-800">${result.length}</b> 项</span>
+                    <span class="text-red-600">移除重复 <b>${removed.length}</b> 项</span>
+                    <button onclick="copyText(this.dataset.t)" data-t="${esc(out)}" class="ml-auto px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border border-gray-300">复制结果</button>
+                </div>
+                <div class="grid grid-cols-2 gap-4">
+                    <div><div class="text-xs text-gray-500 mb-1">去重结果</div>
+                        <div class="border border-gray-200 rounded-lg bg-gray-50 p-3 font-mono text-xs whitespace-pre-wrap break-all max-h-[40vh] overflow-y-auto">${esc(out)}</div></div>
+                    <div><div class="text-xs text-gray-500 mb-1">移除的重复项${removed.length ? `（前 50 条）` : ''}</div>
+                        <div class="border border-gray-200 rounded-lg bg-gray-50 p-3 font-mono text-xs whitespace-pre-wrap break-all max-h-[40vh] overflow-y-auto">${esc(removed.slice(0, 50).join(sep)) || '-'}</div></div>
+                </div>`);
+        }
+        document.getElementById('utDedupFile').addEventListener('change', () => {
+            const f = document.getElementById('utDedupFile').files[0];
+            if (!f) return;
+            const reader = new FileReader();
+            reader.onload = e => { $('#utDedupInput').value = e.target.result; showToast(`已载入 ${f.name}`, 'success'); };
+            reader.readAsText(f);
+        });
+        document.getElementById('utDedupSep').addEventListener('change', e => {
+            $('#utDedupCustomSep').classList.toggle('hidden', e.target.value !== 'custom');
+        });
+
+        // 复制辅助
+        function copyText(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => showToast('已复制', 'success')).catch(() => fallbackCopy(text));
+            } else fallbackCopy(text);
+        }
+        function fallbackCopy(text) {
+            const ta = document.createElement('textarea');
+            ta.value = text; document.body.appendChild(ta); ta.select();
+            try { document.execCommand('copy'); showToast('已复制', 'success'); } catch (e) { showToast('复制失败', 'error'); }
+            document.body.removeChild(ta);
+        }
+
+        // ==================== 生成器（密码 / 密码短语 / 用户名） ====================
+        // 密码学安全随机数
+        function secureRandom(max) {
+            const limit = Math.floor(0xFFFFFFFF / max) * max;
+            let n;
+            do { n = crypto.getRandomValues(new Uint32Array(1))[0]; } while (n >= limit);
+            return n % max;
+        }
+        function shuffleArr(arr) {
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = secureRandom(i + 1);
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // 历史记录（localStorage）
+        const GEN_HISTORY_KEY = 'generator_history';
+        function genHistoryGet() {
+            try { return JSON.parse(localStorage.getItem(GEN_HISTORY_KEY)) || []; } catch (e) { return []; }
+        }
+        function genHistoryAdd(type, value) {
+            const h = genHistoryGet();
+            h.unshift({ type, value, ts: Date.now() });
+            const trimmed = h.slice(0, 20);
+            try { localStorage.setItem(GEN_HISTORY_KEY, JSON.stringify(trimmed)); } catch (e) { }
+            genHistoryUpdateBadge();
+        }
+        function genHistoryClear() {
+            localStorage.removeItem(GEN_HISTORY_KEY);
+            genHistoryUpdateBadge();
+            genHistoryRender();
+        }
+        function genHistoryUpdateBadge() {
+            const n = genHistoryGet().length;
+            const badge = $('#genHistoryCount');
+            if (badge) badge.textContent = n;
+        }
+        function genHistoryRender() {
+            const list = genHistoryGet();
+            const typeNames = { pwd: '密码', phrase: '密码短语', user: '用户名' };
+            const target = $('#genHistoryModalBody');
+            if (!list.length) {
+                target.innerHTML = '<div class="p-8 text-center text-gray-400">暂无生成记录</div>';
+                return;
+            }
+            target.innerHTML = `<div class="divide-y divide-gray-100">${list.map((it) => `
+                <div class="flex items-center gap-3 py-2.5">
+                    <span class="w-20 flex-shrink-0 text-xs text-gray-500">${typeNames[it.type] || it.type}</span>
+                    <span class="flex-1 font-mono text-sm text-gray-800 break-all">${esc(it.value)}</span>
+                    <span class="text-xs text-gray-400 flex-shrink-0 whitespace-nowrap">${new Date(it.ts).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })}</span>
+                    <button onclick="copyText(this.dataset.t)" data-t="${esc(it.value)}" class="px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border border-gray-300 flex-shrink-0">复制</button>
+                </div>`).join('')}</div>`;
+        }
+        function openGenHistoryModal() {
+            genHistoryRender();
+            $('#genHistoryModal').classList.remove('hidden');
+            $('#genHistoryModal').classList.add('flex');
+        }
+        function closeGenHistoryModal() {
+            $('#genHistoryModal').classList.add('hidden');
+            $('#genHistoryModal').classList.remove('flex');
+        }
+
+        // Tab 切换
+        let genActiveTab = 'pwd';
+        function genSwitchTab(tab) {
+            genActiveTab = tab;
+            ['pwd', 'phrase', 'user'].forEach(t => {
+                $('#genPanel-' + t).classList.toggle('hidden', t !== tab);
+                const btn = $('#genTab-' + t);
+                btn.classList.toggle('bg-white', t === tab);
+                btn.classList.toggle('text-blue-600', t === tab);
+                btn.classList.toggle('shadow-sm', t === tab);
+                btn.classList.toggle('text-gray-600', t !== tab);
+            });
+            if (tab === 'pwd') genPwdGenerate();
+            if (tab === 'phrase') genPhraseGenerate();
+            if (tab === 'user') genUserGenerate();
+        }
+        function genCopy(elId) {
+            const v = document.getElementById(elId).textContent;
+            if (v) copyText(v);
+        }
+
+        // --- 密码 ---
+        const PWD_AMB_CHARS = '0OoIl1L|$&*';
+        function genPwdGenerate() {
+            const len = parseInt($('#genPwdLen').value);
+            const useUpper = $('#genPwdUpper').checked, useLower = $('#genPwdLower').checked,
+                  useDigit = $('#genPwdDigit').checked, useSym = $('#genPwdSymbol').checked,
+                  minDigit = parseInt($('#genPwdMinDigit').value) || 0,
+                  minSym = parseInt($('#genPwdMinSym').value) || 0,
+                  noAmb = $('#genPwdAmb').checked;
+            const sets = [];
+            if (useUpper) sets.push('ABCDEFGHIJKLMNOPQRSTUVWXYZ');
+            if (useLower) sets.push('abcdefghijklmnopqrstuvwxyz');
+            if (useDigit) sets.push('0123456789');
+            if (useSym) sets.push('!@#$%^&*');
+            if (!sets.length) { showToast('至少选择一种字符类型', 'error'); return; }
+            let charset = sets.join('');
+            if (noAmb) charset = charset.split('').filter(c => !PWD_AMB_CHARS.includes(c)).join('');
+            // 必填字符
+            const required = [];
+            const digitPool = useDigit ? '0123456789'.split('').filter(c => !noAmb || !PWD_AMB_CHARS.includes(c)) : [];
+            const symPool = useSym ? '!@#$%^&*'.split('').filter(c => !noAmb || !PWD_AMB_CHARS.includes(c)) : [];
+            for (let i = 0; i < minDigit && digitPool.length; i++) required.push(digitPool[secureRandom(digitPool.length)]);
+            for (let i = 0; i < minSym && symPool.length; i++) required.push(symPool[secureRandom(symPool.length)]);
+            if (required.length > len) { showToast('必填字符数超过长度', 'error'); return; }
+            const chars = charset.split('');
+            const all = required.slice();
+            while (all.length < len) all.push(chars[secureRandom(chars.length)]);
+            const pwd = shuffleArr(all).join('');
+            $('#genPwdResult').textContent = pwd;
+            genHistoryAdd('pwd', pwd);
+        }
+
+        // --- 密码短语 ---
+        function genPhraseGenerate() {
+            const count = parseInt($('#genPhraseCount').value);
+            const sep = $('#genPhraseSep').value || '-';
+            const cap = $('#genPhraseCap').checked, addNum = $('#genPhraseNum').checked;
+            if (!window.WORDLIST || !window.WORDLIST.length) { showToast('词库未加载', 'error'); return; }
+            const words = [];
+            for (let i = 0; i < count; i++) {
+                let w = window.WORDLIST[secureRandom(window.WORDLIST.length)];
+                if (cap) w = w.charAt(0).toUpperCase() + w.slice(1);
+                words.push(w);
+            }
+            let out = words.join(sep);
+            if (addNum) out += (secureRandom(10) + '' + secureRandom(10));
+            $('#genPhraseResult').textContent = out;
+            genHistoryAdd('phrase', out);
+        }
+
+        // --- 用户名 ---
+        function genUserGenerate() {
+            const type = $('#genUserType').value;
+            const cap = $('#genUserCap').checked, addNum = $('#genUserNum').checked;
+            if (!window.WORDLIST || !window.WORDLIST.length) { showToast('词库未加载', 'error'); return; }
+            let w = window.WORDLIST[secureRandom(window.WORDLIST.length)];
+            if (cap) w = w.charAt(0).toUpperCase() + w.slice(1);
+            if (type === 'wordnum' || addNum) w += secureRandom(10) + '' + secureRandom(10);
+            $('#genUserResult').textContent = w;
+            genHistoryAdd('user', w);
+        }
+
+        // 事件绑定
+        document.getElementById('genPwdLen').addEventListener('input', e => { $('#genPwdLenVal').textContent = e.target.value; });
+        document.getElementById('genPhraseCount').addEventListener('input', e => { $('#genPhraseCountVal').textContent = e.target.value; });
+
         // ==================== 用户管理（仅 admin）====================
         async function loadUsers() {
             const res = await api('/api/users');
@@ -2711,7 +4239,7 @@
             document.getElementById('userForm').reset();
             document.getElementById('userFormPassword').required = true;
             document.getElementById('userFormPwdRequired').style.display = '';
-            document.getElementById('userFormPermissions').value = 'release,credentials,domains';
+            document.getElementById('userFormPermissions').value = 'release,credentials,domains,nettools,utils';
             const m = document.getElementById('userFormModal');
             m.classList.remove('hidden'); m.classList.add('flex');
         }
@@ -2825,5 +4353,22 @@
 
         init();
     </script>
+
+    <!-- 生成器历史记录弹窗 -->
+    <div id="genHistoryModal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-3xl w-full max-h-[80vh] flex flex-col">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">生成器历史记录</h3>
+                    <p class="text-xs text-gray-500 mt-0.5">本机浏览器保存的最近 20 条（localStorage）</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="genHistoryClear()" class="px-3 py-1.5 bg-red-50 text-red-600 text-sm font-medium rounded-lg hover:bg-red-100 border border-red-200">清空</button>
+                    <button onclick="closeGenHistoryModal()" class="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">关闭</button>
+                </div>
+            </div>
+            <div id="genHistoryModalBody" class="flex-1 overflow-y-auto p-6"></div>
+        </div>
+    </div>
 </body>
 </html>
