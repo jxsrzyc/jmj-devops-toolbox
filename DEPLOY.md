@@ -60,6 +60,9 @@ python3 app.py
 | `Dockerfile` | `python:3.13-slim`，最终镜像 ~200MB |
 | `docker-compose.yml` | 数据挂载到宿主机 `./data/` |
 | `.dockerignore` | 排除 venv/__pycache__/git |
+| `static/` | 登录页图标（Dockerfile 已 COPY） |
+
+> **安全说明**：`data.db`（开发库）**不打包进镜像**（.dockerignore 已排除），容器首次启动 `database.py` 会自动 `init_db()` 建表，数据通过 PVC/挂载卷持久化。
 
 ### 2.2 构建镜像
 
@@ -85,8 +88,9 @@ docker-compose down        # 停止（数据保留在 ./data/）
 ```
 k8s/
 ├── pvc.yaml          # PersistentVolumeClaim（SQLite 单点存储）
-├── configmap.yaml    # 应用配置（DB_PATH / FLASK_ENV / TZ）
-├── deployment.yaml   # Deployment（滚动更新 + 健康检查）
+├── configmap.yaml    # 应用配置（DB_ENGINE=sqlite / DB_PATH / FLASK_ENV / TZ）
+├── secret.yaml       # 生产密钥（SECRET_KEY / PWD_SALT / CRED_SECRET_KEY）⚠️ 部署前必改
+├── deployment.yaml   # Deployment（replicas: 1 + 健康检查 + Secret 挂载）
 └── service.yaml      # ClusterIP + 可选 LoadBalancer
 ```
 
@@ -94,12 +98,22 @@ k8s/
 
 ```bash
 kubectl create ns tooling
+
+# ⚠️ 部署前先修改 k8s/secret.yaml 中的密钥（生成方式见文件头注释）
+# ⚠️ 修改 k8s/deployment.yaml 中的 image 为你的镜像仓库地址
+
 kubectl apply -f k8s/ -n tooling
+kubectl rollout status deploy/lanqi-svc-params -n tooling   # 等待就绪
+kubectl port-forward svc/lanqi-svc-params 5001:80 -n tooling  # 本地预览
 ```
 
 ### 3.3 ⚠️ SQLite 多副本注意
 
-SQLite 是文件数据库，不能同时被多个 Pod 写入。当前 PVC 配置为 `ReadWriteOnce`，如需要多副本必须迁移到外置数据库（PostgreSQL / MySQL）。
+SQLite 是文件数据库，不能同时被多个 Pod 写入。当前 deployment 已固定 `replicas: 1`（配合 `DB_ENGINE=sqlite`）。
+如需要多副本高可用，必须迁移到外置 MySQL：
+1. `k8s/configmap.yaml` 中 `DB_ENGINE: "mysql"`
+2. `k8s/secret.yaml` 取消注释并填写 DB_HOST / DB_PORT / DB_USER / DB_PASS / DB_NAME
+3. `k8s/deployment.yaml` 中 `replicas` 改为 2+，并去掉 PVC 卷挂载
 
 ---
 
@@ -107,7 +121,7 @@ SQLite 是文件数据库，不能同时被多个 Pod 写入。当前 PVC 配置
 
 | 变量 | 默认值 | 说明 |
 |------|--------|------|
-| `DB_ENGINE` | `mysql` | `mysql`（生产）或 `sqlite`（开发），同一套代码双模式 |
+| `DB_ENGINE` | `mysql` | `mysql`（生产）或 `sqlite`（开发）。**K8s 部署默认 sqlite（已写入 ConfigMap），如无 MySQL 实例勿改** |
 | `DB_HOST` | `127.0.0.1` | MySQL 主机（DB_ENGINE=mysql 时生效） |
 | `DB_PORT` | `3306` | MySQL 端口 |
 | `DB_USER` | `root` | MySQL 用户 |
@@ -160,13 +174,13 @@ docker run -d \
 ## 五、健康检查
 
 ```bash
-# Liveness / Readiness
-curl http://localhost:5001/api/modules
-# → {"code":0,"data":["..."]}
+# K8s 探针：
+#   readiness: GET /api/modules （查库，数据库健康才就绪）
+#   liveness:  GET /login        （进程存活）
 
-# 登录页可用
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/login
-# → 200
+# 本地验证
+curl http://localhost:5001/api/modules   # → {"code":0,"data":["..."]}
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/login  # → 200
 ```
 
 ---
@@ -219,13 +233,13 @@ curl -X POST http://localhost:5001/api/domains/import     # 域名
 ## 八、健康检查
 
 ```bash
-# Liveness / Readiness
-curl http://localhost:5001/api/modules
-# → {"code":0,"data":["..."]}
+# K8s 探针：
+#   readiness: GET /api/modules （查库，数据库健康才就绪）
+#   liveness:  GET /login        （进程存活）
 
-# 登录页可用
-curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/login
-# → 200
+# 本地验证
+curl http://localhost:5001/api/modules   # → {"code":0,"data":["..."]}
+curl -s -o /dev/null -w "%{http_code}" http://localhost:5001/login  # → 200
 ```
 
 ---

@@ -12,6 +12,7 @@ FROM python:3.13-slim
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
@@ -19,10 +20,10 @@ WORKDIR /app
 # 从 builder 复制已安装的依赖
 COPY --from=builder /app/deps /usr/local/lib/python3.13/site-packages
 
-# 复制应用代码
-COPY app.py database.py models.py seed.py ./
+# 复制应用代码（全部本地模块 + 静态资源；不含 data.db，避免开发数据进镜像）
+COPY *.py ./
 COPY templates/ ./templates/
-COPY data.db ./data.db
+COPY static/ ./static/
 
 # 创建数据目录（挂载卷用）
 RUN mkdir -p /app/data && chmod 755 /app/data

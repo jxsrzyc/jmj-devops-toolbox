@@ -10,3 +10,6 @@ data:
   TZ: "Asia/Shanghai"
   DB_PATH: "/app/data/data.db"
   FLASK_ENV: "production"
+  # 数据库引擎（重要：database.py 默认 DB_ENGINE=mysql，K8s 内无 MySQL 必须显式 sqlite）
+  # 如需使用 MySQL，改为 mysql 并配置下方 Secret 中的 DB_HOST/DB_PORT/DB_USER/DB_PASS/DB_NAME
+  DB_ENGINE: "sqlite"

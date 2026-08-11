@@ -11,6 +11,8 @@ services:
       # SQLite 数据持久化
       - ./data:/app/data
     environment:
+      # 重要：database.py 默认 DB_ENGINE=mysql，本地 compose 无 MySQL 必须显式 sqlite
+      - DB_ENGINE=sqlite
       - DB_PATH=/app/data/data.db
       - TZ=Asia/Shanghai
     restart: unless-stopped
