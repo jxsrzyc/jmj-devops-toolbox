@@ -15,6 +15,14 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 app.secret_key = "lanqi-svc-params-secret-2026"
 
+# 防 HTML/API 响应被浏览器缓存（确保 JS / API 修改立即生效）
+@app.after_request
+def no_cache(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '0'
+    return response
+
 # 数据库路径（可通过环境变量覆盖，适配 Docker/K8s）
 DB_PATH = os.environ.get("DB_PATH", os.path.join(os.path.dirname(os.path.abspath(__file__)), "data.db"))
 EXCEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "..", "..", "Downloads", "蓝鲸云效服务发版参数列表.xlsx")
@@ -26,7 +34,30 @@ EXCEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."
 @login_required
 def index():
     """首页 — 已登录才能访问"""
-    return render_template("index.html", **get_user_context())
+    ctx = get_user_context()
+    # 服务端预渲染本机出口 IP（避免依赖前端 JS）—— 限时 1.0s
+    eip = None
+    try:
+        from nettools import _get_egress_ip
+        ip, _src = _get_egress_ip(request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr)
+        if ip:
+            # 单次查归属（ip-api 5s 超时自己控制）
+            r = nettools.myip_lookup(ip)
+            if r.get("code") == 0:
+                d = r["data"]
+                eip = {
+                    "ip": d.get("ip", ""),
+                    "country": d.get("country", "") or "-",
+                    "region": d.get("region", "") or "-",
+                    "city": d.get("city", "") or "-",
+                    "isp": d.get("isp", "") or "-",
+                    "source": d.get("_internal", False) and "内网" or "cip.cc/ipify.org",
+                }
+    except Exception:
+        eip = None
+    ctx["egress_ip"] = eip
+    ctx["build_ts"] = __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    return render_template("index.html", **ctx)
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -560,6 +591,16 @@ def _validate_net_host():
     if not ok:
         return False, None, jsonify({"code": 400, "message": msg}), 400
     return True, host, None, None
+
+
+@app.route("/api/nettools/myip", methods=["GET"])
+@login_required
+def nettools_myip():
+    """本机出口 IP 查询（服务端视角）"""
+    ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or ""
+    if not ip:
+        return jsonify({"code": 1, "message": "无法获取客户端 IP"})
+    return jsonify(nettools.myip_lookup(ip))
 
 
 @app.route("/api/nettools/ip", methods=["POST"])

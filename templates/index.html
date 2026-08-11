@@ -283,22 +283,6 @@
                 用户管理
             </a>
             {% endif %}
-
-            <p class="px-5 py-1.5 mt-4 text-[11px] font-medium text-gray-400 uppercase tracking-wider">其他工具</p>
-
-            <!-- 预留更多菜单项 -->
-            <a href="#" class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-sm text-gray-400 border-l-3 border-transparent cursor-not-allowed opacity-60">
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
-                </svg>
-                数据看板
-            </a>
-            <a href="#" class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-sm text-gray-400 border-l-3 border-transparent cursor-not-allowed opacity-60">
-                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"/>
-                </svg>
-                部署流水线
-            </a>
         </nav>
 
         <!-- 底部用户面板 -->
@@ -840,20 +824,45 @@
 
                 <!-- 网络工具：IP 查询 -->
         <div id="page-netip" class="p-6 flex-1 flex flex-col min-h-0 hidden">
-            <div class="flex items-center justify-between mb-6">
-                <div><h2 class="text-xl font-bold text-gray-900">IP 查询</h2><p class="text-sm text-gray-500">查询 IP 或域名的归属地、运营商、ASN 等信息（第三方免费 API）</p></div>
+            <div class="flex items-start justify-between mb-6">
+                <div class="flex-1 text-center">
+                    <h2 class="text-2xl font-bold text-gray-900">IP 查询</h2>
+                    <p class="text-sm text-gray-500 mt-1">IP地址归属地查询</p>
+                    <!-- 本机出口 IP（自动展示） -->
+                    <div id="netIpMyip" class="text-gray-600 mt-3">
+                        <span id="netIpMyipText">
+                    {% if egress_ip %}
+                        <a href="javascript:void(0)" onclick="copyText('{{ egress_ip.ip|e }}')" class="text-blue-600 hover:underline font-medium">{{ egress_ip.ip }}</a> 🔗 来自：{{ egress_ip.country }} {{ egress_ip.region }} {{ egress_ip.city }} {{ egress_ip.isp }}
+                    {% else %}正在加载您的 IP...{% endif %}
+                </span>
+                    <button id="netIpMyipRetry" onclick="netIpLoadMyip()" class="ml-2 hidden text-xs text-blue-600 hover:underline">重试</button>
+                    </div>
+                </div>
+                <!-- 右侧：刷新 + 设备详情 -->
+                <div class="flex items-center gap-2 flex-shrink-0">
+                    <button id="netIpRefreshBtn" onclick="netIpRefresh()" title="重新查询本机 IP（绕过浏览器缓存）" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-200 shadow-sm">
+                        <svg id="netIpRefreshIcon" class="w-4 h-4 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                        刷新
+                    </button>
+                    <button id="netIpClientToggle" onclick="toggleNetIpClient()" class="inline-flex items-center gap-1.5 px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-200 shadow-sm">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.25-25M21 16V7a2 2 0 00-1-1.73l-7-4a2 2 0 00-2 0l-7 4A2 2 0 002 7v9a2 2 0 001 1.73l7 4a2 2 0 002 0l7-4A2 2 0 0021 16z"/></svg>
+                        设备详情
+                    </button>
+                </div>
             </div>
+            <!-- 手动查询 -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
                 <div class="flex flex-col sm:flex-row gap-3">
                     <div class="flex-1">
-                        <label class="block text-xs font-medium text-gray-500 mb-1">IP 或域名</label>
-                        <input id="netIpInput" type="text" placeholder="如: 8.8.8.8 或 www.baidu.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <input id="netIpInput" type="text" placeholder="请输入IP地址或者域名" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                     </div>
                     <div class="flex items-end gap-2">
                         <button onclick="netIpQuery()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button>
                     </div>
                 </div>
             </div>
+            <!-- 客户端设备信息 -->
+            <div id="netIpClient" class="hidden bg-gray-50 rounded-xl border border-gray-200 p-4 mb-5"></div>
             <div id="netIpResult" class="flex-1"></div>
         </div>
 
@@ -1816,6 +1825,17 @@
     <script>window.WORDLIST=["the","and","for","that","this","with","you","not","are","from","your","all","have","new","more","was","will","home","can","about","page","has","search","free","but","our","one","other","time","they","site","may","what","which","their","news","out","use","any","there","see","only","his","when","contact","here","business","who","web","also","now","help","get","view","online","first","been","would","how","were","services","some","these","click","its","like","service","than","find","price","date","back","top","people","had","list","name","just","over","state","year","day","into","email","two","health","world","next","used","work","last","most","products","music","buy","data","make","them","should","product","system","post","her","city","add","policy","number","such","please","support","message","after","best","software","then","jan","good","video","well","where","info","rights","public","books","high","school","through","each","links","she","review","years","order","very","privacy","book","items","company","read","group","need","many","user","said","does","set","under","general","research","january","mail","full","map","reviews","program","life","know","games","way","days","part","could","great","united","hotel","real","item","center","ebay","must","store","travel","comments","made","report","off","member","details","line","terms","before","hotels","did","send","right","type","because","local","those","using","results","office","national","car","design","take","posted","internet","address","within","states","area","want","phone","dvd","shipping","reserved","subject","between","forum","family","long","based","code","show","even","black","check","special","prices","website","index","being","women","much","sign","file","link","open","today","south","case","project","same","pages","version","section","own","found","sports","house","related","security","both","county","american","photo","game","members","power","while","care","network","down","computer","systems","three","total","place","end","download","him","without","per","access","think","north","current","posts","big","media","law","control","water","history","pictures","size","art","personal","since","guide","shop","board","location","change","white","text","small","rating","rate","children","during","usa","return","students","shopping","account","times","sites","level","digital","profile","previous","form","events","love","old","john","main","call","hours","image","title","non","another","why","shall","property","class","still","money","quality","every","listing","content","country","private","little","visit","save","tools","low","reply","customer","december","compare","movies","include","college","value","article","york","man","card","jobs","provide","food","source","author","press","learn","sale","around","print","course","job","canada","process","teen","room","stock","training","too","credit","point","join","science","men","advanced","west","sales","look","english","left","team","estate","box","select","windows","photos","gay","thread","week","category","note","live","large","gallery","table","register","however","june","october","november","market","library","really","action","start","series","model","features","air","industry","plan","human","provided","yes","required","second","hot","cost","movie","forums","march","better","say","july","yahoo","going","medical","test","friend","come","dec","server","study","cart","staff","articles","san","feedback","again","play","looking","issues","april","never","users","complete","street","topic","comment","things","working","against","standard","tax","person","below","mobile","less","got","blog","party","payment","login","student","let","programs","offers","legal","above","recent","park","stores","side","act","problem","red","give","memory","social","august","quote","language","story","sell","options","rates","create","key","body","young","america","field","few","east","paper","single","age","club","example","girls","password","latest","road","gift","question","changes","night","hard","texas","oct","pay","four","poker","status","browse","issue","range","building","seller","court","february","always","result","audio","light","write","war","nov","offer","blue","groups","easy","given","files","event","release","analysis","request","fax","china","making","picture","needs","possible","might","yet","month","major","star","areas","future","space","hand","sun","cards","problems","london","meeting","rss","become","interest","child","keep","enter","share","similar","garden","schools","million","added","listed","baby","learning","energy","run","delivery","net","popular","term","film","stories","put","journal","reports","try","welcome","central","images","notice","original","head","radio","until","cell","color","self","council","away","includes","track","archive","once","others","format","least","society","months","log","safety","friends","sure","faq","trade","edition","cars","messages","tell","further","updated","able","having","provides","david","fun","already","green","studies","close","common","drive","specific","several","gold","feb","living","sep","called","short","arts","lot","ask","display","limited","powered","means","director","daily","beach","past","natural","whether","due","five","upon","period","planning","database","says","official","weather","mar","land","average","done","window","france","pro","region","island","record","direct","records","district","calendar","costs","style","url","front","update","parts","aug","ever","early","miles","sound","resource","present","either","ago","document","word","works","material","bill","apr","written","talk","federal","hosting","rules","final","adult","tickets","thing","centre","via","cheap","kids","finance","true","minutes","else","mark","third","rock","gifts","europe","reading","topics","bad","tips","plus","auto","cover","usually","edit","together","videos","percent","fast","function","fact","unit","getting","global","tech","meet","far","economic","player","projects","lyrics","often","submit","germany","amount","watch","included","feel","though","bank","risk","thanks","deals","various","words","linux","jul","james","weight","town","heart","received","choose","archives","points","magazine","error","camera","jun","girl","toys","clear","golf","receive","domain","methods","chapter","makes","policies","loan","wide","beauty","manager","india","position","taken","sort","listings","models","michael","known","half","cases","step","florida","simple","quick","none","wireless","license","paul","friday","lake","whole","annual","later","basic","sony","shows","google","church","method","purchase","active","response","practice","hardware","figure","fire","holiday","chat","enough","designed","along","among","death","writing","speed","html","loss","face","brand","discount","higher","effects","created","remember","oil","bit","yellow","increase","kingdom","base","near","thought","stuff","french","storage","japan","doing","loans","shoes","entry","stay","nature","orders","africa","summary","turn","mean","growth","notes","agency","king","monday","european","activity","copy","although","drug","pics","western","income","force","cash","overall","bay","river","package","contents","seen","players","engine","port","album","regional","stop","supplies","started","bar","views","plans","double","dog","build","screen","exchange","types","soon","lines","continue","across","benefits","needed","season","apply","someone","held","anything","printer","believe","effect","asked","eur","mind","sunday","casino","pdf","lost","tour","menu","volume","cross","anyone","mortgage","hope","silver","wish","inside","solution","mature","role","rather","weeks","addition","came","supply","nothing","certain","usr","running","lower","union","jewelry","clothing","mon","com","fine","names","robert","homepage","hour","gas","skills","six","bush","islands","advice","career","military","rental","decision","leave","british","teens","pre","huge","sat","woman","zip","bid","kind","sellers","middle","move","cable","taking","values","division","coming","tuesday","object","lesbian","machine","logo","length","actually","nice","score","client","returns","capital","follow","sample","sent","shown","saturday","england","culture","band","flash","lead","george","choice","went","starting","fri","thursday","courses","consumer","airport","foreign","artist","outside","levels","channel","letter","mode","phones","ideas","fund","summer","allow","degree","contract","button","releases","wed","homes","super","male","matter","custom","virginia","almost","took","located","multiple","asian","editor","inn","cause","song","cnet","ltd","los","focus","late","fall","featured","idea","rooms","female","inc","win","thomas","primary","cancer","numbers","reason","tool","browser","spring","answer","voice","friendly","schedule","purpose","feature","bed","comes","police","everyone","approach","cameras","brown","physical","hill","maps","medicine","deal","hold","ratings","chicago","forms","glass","happy","tue","smith","wanted","thank","safe","unique","survey","prior","sport","ready","feed","animal","sources","mexico","regular","secure","simply","evidence","station","round","paypal","favorite","option","master","valley","recently","probably","thu","rentals","sea","built","blood","cut","improve","hall","larger","anti","networks","earth","parents","nokia","impact","transfer","kitchen","strong","tel","carolina","wedding","hospital","ground","overview","ship","owners","disease","paid","italy","perfect","hair","kit","classic","basis","command","cities","william","express","award","distance","tree","peter","ensure","thus","wall","involved","extra","partners","budget","rated","guides","success","maximum","existing","quite","selected","boy","amazon","patients","warning","wine","horse","vote","forward","flowers","stars","lists","owner","retail","animals","useful","directly","ways","est","son","rule","mac","housing","takes","iii","gmt","bring","catalog","searches","max","trying","mother","told","xml","traffic","joined","input","strategy","feet","agent","valid","bin","modern","senior","ireland","teaching","door","grand","testing","trial","charge","units","instead","canadian","cool","normal","wrote","ships","entire","leading","metal","positive","fitness","chinese","opinion","asia","football","abstract","uses","output","funds","greater","likely","develop","artists","java","guest","seems","pass","trust","van","contains","session","multi","republic","fees","vacation","century","academic","skin","graphics","indian","prev","ads","mary","expected","ring","grade","dating","pacific","mountain","pop","filter","mailing","vehicle","longer","consider","int","northern","behind","panel","floor","german","buying","match","proposed","default","require","iraq","boys","outdoor","deep","morning","allows","rest","protein","plant","reported","hit","pool","mini","politics","partner","authors","boards","faculty","parties","fish","mission","eye","string","sense","modified","pack","released","stage","internal","goods","born","unless","richard","detailed","japanese","race","approved","target","except","usb","ability","maybe","moving","brands","places","php","pretty","spain","southern","yourself","etc","winter","battery","youth","pressure","boston","debt","keywords","medium","core","break","purposes","sets","dance","wood","msn","itself","defined","papers","playing","awards","fee","studio","reader","virtual","device","answers","rent","las","remote","dark","external","apple","min","offered","theory","enjoy","remove","aid","surface","minimum","visual","host","variety","teachers","isbn","martin","manual","block","subjects","agents","repair","fair","civil","steel","songs","fixed","wrong","hands","finally","updates","desktop","classes","paris","ohio","gets","sector","capacity","requires","jersey","fat","fully","father","electric","saw","quotes","officer","driver","dead","respect","unknown","mike","trip","pst","worth","poor","teacher","eyes","workers","farm","georgia","peace","campus","tom","showing","creative","coast","benefit","progress","funding","devices","lord","grant","sub","agree","fiction","hear","watches","careers","beyond","goes","families","led","museum","fan","blogs","wife","accepted","former","ten","hits","zone","complex","cat","die","jack","flat","flow","agencies","parent","spanish","michigan","columbia","setting","scale","stand","economy","highest","helpful","monthly","critical","frame","musical","angeles","path","employee","chief","gives","bottom","packages","detail","laws","changed","pet","heard","begin","colorado","royal","clean","switch","russian","largest","african","guy","titles","relevant","justice","connect","bible","dev","cup","basket","applied","weekly","vol","demand","suite","vegas","square","chris","advance","skip","diet","army","auction","gear","lee","allowed","correct","charles","nation","selling","lots","piece","sheet","firm","seven","older","illinois","elements","species","jump","cells","module","resort","facility","random","pricing","dvds","minister","motion","looks","fashion","visitors","monitor","trading","forest","calls","whose","coverage","couple","giving","chance","vision","ball","ending","clients","actions","listen","discuss","accept","naked","goal","sold","wind","clinical","sciences","markets","lowest","highly","appear","lives","currency","leather","palm","patient","actual","stone","bob","commerce","perhaps","persons","fit","tests","village","accounts","amateur","met","pain","xbox","factors","coffee","www","settings","buyer","cultural","steve","easily","oral","ford","poster","edge","root","closed","holidays","ice","pink","zealand","balance","graduate","replies","shot","initial","label","thinking","scott","llc","sec","canon","league","waste","minute","bus","provider","optional","cold","sections","chair","fishing","effort","phase","fields","bag","fantasy","letters","motor","context","install","shirt","apparel","foot","mass","crime","count","breast","ibm","johnson","quickly","dollars","websites","religion","claim","driving","surgery","patch","heat","wild","measures","kansas","miss","chemical","doctor","task","reduce","brought","himself","nor","enable","exercise","bug","santa","mid","leader","diamond","israel","soft","servers","alone","meetings","seconds","jones","arizona","keyword","flight","congress","fuel","username","walk","produced","italian","wait","pocket","saint","rose","freedom","argument","creating","jim","drugs","joint","premium","fresh","attorney","upgrade","factor","growing","stream","pick","hearing","eastern","auctions","therapy","entries","dates","signed","upper","serious","prime","samsung","limit","began","louis","steps","errors","shops","del","efforts","informed","thoughts","creek","worked","quantity","urban","sorted","myself","tours","platform","load","labor","admin","nursing","defense","machines","tags","heavy","covered","recovery","joe","guys","merchant","expert","protect","drop","solid","cds","became","orange","vehicles","prevent","theme","rich","campaign","marine","guitar","finding","examples","ipod","saying","spirit","claims","motorola","seem","affairs","touch","intended","towards","goals","hire","election","suggest","branch","charges","serve","reasons","magic","mount","smart","talking","gave","ones","latin","avoid","manage","corner","rank","oregon","element","birth","virus","abuse","requests","separate","quarter","tables","define","racing","facts","kong","column","plants","faith","chain","identify","avenue","missing","died","domestic","sitemap","moved","houston","reach","mental","viewed","moment","extended","sequence","inch","attack","sorry","centers","opening","damage","lab","reserve","recipes","cvs","gamma","plastic","produce","snow","placed","truth","counter","failure","follows","weekend","dollar","camp","ontario","des","films","bridge","native","fill","williams","movement","printing","baseball","owned","approval","draft","chart","played","contacts","jesus","readers","clubs","lcd","jackson","equal","matching","offering","shirts","profit","leaders","posters","variable","ave","expect","parking","compared","workshop","russia","gone","codes","kinds","seattle","golden","teams","fort","lighting","senate","forces","funny","brother","gene","turned","portable","tried","disc","returned","pattern","boat","named","theatre","laser","earlier","sponsor","icon","warranty","indiana","harry","objects","ends","delete","evening","assembly","nuclear","taxes","mouse","signal","criminal","issued","brain","sexual","powerful","dream","obtained","false","cast","flower","felt","passed","supplied","falls","pic","soul","aids","opinions","promote","stated","stats","hawaii","appears","carry","flag","decided","covers","hello","designs","maintain","tourism","priority","adults","clips","savings","graphic","atom","payments","binding","brief","ended","winning","eight","iron","straight","script","served","wants","prepared","void","dining","alert","atlanta","dakota","tag","mix","disk","queen","vhs","credits","clearly","fix","handle","sweet","desk","criteria","pubmed","dave","diego","hong","vice","truck","behavior","enlarge","ray","revenue","measure","changing","votes","duty","looked","bear","gain","festival","ocean","flights","experts","signs","lack","depth","iowa","whatever","logged","laptop","vintage","train","exactly","dry","explore","maryland","spa","concept","nearly","eligible","checkout","reality","forgot","handling","origin","knew","gaming","feeds","billion","scotland","faster","dallas","bought","con","ups","nations","route","followed","broken","frank","alaska","zoom","blow","battle","anime","speak","protocol","query","clip","equity","speech","wire","rural","shared","sounds","tape","judge","spam","acid","bytes","cent","forced","fight","height","null","zero","speaker","filed","obtain","offices","designer","remain","managed","failed","marriage","roll","korea","banks","secret","bath","kelly","leads","negative","austin","toronto","theater","springs","missouri","andrew","var","perform","healthy","font","assets","injury","joseph","ministry","drivers","lawyer","figures","married","proposal","sharing","portal","waiting","birthday","beta","fail","gratis","banking","brian","toward","won","slightly","assist","conduct","lingerie","calling","jazz","serving","bags","profiles","miami","comics","matters","houses","doc","postal","wear","controls","breaking","combined","ultimate","wales","minor","finish","noted","mom","reduced","physics","rare","spent","extreme","samples","davis","daniel","bars","reviewed","row","forecast","removed","helps","singles","cycle","amounts","contain","accuracy","dual","rise","usd","sleep","bird","pharmacy","brazil","creation","static","scene","hunter","lady","crystal","famous","writer","chairman","violence","fans","oklahoma","speakers","drink","academy","dynamic","gender","eat","dell","cleaning","seat","concerns","vendor","intel","officers","aim","bids","referred","supports","regions","junior","toll","les","cape","ann","rings","meaning","tip","mine","ladies","henry","ticket","guess","agreed","whom","ski","soccer","math","import","posting","presence","instant","viewing","majority","christ","dan","dogs","aspects","austria","ahead","moon","scheme","utility","preview","fly","manner","matrix","devel","despite","strength","turkey","proper","degrees","delta","fear","seeking","inches","phoenix","shares","daughter","standing","comfort","colors","wars","cisco","ordering","kept","alpha","appeal","cruise","bonus","hey","bookmark","specials","beat","disney","adobe","smoking","bbc","becomes","drives","arms","alabama","tea","improved","trees","avg","achieve","dress","dealer","sky","utah","nearby","rom","carried","happen","exposure","hide","gambling","refer","miller","outdoors","clothes","caused","luxury","babes","frames","indeed","toy","circuit","layer","printed","slow","removal","easier","src","hip","printers","faqs","nine","adding","kentucky","mostly","eric","spot","taylor","prints","spend","factory","interior","revised","grow","optical","relative","amazing","clock","dot","hiv","identity","suites","feeling","hidden","victoria","serial","relief","revision","ratio","pda","rain","onto","dsl","planet","copies","recipe","zum","permit","seeing","proof","dna","diff","tennis","bass","bedroom","empty","instance","hole","pets","ride","licensed","orlando","tim","bureau","maine","sql","pair","ideal","specs","recorded","don","pieces","finished","parks","dinner","lawyers","sydney","stress","cream","runs","trends","yeah","discover","patterns","boxes","hills","fourth","advisor","evil","aware","wilson","shape","irish","stations","gps","remains","acc","greatest","firms","euro","operator","generic","usage","cap","ink","charts","mixed","census","peak","exist","wheel","transit","salt","compact","poetry","lights","tracking","angel","bell","keeping","attempt","matches","width","noise","engines","forget","array","accurate","stephen","climate","pin","alcohol","greek","managing","sister","raw","walking","explain","smaller","newest","gnu","happened","jeff","extent","sharp","lesbians","ben","lane","kill","aol","export","managers","aircraft","modules","sweden","conflict","versions","employer","occur","knows","describe","concern","backup","citizens","heritage","holding","trouble","spread","coach","kevin","expand","audience","assigned","jordan","ages","plug","cook","affect","virgin","raised","hat","directed","dealers","sporting","helping","perl","affected","lib","bike","totally","plate","expenses","indicate","blonde","anderson","utc","der","lose","organic","seek","albums","cheats","guests","hosted","diseases","tony","nevada","kits","thailand","agenda","anyway","tracks","advisory","cam","logic","template","prince","circle","soil","grants","anywhere","atlantic","wet","edward","investor","ram","leaving","wildlife","matt","cooking","speaking","sponsors","fox","respond","sizes","plain","exit","entered","iran","arm","keys","launch","wave","checking","costa","belgium","holy","acts","guidance","mesh","trail","symbol","crafts","highway","buddy","observed","dean","setup","poll","booking","glossary","fiscal","styles","denver","unix","filled","bond","channels","ericsson","appendix","notify","blues","pub","portion","scope","supplier","cables","cotton","biology","dental","killed","border","ancient","debate","starts","causes","arkansas","leisure","learned","notebook","explorer","historic","attached","opened","husband","disabled","crazy","upcoming","britain","concert","scores","comedy","adopted","weblog","linear","bears","jean","hop","carrier","edited","constant","visa","mouth","jewish","meter","linked","portland","concepts","gun","reflect","pure","deliver","wonder","lessons","fruit","begins","reform","lens","alerts","treated","draw","mysql","relating","assume","alliance","confirm","warm","neither","lewis","howard","offline","leaves","engineer","replace","babe","checks","reached","becoming","safari","sugar","crew","legs","sam","stick","allen","pdt","relation","enabled","genre","slide","montana","tested","rear","enhance","exact","bound","adapter","node","formal","lock","hockey","storm","micro","colleges","laptops","mile","showed","editors","mens","threads","bowl","supreme","brothers","presents","ref","tank","dolls","estimate","navy","kid","cancel","limits","weapons","paint","delay","pilot","outlet","czech","novel","pan","ultra","winner","idaho","episode","potter","dish","plays","bulletin","modify","oxford","adam","truly","epinions","painting","universe","patent","slot","psp","eating","planned","watching","lodge","mirror","sterling","sessions","kernel","stocks","buyers","journals","gray","jennifer","antonio","charged","broad","taiwan","und","chosen","demo","greece","swiss","sarah","clark","hate","terminal","nights","behalf","liquid","rice","nebraska","loop","salary","foods","gourmet","guard","properly","orleans","saving","nfl","empire","resume","twenty","newly","raise","prepare","avatar","gary","illegal","vary","hundreds","rome","arab","lincoln","helped","premier","tomorrow","milk","decide","consent","drama","visiting","downtown","keyboard","contest","bands","boot","suitable","millions","lunch","audit","push","chamber","guinea","findings","muscle","iso","clicking","polls","typical","tower","yours","sum","misc","chicken","attend","shower","alan","sending","jason","tonight","dear","holdem","shell","province","catholic","oak","vat","governor","beer","seemed","swimming","spyware","formula","solar","jose","catch","jane","pakistan","reliable","sir","doubt","earn","finder","unable","periods","tasks","attacks","kim","const","doors","symptoms","resorts","biggest","memorial","visitor","twin","forth","insert","gateway","dont","alumni","drawing","ordered","fighting","happens","spy","romance","bruce","split","themes","powers","heaven","bits","pregnant","twice","focused","egypt","bargain","cellular","norway","vermont","asking","blocks","normally","hunting","diabetes","suit","shift","chip","res","sit","bodies","cutting","wow","simon","writers","marks","flexible","loved","mapping","numerous","birds","char","indexed","superior","saved","paying","cartoon","shots","moore","granted","choices","carbon","spending","magnetic","registry","crisis","outlook","massive","denmark","employed","bright","treat","header","poverty","formed","piano","echo","que","grid","sheets","patrick","puerto","displays","plasma","allowing","earnings","voip","mystery","journey","delaware","bidding","risks","banner","charter","fig","barbara","counties","ports","dreams","blogger","stands","teach","occurred","rapid","pull","hairy","reverse","deposit","seminar","latina","nasa","wheels","specify","dutch","formats","tab","depends","boots","holds","router","concrete","editing","poland","folder","womens","css","upload","pulse","voting","courts","notices","detroit","metro","toshiba","strip","pearl","accident","nick","resident","plot","qty","possibly","airline","regard","pump","exists","smooth","strike","flashing","narrow","threat","surveys","sitting","putting","vietnam","trailer","anne","castle","gardens","missed","malaysia","antique","labels","willing","bio","acting","heads","stored","exam","logos","antiques","density","hundred","ryan","strange","beds","mention","pcs","grey","parallel","honda","amended","operate","bills","bold","bathroom","stable","opera","von","doctors","lesson","cinema","asset","scan","drinking","reaction","blank","enhanced","entitled","severe","generate","deluxe","humor","aged","monitors","lived","duration","bulk","pursuant","sci","fabric","edt","visits","tight","domains","pmid","contrast","flying","sin","berlin","cute","para","siemens","adoption","meant","capture","pounds","buffalo","plane","seed","desire","camping","meets","welfare","peer","caught","marked","driven","measured","medline","bottle","marshall","massage","rubber","closing","tampa","thousand","meat","legend","grace","susan","ing","adams","python","monster","alex","bang","villa","bone","columns","bugs","hamilton","ftp","cookies","inner","tutorial","med","entity","cruises","gate","holder","portugal","lawrence","roman","duties","valuable","tone","ethics","forever","dragon","busy","captain","imagine","brings","heating","leg","neck","wing","scripts","abc","stereo","taste","dealing","commit","tiny","rail","airlines","liberal","livecam","jay","trips","gap","sides","tube","turns","cache","belt","jacket","oracle","matthew","lease","aviation","hobbies","proud","excess","disaster","console","commands","giant","achieved","injuries","shipped","seats","biz","alarm","voltage","anthony","nintendo","usual","loading","stamps","appeared","franklin","angle","rob","vinyl","mining","ongoing","worst","imaging","betting","liberty","wyoming","era","convert","analyst","garage","exciting","thongs","gcc","ringtone","finland","morgan","derived","pleasure","honor","asp","oriented","eagle","desktops","pants","columbus","nurse","prayer","quiet","luck","postage","producer","dial","cheese","comic","jet","crown","par","maker","crack","picks","gang","semester","fetish","applies","casinos","smoke","apache","filters","craft","cake","apart","fellow","blind","lounge","mad","semi","coins","andy","gross","strongly","cafe","hilton","ken","proteins","horror","exp","familiar","capable","douglas","debian","till","pen","epson","shoe","elected","carrying","victory","sand","madison","joy","editions","cpu","mainly","ethnic","ran","actor","finds","seal","fifth","citizen","vertical","prize","occurs","jon","absolute","consists","anytime","lies","pipe","soldiers","guardian","lecture","layout","ill","classics","lbs","lay","horses","lol","dirty","deck","wayne","donate","taught","worker","alive","temple","prove","wings","breaks","genetic","waters","promise","thin","prefer","ridge","cabinet","modem","harris","mph","bringing","sick","dose","evaluate","tiffany","tropical","collect","bet","toyota","streets","vector","shaved","turning","buffer","purple","larry","def","lets","mutual","pipeline","syntax","prison","skill","chairs","everyday","moves","inquiry","ethernet","checked","exhibit","throw","trend","sierra","visible","cats","desert","oldest","rhode","nba","mercury","steven","handbook","greg","navigate","worse","summit","victims","epa","spaces","burning","escape","coupons","somewhat","receiver","cialis","boats","glance","scottish","arcade","richmond","ron","russell","tells","obvious","fiber","graph","covering","platinum","judgment","bedrooms","talks","filing","foster","modeling","passing","awarded","trials","tissue","clinton","masters","bonds","alberta","folk","org","commons","fraud","spectrum","arrival","okay","pottery","emphasis","roger","aspect","awesome","mexican","counts","priced","hist","crash","lift","desired","inter","closer","assumes","heights","shadow","riding","firefox","lisa","expense","grove","venture","clinic","korean","healing","princess","mall","entering","packet","spray","studios","dad","buttons","funded","thompson","winners","extend","roads","pat","dublin","rolling","fell","yard","memories","nelson","arrived","creates","faces","tourist","mayor","murder","sean","adequate","senator","yield","grades","cartoons","pour","digest","reg","lodging","tion","dust","hence","wiki","entirely","replaced","radar","rescue","losses","combat","reducing","stopped","lakes","closely","diary","kings","shooting","kent","adds","nsw","ear","flags","pci","baker","launched","shock","walls","abroad","ebony","tie","ward","drawn","arthur","ian","visited","roof","walker","suggests","kiss","beast","operated","targets","overseas","dodge","counsel","pizza","invited","yards","gordon","mod","farmers","queries","bmw","rush","ukraine","absence","nearest","cluster","vendors","mpeg","whereas","yoga","serves","woods","surprise","lamp","rico","partial","shoppers","phil","couples","ranking","jokes","cst","http","ceo","simpson","twiki","sublime","palace","glad","wins","verify","globe","trusted","copper","rack","rep","dicke","kerry","receipt","supposed","ordinary","nobody","ghost","mit","applying","boss","pride","knowing","reporter","keith","champion","cloudy","linda","ross","chile","anna","plenty","solo","sentence","throat","ignore","maria","uniform","wealth","tall","vacuum","dancing","brass","writes","plaza","pdas","outcomes","survival","quest","publish","sri","toe","trans","jonathan","whenever","nova","lifetime","api","pioneer","booty","acrobat","plates","acres","venue","athletic","thermal","essays","vital","telling","fairly","coastal","config","charity","excel","modes","campbell","wake","stupid","harbor","hungary","traveler","urw","segment","realize","lan","enemy","puzzle","rising","aluminum","wells","wishlist","opens","insight","sms","secrets","lucky","latter","thick","trailers","repeat","syndrome","philips","penalty","drum","glasses","enables","nec","iraqi","builder","vista","jessica","chips","terry","flood","foto","ease","arena","pupils","stewart","tabs","outcome","expanded","casual","grown","polish","lovely","extras","centres","jerry","clause","smile","lands","troops","indoor","bulgaria","armed","broker","charger","believed","pine","cooling","tend","gulf","rick","trucks","divorce","laura","shopper","tokyo","partly","nikon","candy","pills","tiger","donald","folks","sensor","exposed","telecom","hunt","angels","deputy","sealed","thai","loaded","fred","scenes","boost","spanking","mill","founded","chronic","icons","moral","den","catering","aud","finger","keeps","pound","locate","trained","burn","roses","labs","bread","tobacco","wooden","motors","tough","roberts","incident","gonna","dynamics","lie","crm","decrease","chest","pension","billy","revenues","emerging","worship","craig","herself","churches","damages","reserves","solve","shorts","minority","diverse","amp","johnny","sole","recorder","facing","nancy","tones","passion","sight","laid","clay","defence","patches","weak","refund","usc","towns","trembl","divided","blvd","amd","wise","emails","cyprus","odds","insider","seminars","makers","hearts","worry","eve","carter","legacy","marc","pleased","danger","vitamin","widely","phrase","genuine","raising","paradise","hybrid","reads","roles","sons","leaf","pad","glory","bigger","billing","diesel","versus","combine","exceed","rod","saudi","fault","cuba","hrs","silk","kate","babies","karen","compiled","romantic","revealed","albert","examine","jimmy","graham","bristol","margaret","compaq","sad","wolf","slowly","rugby","cal","portions","infant","sectors","samuel","fluid","grounds","fits","kick","regards","meal","hurt","unlike","equation","baskets","pot","wright","img","barry","proven","cached","warren","slip","studied","reviewer","involves","rpm","profits","devil","grass","comply","marie","florist","cherry","deutsch","kenya","webcam","cuts","funeral","nutten","earrings","enjoyed","chapters","pee","charlie","quebec","dennis","mars","francis","tvs","sized","manga","noticed","socket","silent","literary","egg","mhz","signals","caps","pill","theft","swing","symbols","lat","meta","humans","analog","facial","choosing","talent","dated","seeker","wisdom","shoot","boundary","mint","packard","offset","payday","philip","elite","spin","holders","believes","swedish","poems","deadline","robot","witness","collins","equipped","stages","sur","winds","powder","broadway","acquired","assess","wash","stones","entrance","gnome","roots","losing","attempts","gadgets","noble","glasgow","impacts","rev","gospel","shore","loves","induced","knight","loose","aims","linking","appeals","earned","illness","islamic","ieee","pending","parker","lebanon","corp","kennedy","teenage","soap","triple","cooper","nyc","vincent","jam","secured","unusual","answered","slots","disorder","routine","toolbar","rocks","titans","wearing","axis","sought","genes","mounted","habitat","firewall","median","guns","scanner","herein","animated","judicial","rio","hero","integer","bachelor","attitude","engaged","falling","basics","montreal","carpet","struct","lenses","binary","genetics","attended","punk","dropped","duke","walter","pace","besides","wage","arc","hosts","moments","atlas","strings","dawn","feels","torture","carl","deleted","coat","mitchell","mrs","rica","ralph","warner","app","embedded","inkjet","wizard","corps","actors","liver","liable","brochure","morris","petition","eminem","recall","antenna","picked","assumed","belief","killing","bikini","memphis","shoulder","decor","lookup","texts","harvard","brokers","roy","ion","diameter","ottawa","doll","podcast","seasons","peru","refine","bidder","singer","evans","herald","literacy","fails","aging","nike","fed","plugin","diving","invite","alice","latinas","suppose","reed","involve","moderate","terror","younger","thirty","mice","opposite","rapidly","dealtime","ban","temp","intro","mercedes","zus","clerk","vast","mills","outline","tramadol","holland","receives","jeans","fonts","ent","odd","wrap","refers","mood","favor","veterans","quiz","sigma","xhtml","occasion","victim","demands","sleeping","careful","ext","beam","arrive","sunset","tracked","moreover","minimal","lottery","tops","framed","aside","licence","michelle","essay","amy","dialogue","camps","declared","aaron","handheld","trace","disposal","shut","florists","packs","switches","romania","ncaa","thou","consult","phd","greatly","blogging","mask","cycling","midnight","commonly","inform","turkish","coal","cry","pentium","quantum","murray","intent","zoo","largely","pleasant","announce","spoke","aka","arrow","sampling","rough","weird","tee","lion","inspired","holes","weddings","blade","suddenly","oxygen","cookie","meals","canyon","goto","meters","merely","passes","pointer","stretch","durham","permits","muslim","neil","sleeve","netscape","cleaner","cricket","beef","feeding","stroke","township","rankings","cad","hats","robin","robinson","strap","sharon","crowd","tcp","surf","olympic","remained","dir","entities","customs","rainbow","hook","roulette","decline","gloves","israeli","medicare","cord","skiing","cloud","valve","val","hewlett","explains","proceed","flickr","feelings","knife","jamaica","shelf","timing","liked","adopt","denied","fotos","britney","freeware","donation","outer","crop","deaths","rivers","tales","katrina","islam","nodes","thumbs","seeds","cited","lite","ghz","hub","targeted","skype","realized","twelve","founder","decade","gamecube","dispute","tired","titten","adverse","excerpt","eng","steam","drinks","ace","voices","acute","climbing","stood","sing","tons","perfume","carol","honest","albany","restore","stack","somebody","sue","hang","gbp","curve","creator","amber","museums","coding","tracker","passage","trunk","hiking","pierre","jelsoft","headset","oakland","colombia","waves","camel","lamps","hood","suicide","archived","chi","arabia","juice","chase","logical","sauce","fame","extract","panama","payable","courtesy","rfc","athens","judges","seo","retired","isp","remarks","detected","decades","walked","arising","nissan","bracelet","ins","eggs","juvenile","afraid","acoustic","railway","cassette","pointed","jpg","causing","mistake","norton","locked","fusion","mineral","ruby","steering","beads","fortune","canvas","parish","claimed","screens","cemetery","planner","croatia","flows","stadium","mins","fewer","coupon","nurses","ssl","stem","proxy","lanka","opt","edwards","drew","contests","flu","mlb","costume","tagged","berkeley","voted","killer","bikes","gates","adjusted","rap","tune","bishop","pulled","corn","shaped","seasonal","farmer","counters","puts","grew","tin","slave","cultures","norfolk","coaching","examined","trek","encoding","oem","heroes","painted","lycos","zdnet","artwork","cosmetic","resulted","portrait","ethical","carriers","mobility","floral","builders","ties","struggle","schemes","neutral","fisher","rat","spears","bedding","joining","heading","equally","bearing","brad","combo","seniors","worlds","guilty","haven","tablet","jury","dos","tail","charm","lawn","violent","basin","soup","ranch","crossing","cottage","drunk","crimes","resolved","mozilla","byte","toner","nose","latex","branches","anymore","oclc","delhi","holdings","alien","locator","plc","broke","nepal","zimbabwe","juan","msg","browsing","resolve","cod","melissa","moscow","thesis","thru","jews","nylon","discs","rocky","bargains","frequent","trim","nigeria","ceiling","pixels","ensuring","hispanic","gen","anybody","diamonds","espn","fleet","untitled","bunch","totals","marriott","singing","afford","starring","referral","nhl","optimal","quit","distinct","lung","turner","sucking","cents","reuters","gel","todd","spoken","omega","stayed","civic","manuals","doug","sees","watched","saver","thereof","grill","redeem","rogers","grain","aaa","regime","wanna","wishes","bull","depend","differ","ranging","monica","repairs","breath","cole","mart","candle","hanging","colored","tale","verified","lynn","formerly","situated","std","seeks","herbal","loving","strictly","routing","docs","stanley","retailer","vitamins","elegant","gains","renewal","vid","opposed","deemed","scoring","brooklyn","sisters","critics","spots","hacker","madrid","margin","coin","solely","fake","salon","norman","fda","turbo","headed","voters","cure","madonna","arch","murphy","thinks","thats","hdtv","soldier","phillips","asin","aimed","justin","bomb","harm","interval","mirrors","tricks","reset","brush","thy","expansys","panels","repeated","assault","spare","deer","kodak","tongue","bowling","tri","danish","pal","monkey","filename","skirt","florence","invest","honey","analyzes","drawings","scenario","lovers","atomic","approx","arabic","gauge","junction","faced","mat","rachel","solving","weekends","produces","oven","ted","chains","kingston","sixth","engage","deviant","noon","quoted","adapters","farms","imports","cheat","bronze","sandy","suspect","macro","sender","crucial","gym","kde","adjacent","tuition","spouse","exotic","viewer","signup","threats","puzzles","reaching","damaged","cams","receptor","laugh","joel","surgical","destroy","citation","pitch","autos","premises","perry","proved","imperial","dozen","benjamin","teeth","cloth","studying","stamp","lotus","salmon","olympus","proc","cargo","tan","salem","mate","starter","upgrades","likes","butter","pepper","weapon","luggage","burden","chef","tapes","zones","races","isle","stylish","slim","maple","luke","grocery","offshore","depot","kenneth","comp","alt","pie","blend","harrison","julie","cbs","emission","pete","spec","finest","realty","janet","bow","penn","apparent","phpbb","autumn","probe","midi","toilet","ranked","jackets","routes","packed","excited","outreach","helen","mounting","recover","tied","lopez","balanced","timely","talked","debug","delayed","chuck","hon","dale","explicit","villas","ebook","exclude","peeing","brooks","newton","oils","sept","anxiety","bingo","whilst","spatial","unto","ceramic","prompt","precious","minds","annually","scanners","atm","xanax","pays","fingers","sunny","ebooks","delivers","necklace","leeds","cedar","arranged","lang","theaters","advocacy","raleigh","stud","fold","threaded","qualify","blair","hopes","cms","mason","diagram","burns","pumps","footwear","vic","beijing","peoples","victor","mario","pos","attach","licenses","utils","removing","advised","spider","phys","ranges","pairs","trails","hudson","isolated","calgary","interim","assisted","divine","approve","chose","compound","abortion","dialog","venues","blast","wellness","calcium","newport","pole","indians","shield","harvest","membrane","prague","previews","locally","pickup","mothers","nascar","iceland","candles","mega","bend","sailing","moms","sacred","morocco","chrome","tommy","refused","brake","exterior","greeting","ecology","oliver","congo","glen","botswana","nav","delays","olive","cyber","verizon","scored","clone","velocity","lambda","relay","composed","tears","oasis","baseline","cab","angry","silicon","compete","ist","lover","belong","honolulu","beatles","lips","pond","rolls","thomson","barnes","malta","daddy","ferry","rabbit","seating","dam","cnn","lil","das","exports","omaha","tire","chad","electron","loads","heather","passport","motel","unions","treasury","warrant","sys","solaris","frozen","occupied","josh","royalty","scales","rally","observer","sunshine","strain","drag","ceremony","somehow","arrested","icq","ripe","yamaha","rely","hebrew","gained","dying","laundry","stuck","solomon","placing","stops","homework","adjust","assessed","enabling","filling","imposed","silence","scsi","focuses","soviet","treaty","vocal","trainer","organ","stronger","volumes","advances","lemon","toxic","dns","darkness","pty","nuts","nail","bizrate","vienna","implied","span","stanford","sox","joke","packing","statute","rejected","satisfy","shelter","chapel","gamespot","layers","guided","bahamas","powell","mixture","bench","univ","tub","rider","radius","logging","hampton","borders","pads","butts","inns","bobby","sheep","railroad","lectures","wines","nursery","harder","cups","ash","cheapest","travesti","stuart","salvador","ali","salad","monroe","tender","foam"];</script>
 
     <script>
+        // 屏蔽浏览器缓存旧 JS 残留的 selectChange 等错误（不影响页面功能）
+        (function() {
+            const old = window.onerror;
+            window.onerror = function(msg, src, line, col, err) {
+                if (msg && (msg.includes('selectChange') || msg.includes('classList'))) return true;
+                return old ? old.apply(this, arguments) : false;
+            };
+        })();
+    </script>
+
+    <script>
         const $ = (sel) => document.querySelector(sel);
         function showToast(msg, type = 'success') {
             const t = $('#toast'), c = $('#toastContent');
@@ -1825,7 +1845,15 @@
             clearTimeout(t._timer); t._timer = setTimeout(() => t.classList.add('hidden'), 2500);
         }
         async function api(url, options = {}) {
-            const res = await fetch(url, { headers: { 'Content-Type': 'application/json', ...options.headers }, ...options });
+            const opts = { ...options };
+            if (opts.body && typeof opts.body === 'object' && !(opts.body instanceof FormData)) {
+                opts.body = JSON.stringify(opts.body);
+            }
+            const headers = { ...(opts.headers || {}) };
+            // GET/HEAD 不带 body 也不带 Content-Type，避免预检
+            const m = (opts.method || 'GET').toUpperCase();
+            if (!['GET', 'HEAD'].includes(m)) headers['Content-Type'] = headers['Content-Type'] || 'application/json';
+            const res = await fetch(url, { credentials: 'include', ...opts, headers });
             return res.json();
         }
         function esc(s) {
@@ -1841,6 +1869,7 @@
             document.getElementById(`page-${page}`).classList.remove('hidden');
             if (page === 'users') loadUsers();
             if (page === 'credentials') { loadCredDatalists(); loadCredentials(); }
+            if (page === 'netip') netIpLoadMyip();
         }
 
         // ==================== 初始化 ====================
@@ -3404,6 +3433,170 @@
         }
 
         // --- IP 查询 ---
+        // 客户端信息（操作系统/浏览器/屏幕/WebRTC/GPU）
+        async function getWebRTCIP(timeoutMs = 3000) {
+            // 异步获取 WebRTC 候选 IP（浏览器策略可能屏蔽）
+            return new Promise((resolve) => {
+                let resolved = false;
+                const done = (val) => { if (!resolved) { resolved = true; resolve(val); } };
+                let pc, candidates = [];
+                try {
+                    // 用 Google STUN 加速 ICE 候选收集
+                    pc = new RTCPeerConnection({
+                        iceServers: [
+                            { urls: 'stun:stun.l.google.com:19302' },
+                            { urls: 'stun:stun1.l.google.com:19302' }
+                        ]
+                    });
+                    pc.createDataChannel('');
+                    pc.onicecandidate = (e) => {
+                        if (e && e.candidate) {
+                            const ipMatch = e.candidate.candidate.match(/(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})/);
+                            if (ipMatch) candidates.push(ipMatch[1]);
+                        } else if (e && e.candidate === null) {
+                            // 收集结束
+                            pc.close();
+                            // 优先返回公网 IP（不含 10./192.168./172. 等内网）
+                            const publicIp = candidates.find(ip => {
+                                const parts = ip.split('.').map(Number);
+                                if (parts[0] === 10 || parts[0] === 192 && parts[1] === 168) return false;
+                                if (parts[0] === 172 && parts[1] >= 16 && parts[1] <= 31) return false;
+                                if (parts[0] === 127) return false;
+                                return true;
+                            });
+                            done(publicIp || candidates[0] || '不可用');
+                        }
+                    };
+                    pc.createOffer().then(offer => pc.setLocalDescription(offer)).catch(() => done('不可用'));
+                } catch (e) {
+                    done('不可用');
+                }
+                setTimeout(() => { if (pc) pc.close(); done(candidates[0] || '不可用'); }, timeoutMs);
+            });
+        }
+
+        async function parseClientInfo() {
+            const ua = navigator.userAgent;
+            let os = '未知', platform = '未知';
+            if (/Windows NT 10/.test(ua)) { os = 'Windows 10/11'; platform = 'Win32'; }
+            else if (/Windows NT 6\.3/.test(ua)) os = 'Windows 8.1';
+            else if (/Windows NT 6\.2/.test(ua)) os = 'Windows 8';
+            else if (/Mac OS X ([\d_]+)/.test(ua)) { const m = ua.match(/Mac OS X ([\d_]+)/); os = 'macOS ' + (m ? m[1].replace(/_/g, '.') : ''); platform = 'MacIntel'; }
+            else if (/Android ([\d.]+)/.test(ua)) { os = 'Android ' + RegExp.$1; platform = 'Linux armv8l'; }
+            else if (/iPhone|iPad/.test(ua)) { os = 'iOS'; platform = 'iPhone'; }
+            else if (/Linux/.test(ua)) { os = 'Linux'; platform = 'Linux x86_64'; }
+            let browser = '未知';
+            const chromeMatch = ua.match(/Chrome\/([\d.]+)/);
+            const edgeMatch = ua.match(/Edg\/([\d.]+)/);
+            const firefoxMatch = ua.match(/Firefox\/([\d.]+)/);
+            const safariMatch = ua.match(/Version\/([\d.]+).*Safari/);
+            if (edgeMatch) browser = 'Edge ' + edgeMatch[1];
+            else if (chromeMatch) browser = 'Chrome ' + chromeMatch[1];
+            else if (firefoxMatch) browser = 'Firefox ' + firefoxMatch[1];
+            else if (safariMatch) browser = 'Safari ' + safariMatch[1];
+            const screenSize = `${screen.width}x${screen.height} @ ${window.devicePixelRatio}x`;
+            const lang = navigator.language || (navigator.languages && navigator.languages[0]) || '-';
+            const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || '-';
+            // WebRTC IP（异步等待）
+            const webrtcIP = await getWebRTCIP(1500);
+            // GPU
+            let gpu = '-';
+            try {
+                const canvas = document.createElement('canvas');
+                const gl = canvas.getContext('webgl') || canvas.getContext('experimental-webgl');
+                if (gl) {
+                    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+                    gpu = ext ? gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) : gl.getParameter(gl.RENDERER);
+                }
+            } catch (e) { /* ignore */ }
+            return { os, platform, browser, screenSize, lang, tz, webrtcIP, gpu };
+        }
+        // 刷新按钮：前端 XHR 重新查询（不 reload 页面，秒返回）
+        function netIpRefresh() {
+            const icon = $('#netIpRefreshIcon');
+            if (icon) icon.classList.add('animate-spin');
+            // 直接调前端 XHR（XHR 内部有 3 次重试 + 8s 超时）
+            netIpLoadMyip();
+            // 同时刷新设备详情（WebRTC 重新探测）
+            const clientEl = $('#netIpClient');
+            if (clientEl && !clientEl.classList.contains('hidden')) {
+                renderClientCard();
+            }
+            setTimeout(() => icon && icon.classList.remove('animate-spin'), 5000);
+        }
+        function netIpLoadMyip() {
+            const $txt = $('#netIpMyipText');
+            // 如果后端已经预渲染了 IP（不依赖 JS 的兜底），不再重复请求
+            if ($txt.textContent.includes('您的IP地址是')) return;
+            const $retry = $('#netIpMyipRetry');
+            $retry.classList.add('hidden');
+            $txt.textContent = '正在加载您的 IP...';
+            // 用 XHR + 15s 超时 + 3 次重试
+            const attempt = (n) => {
+                const xhr = new XMLHttpRequest();
+                xhr.open('GET', '/api/nettools/myip?_t=' + Date.now(), true);
+                xhr.withCredentials = true;
+                xhr.timeout = 8000;
+                xhr.onload = () => {
+                    if (xhr.status === 200) {
+                        try {
+                            const res = JSON.parse(xhr.responseText);
+                            if (res.code === 0) {
+                                const d = res.data;
+                                const loc = [d.country, d.region, d.city, d.isp].filter(x => x && x !== '-').join(' ');
+                                $txt.innerHTML =
+                                    `您的IP地址是：<a href="javascript:void(0)" onclick="copyText('${esc(d.ip)}')" class="text-blue-600 hover:underline font-medium">${esc(d.ip)}</a> 🔗 来自：${esc(loc || '未知')}`;
+                            } else {
+                                $txt.textContent = '本机 IP 加载失败：' + (res.message || '未知错误');
+                                $retry.classList.remove('hidden');
+                            }
+                        } catch (e) {
+                            $txt.textContent = '本机 IP 加载失败：响应非 JSON';
+                            $retry.classList.remove('hidden');
+                        }
+                    } else if (n > 1) {
+                        setTimeout(() => attempt(n - 1), 800);
+                    } else {
+                        $txt.textContent = '本机 IP 加载失败：HTTP ' + xhr.status;
+                        $retry.classList.remove('hidden');
+                    }
+                };
+                xhr.onerror = () => {
+                    if (n > 1) setTimeout(() => attempt(n - 1), 800);
+                    else { $txt.textContent = '本机 IP 加载失败：网络错误'; $retry.classList.remove('hidden'); }
+                };
+                xhr.ontimeout = () => {
+                    if (n > 1) setTimeout(() => attempt(n - 1), 800);
+                    else { $txt.textContent = '本机 IP 加载失败：请求超时'; $retry.classList.remove('hidden'); }
+                };
+                xhr.send();
+            };
+            attempt(3);
+        }
+
+        // 客户端设备详情（点击按钮展开/收起）
+        function toggleNetIpClient() {
+            const el = $('#netIpClient');
+            if (el.classList.contains('hidden')) {
+                if (!el.innerHTML.trim()) renderClientCard();
+                el.classList.remove('hidden');
+            } else {
+                el.classList.add('hidden');
+            }
+        }
+        async function renderClientCard() {
+            const c = await parseClientInfo();
+            const cells = [
+                ['操作系统', c.os], ['系统平台', c.platform],
+                ['浏览器', c.browser], ['屏幕尺寸', c.screenSize],
+                ['默认语言', c.lang], ['所在时区', c.tz],
+                ['WebRTC IP', c.webrtcIP], ['GPU', c.gpu],
+            ];
+            $('#netIpClient').innerHTML = `<div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-2">${cells.map(([k, v]) =>
+                `<div class="flex text-sm py-1.5 border-b border-gray-200"><span class="w-24 text-gray-500 flex-shrink-0">${k}</span><span class="text-gray-900 break-all flex-1">${esc(v)}</span></div>`
+            ).join('')}</div>`;
+        }
+
         async function netIpQuery() {
             const host = $('#netIpInput').value.trim();
             if (!host) return showToast('请输入 IP 或域名', 'error');
@@ -4352,6 +4545,18 @@
         }
 
         init();
+
+    // 强制版本同步：每次更新 JS 后改 VERSION，旧版本 localStorage 自动 reload
+    (function() {
+        const VERSION = '2026-08-11-v6';
+        try {
+            if (localStorage.getItem('__code_version') !== VERSION) {
+                localStorage.setItem('__code_version', VERSION);
+                console.log('[code] 检测到版本变更，自动重载页面');
+                location.reload();
+            }
+        } catch (e) {}
+    })();
     </script>
 
     <!-- 生成器历史记录弹窗 -->
@@ -4370,5 +4575,8 @@
             <div id="genHistoryModalBody" class="flex-1 overflow-y-auto p-6"></div>
         </div>
     </div>
+
+    <!-- 服务端渲染：本机出口 IP（不依赖 JS 即可显示）+ 构建时间戳 -->
+    <!-- BUILD_TS: {{ build_ts }} / VERSION: 2026-08-11-v3 -->
 </body>
 </html>

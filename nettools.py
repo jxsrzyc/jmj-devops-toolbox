@@ -129,6 +129,103 @@ def _run_cmd(cmd, timeout=15):
 IP_API_URL = "http://ip-api.com/json/{ip}?lang=zh-CN&fields=status,message,country,regionName,city,isp,org,as,asname,lat,lon,timezone,query,reverse,mobile,proxy,hosting"
 
 
+# 中英映射（ip-api.com 的 lang=zh-CN 部分翻译不完整，补充常用）
+LOCALIZE_COUNTRY = {
+    "Singapore": "新加坡", "United States": "美国", "United Kingdom": "英国",
+    "China": "中国", "Hong Kong": "中国香港", "Taiwan": "中国台湾", "Macao": "中国澳门",
+    "Japan": "日本", "South Korea": "韩国", "Korea, Republic of": "韩国",
+    "North Korea": "朝鲜", "Mongolia": "蒙古", "India": "印度", "Pakistan": "巴基斯坦",
+    "Thailand": "泰国", "Vietnam": "越南", "Malaysia": "马来西亚", "Singapore": "新加坡",
+    "Indonesia": "印度尼西亚", "Philippines": "菲律宾", "Cambodia": "柬埔寨",
+    "Myanmar": "缅甸", "Laos": "老挝", "Nepal": "尼泊尔", "Bangladesh": "孟加拉",
+    "Russia": "俄罗斯", "Ukraine": "乌克兰", "Germany": "德国", "France": "法国",
+    "Italy": "意大利", "Spain": "西班牙", "Portugal": "葡萄牙", "Netherlands": "荷兰",
+    "Belgium": "比利时", "Switzerland": "瑞士", "Austria": "奥地利", "Sweden": "瑞典",
+    "Norway": "挪威", "Finland": "芬兰", "Denmark": "丹麦", "Poland": "波兰",
+    "Czech Republic": "捷克", "Czechia": "捷克", "Hungary": "匈牙利", "Greece": "希腊",
+    "Ireland": "爱尔兰", "Iceland": "冰岛", "Turkey": "土耳其", "Israel": "以色列",
+    "Saudi Arabia": "沙特阿拉伯", "United Arab Emirates": "阿联酋", "Iran": "伊朗",
+    "Iraq": "伊拉克", "Egypt": "埃及", "Turkey": "土耳其", "Israel": "以色列",
+    "South Africa": "南非", "Kenya": "肯尼亚", "Nigeria": "尼日利亚",
+    "Australia": "澳大利亚", "New Zealand": "新西兰",
+    "Canada": "加拿大", "Mexico": "墨西哥", "Brazil": "巴西", "Argentina": "阿根廷",
+    "Chile": "智利", "Colombia": "哥伦比亚",
+}
+LOCALIZE_REGION = {
+    # 新加坡行政区
+    "North West": "西北区", "South West": "西南区", "North East": "东北区",
+    "South East": "东南区", "Central": "中部",
+    # 中国（用拼音时大陆省份不需要翻译，但备用）
+    "Beijing": "北京", "Shanghai": "上海", "Tianjin": "天津", "Chongqing": "重庆",
+    # 通用方位
+    "North": "北部", "South": "南部", "East": "东部", "West": "西部",
+    "Northeast": "东北", "Northwest": "西北", "Southeast": "东南", "Southwest": "西南",
+    # 美国州
+    "California": "加利福尼亚", "New York": "纽约", "Texas": "得克萨斯",
+    "Washington": "华盛顿", "Illinois": "伊利诺伊", "Massachusetts": "马萨诸塞",
+    "Virginia": "弗吉尼亚", "Georgia": "乔治亚", "Florida": "佛罗里达",
+    "Oregon": "俄勒冈", "Colorado": "科罗拉多", "Arizona": "亚利桑那",
+    "Nevada": "内华达", "Ohio": "俄亥俄", "Pennsylvania": "宾夕法尼亚",
+    # 英文省份 → 中文（节选）
+    "Guangdong": "广东", "Sichuan": "四川", "Zhejiang": "浙江", "Jiangsu": "江苏",
+    "Shandong": "山东", "Henan": "河南", "Hubei": "湖北", "Hunan": "湖南",
+    "Fujian": "福建", "Anhui": "安徽", "Shanxi": "山西", "Heilongjiang": "黑龙江",
+    "Liaoning": "辽宁", "Jilin": "吉林", "Shaanxi": "陕西", "Gansu": "甘肃",
+    "Yunnan": "云南", "Guangxi": "广西", "Hainan": "海南", "Fujian": "福建",
+    # 日本
+    "Tokyo": "东京都", "Osaka": "大阪府", "Kyoto": "京都府",
+    # 澳大利亚
+    "New South Wales": "新南威尔士", "Victoria": "维多利亚州",
+    "Queensland": "昆士兰", "Western Australia": "西澳大利亚",
+    # 香港十八区
+    "Central and Western": "中西区", "Eastern": "东区", "Wan Chai": "湾仔区",
+    "Yau Tsim Mong": "油尖旺区", "Kowloon City": "九龙城区", "Kwun Tong": "观塘区",
+    "Tsuen Wan": "荃湾区", "Tuen Mun": "屯门区", "Yuen Long": "元朗区",
+    "Northern": "北区", "Sha Tin": "沙田区", "Tai Po": "大埔区",
+    "Sai Kung": "西贡区", "Islands": "离岛区",
+}
+LOCALIZE_CITY = {
+    "Singapore": "新加坡", "Hong Kong": "香港", "Tokyo": "东京", "Osaka": "大阪",
+    "Seoul": "首尔", "Bangkok": "曼谷", "Kuala Lumpur": "吉隆坡", "Jakarta": "雅加达",
+    "Manila": "马尼拉", "Ho Chi Minh City": "胡志明市", "Hanoi": "河内",
+    "Sydney": "悉尼", "Melbourne": "墨尔本", "Brisbane": "布里斯班",
+    "Auckland": "奥克兰", "Wellington": "惠灵顿",
+    "New York": "纽约", "Los Angeles": "洛杉矶", "San Francisco": "旧金山",
+    "Chicago": "芝加哥", "Washington": "华盛顿", "Boston": "波士顿",
+    "Houston": "休斯顿", "Dallas": "达拉斯", "Seattle": "西雅图", "Atlanta": "亚特兰大",
+    "London": "伦敦", "Paris": "巴黎", "Berlin": "柏林", "Munich": "慕尼黑",
+    "Frankfurt": "法兰克福", "Amsterdam": "阿姆斯特丹", "Madrid": "马德里",
+    "Barcelona": "巴塞罗那", "Rome": "罗马", "Milan": "米兰", "Moscow": "莫斯科",
+    "Istanbul": "伊斯坦布尔", "Dubai": "迪拜", "Mumbai": "孟买", "New Delhi": "新德里",
+    "Toronto": "多伦多", "Vancouver": "温哥华", "Montreal": "蒙特利尔",
+    "Mexico City": "墨西哥城", "São Paulo": "圣保罗", "Buenos Aires": "布宜诺斯艾利斯",
+    "Guangzhou": "广州", "Shenzhen": "深圳", "Beijing": "北京", "Shanghai": "上海",
+    "Hangzhou": "杭州", "Nanjing": "南京", "Chengdu": "成都", "Wuhan": "武汉",
+    "Xi'an": "西安", "Tianjin": "天津", "Chongqing": "重庆", "Suzhou": "苏州",
+    "Taipei": "台北",
+}
+
+
+def _localize(value, mapping):
+    """中英映射：命中返回中文，否则保留原值（小写比较避免大小写问题）"""
+    if not value:
+        return value
+    if value in mapping:
+        return mapping[value]
+    # 尝试 Title Case 匹配
+    return mapping.get(value.title(), value)
+
+
+def _localize_geo(data):
+    """对 IP 归属数据中的 country/region/city 做中英转换"""
+    if not isinstance(data, dict):
+        return data
+    data["country"] = _localize(data.get("country", ""), LOCALIZE_COUNTRY)
+    data["region"] = _localize(data.get("region", ""), LOCALIZE_REGION)
+    data["city"] = _localize(data.get("city", ""), LOCALIZE_CITY)
+    return data
+
+
 def ip_lookup(target):
     """查询 IP 归属地（第三方免费 API ip-api.com）"""
     # 支持输入 IP 或域名（域名先解析成 IP）
@@ -152,7 +249,7 @@ def ip_lookup(target):
             data = json.loads(resp.read().decode())
         if data.get("status") != "success":
             return {"code": 1, "message": data.get("message", "查询失败")}
-        return {"code": 0, "data": {
+        result = {
             "ip": data.get("query", ip),
             "country": data.get("country", ""),
             "region": data.get("regionName", ""),
@@ -168,9 +265,89 @@ def ip_lookup(target):
             "mobile": data.get("mobile"),
             "proxy": data.get("proxy"),
             "hosting": data.get("hosting"),
-        }}
+        }
+        _localize_geo(result)
+        return {"code": 0, "data": result}
     except Exception as e:
         return {"code": 1, "message": f"IP 归属查询失败: {str(e)}"}
+
+
+def _fetch_myip_from_cip(timeout=1.5):
+    """通过 cip.cc 获取服务端自身公网 IP（这是浏览器访问服务器时的网络出口 IP）。
+    cip.cc 返回纯文本格式：
+        IP      : 210.184.73.156
+        地址    : 新加坡
+        ...
+    """
+    import re as _re
+    try:
+        req = Request("http://cip.cc", headers={"User-Agent": "Mozilla/5.0 (ops-toolbox)"})
+        with urlopen(req, timeout=timeout) as resp:
+            text = resp.read().decode("utf-8", errors="replace")
+        m = _re.search(r'IP\s*:\s*(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})', text)
+        return m.group(1) if m else None
+    except Exception:
+        return None
+
+
+def _fetch_myip_from_api(ipify_timeout=1.5):
+    """备用：通过 api.ipify.org 获取出口 IP（返回纯文本）"""
+    try:
+        req = Request("https://api.ipify.org", headers={"User-Agent": "Mozilla/5.0 (ops-toolbox)"})
+        with urlopen(req, timeout=ipify_timeout) as resp:
+            return resp.read().decode("utf-8").strip() or None
+    except Exception:
+        return None
+
+
+def _get_egress_ip(request_ip=None):
+    """获取服务端公网出口 IP（并行查询 cip.cc + ipify.org，1.0 秒首返回即停）"""
+    import concurrent.futures
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        f1 = ex.submit(_fetch_myip_from_cip)
+        f2 = ex.submit(_fetch_myip_from_api)
+        # 仅 1.0 秒首返回即停（不卡 HTML 加载）
+        done, _ = concurrent.futures.wait(
+            [f1, f2],
+            timeout=1.0,
+            return_when=concurrent.futures.FIRST_COMPLETED
+        )
+        for fut in done:
+            try:
+                ip = fut.result()
+                if ip:
+                    return ip, 'cip.cc/ipify.org'
+            except Exception:
+                continue
+    # 兜底：返回 remote_addr（让前端 JS 后续 XHR 重新查询）
+    return (request_ip or '').strip() or None, 'X-Forwarded-For/remote_addr'
+
+
+def myip_lookup(ip):
+    """本机出口 IP 查询
+    1. 服务端主动访问 cip.cc / ipify.org 拿公网 IP（这是浏览器访问服务器时的真实出口 IP）
+    2. 失败则回退 X-Forwarded-For / remote_addr
+    3. 用 ip-api.com 查归属信息
+    """
+    public_ip, _src = _get_egress_ip(ip)
+    if not public_ip:
+        return {"code": 1, "message": "无法获取出口 IP（cip.cc / ipify.org 都不可用）"}
+    ip = public_ip
+    # 内网 IP（127.0.0.1 / 192.168.x.x 等）直接标记
+    try:
+        addr = ipaddress.ip_address(ip)
+        if addr.is_loopback or addr.is_private or addr.is_link_local or addr.is_unspecified:
+            return {"code": 0, "data": {
+                "ip": ip, "country": "内网/本地", "region": "-", "city": "-",
+                "isp": "本地回环/内网地址", "org": "内网", "as": "-", "asname": "-",
+                "lat": None, "lon": None, "timezone": "-",
+                "reverse": "-", "mobile": False, "proxy": False, "hosting": False,
+                "_internal": True,
+            }}
+    except ValueError:
+        return {"code": 1, "message": "客户端 IP 格式异常"}
+    # 公网 IP：走标准 ip_lookup
+    return ip_lookup(ip)
 
 
 # ==================== 2. PING 检测 ====================
