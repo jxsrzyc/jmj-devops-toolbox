@@ -201,6 +201,48 @@ def _init_db_sqlite():
         conn.execute("CREATE INDEX IF NOT EXISTS idx_domains_root ON domains(root_domain);")
         conn.execute("CREATE INDEX IF NOT EXISTS idx_domains_domain ON domains(domain_name);")
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS business_links (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(100) NOT NULL,
+                url VARCHAR(500) NOT NULL,
+                category VARCHAR(50) DEFAULT '云平台',
+                description VARCHAR(200) DEFAULT '',
+                color VARCHAR(7) DEFAULT '',
+                sort_order INT DEFAULT 0,
+                is_active INT DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_bizlinks_category ON business_links(category);")
+        # 兼容旧库
+        link_cols = [r["name"] for r in conn.execute("PRAGMA table_info(business_links)").fetchall()]
+        if "color" not in link_cols:
+            conn.execute("ALTER TABLE business_links ADD COLUMN color VARCHAR(7) DEFAULT ''")
+            conn.commit()
+        # 业务分类顺序表（管理员可手动维护类目顺序）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bizlink_categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name VARCHAR(50) NOT NULL UNIQUE,
+                sort_order INT DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        # 从 business_links 自动填充首次类目
+        existing_cats = conn.execute("SELECT COUNT(*) AS cnt FROM bizlink_categories").fetchone()["cnt"]
+        if existing_cats == 0:
+            distinct = conn.execute(
+                "SELECT DISTINCT category FROM business_links WHERE category != '' ORDER BY category"
+            ).fetchall()
+            for i, row in enumerate(distinct):
+                conn.execute(
+                    "INSERT OR IGNORE INTO bizlink_categories (name, sort_order) VALUES (?, ?)",
+                    (row["category"], (i + 1) * 10)
+                )
+            if distinct:
+                conn.commit()
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS ci_orders (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 delivery_service TEXT NOT NULL,
@@ -256,6 +298,11 @@ def _init_db_sqlite():
             if col not in cred_cols:
                 conn.execute(f"ALTER TABLE service_credentials ADD COLUMN {col} {ddl}")
                 conn.commit()
+        # 兼容旧库：business_links 补充 color 列（自定义图标颜色）
+        link_cols = [r["name"] for r in conn.execute("PRAGMA table_info(business_links)").fetchall()]
+        if "color" not in link_cols:
+            conn.execute("ALTER TABLE business_links ADD COLUMN color VARCHAR(7) DEFAULT ''")
+            conn.commit()
 
 
 # ---------- MySQL 建表 ----------
@@ -268,6 +315,18 @@ def _mysql_ensure_index(conn, table, index, column_sql):
     ).fetchone()
     if row and row["cnt"] == 0:
         conn.execute(f"CREATE INDEX {index} ON {table} ({column_sql})")
+
+
+def _mysql_ensure_column(conn, table, column, ddl):
+    """MySQL 兼容旧库：列不存在则 ALTER TABLE ADD COLUMN
+    ddl 例：'VARCHAR(7) DEFAULT \'\''
+    """
+    row = conn.execute(
+        "SELECT COUNT(*) AS cnt FROM information_schema.columns WHERE table_schema=%s AND table_name=%s AND column_name=%s",
+        (DB_NAME, table, column)
+    ).fetchone()
+    if row and row["cnt"] == 0:
+        conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}")
 
 
 def _init_db_mysql():
@@ -347,6 +406,45 @@ def _init_db_mysql():
         """)
         _mysql_ensure_index(conn, "domains", "idx_domains_root", "root_domain")
         _mysql_ensure_index(conn, "domains", "idx_domains_domain", "domain_name")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS business_links (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL,
+                url VARCHAR(500) NOT NULL,
+                category VARCHAR(50) DEFAULT '云平台',
+                description VARCHAR(200) DEFAULT '',
+                color VARCHAR(7) DEFAULT '',
+                sort_order INT DEFAULT 0,
+                is_active TINYINT DEFAULT 1,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "business_links", "idx_bizlinks_category", "category")
+        # 兼容旧库
+        _mysql_ensure_column(conn, "business_links", "color", "VARCHAR(7) DEFAULT ''")
+        # 业务分类顺序表
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS bizlink_categories (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(50) NOT NULL UNIQUE,
+                sort_order INT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        # 自动填充首次类目
+        existing_cats = conn.execute("SELECT COUNT(*) AS cnt FROM bizlink_categories").fetchone()["cnt"]
+        if existing_cats == 0:
+            distinct = conn.execute(
+                "SELECT DISTINCT category FROM business_links WHERE category != '' ORDER BY category"
+            ).fetchall()
+            for i, row in enumerate(distinct):
+                conn.execute(
+                    "INSERT IGNORE INTO bizlink_categories (name, sort_order) VALUES (%s, %s)",
+                    (row["category"], (i + 1) * 10)
+                )
+            if distinct:
+                conn.commit()
         conn.execute("""
             CREATE TABLE IF NOT EXISTS ci_orders (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -677,6 +775,169 @@ class Database:
             cursor = conn.execute("DELETE FROM domains WHERE id=?", (did,))
             conn.commit()
             return cursor.rowcount > 0
+
+    # ---------- business_links（业务跳转） ----------
+    def get_all_links(self, keyword="", category="", active_only=True):
+        conditions, params = [], []
+        if active_only:
+            conditions.append("is_active = 1")
+        if keyword:
+            conditions.append("(name LIKE ? OR description LIKE ? OR url LIKE ?)")
+            params += [f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"]
+        if category:
+            conditions.append("category = ?")
+            params.append(category)
+        where = " WHERE " + " AND ".join(conditions) if conditions else ""
+        with get_conn() as conn:
+            rows = conn.execute(
+                f"SELECT * FROM business_links{where} ORDER BY sort_order, id", params
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_link_categories(self):
+        """按管理员配置的 sort_order 返回所有已用分类（如无配置则按字典序）"""
+        with get_conn() as conn:
+            rows = conn.execute(
+                "SELECT name FROM bizlink_categories WHERE name IN "
+                "(SELECT DISTINCT category FROM business_links WHERE category != '') "
+                "ORDER BY sort_order, name"
+            ).fetchall()
+            result = [r["name"] for r in rows if r["name"]]
+            # 兜底：若 bizlink_categories 为空（极少见），退回到 dictinct
+            if not result:
+                rows = conn.execute(
+                    "SELECT DISTINCT category FROM business_links WHERE category != '' ORDER BY category"
+                ).fetchall()
+                result = [r["category"] for r in rows if r["category"]]
+            return result
+
+    def ensure_category(self, name):
+        """新增链接时自动登记分类（不覆盖已存在的 sort_order）"""
+        if not name:
+            return
+        with get_conn() as conn:
+            row = conn.execute("SELECT id FROM bizlink_categories WHERE name=?", (name,)).fetchone()
+            if row:
+                return  # 已存在 → 不动
+            # 新分类：追加到末尾（MAX(sort_order) + 10）
+            max_row = conn.execute("SELECT COALESCE(MAX(sort_order), 0) AS m FROM bizlink_categories").fetchone()
+            max_sort = int(max_row["m"]) if max_row else 0
+            conn.execute(
+                "INSERT INTO bizlink_categories (name, sort_order) VALUES (%s, %s)" if False
+                else "INSERT INTO bizlink_categories (name, sort_order) VALUES (?, ?)",
+                (name, max_sort + 10)
+            )
+            conn.commit()
+
+    def reorder_categories(self, items):
+        """批量更新分类顺序 items = [{'name': str, 'sort_order': int}, ...]"""
+        with get_conn() as conn:
+            for item in items:
+                conn.execute(
+                    "UPDATE bizlink_categories SET sort_order=? WHERE name=?",
+                    (int(item["sort_order"]), str(item["name"]))
+                )
+            conn.commit()
+        return True
+
+    def get_link_by_id(self, lid):
+        with get_conn() as conn:
+            row = conn.execute("SELECT * FROM business_links WHERE id=?", (lid,)).fetchone()
+            return dict(row) if row else None
+
+    def create_link(self, **fields):
+        allowed = ["name", "url", "category", "description", "color", "sort_order", "is_active"]
+        vals = [fields.get(f, "") for f in allowed]
+        # 类型加固：is_active 默认 1，sort_order 默认 0（注意不能用 or 判断，0 是 falsy）
+        for f in ("is_active", "sort_order"):
+            idx = allowed.index(f)
+            if vals[idx] is None or vals[idx] == "":
+                vals[idx] = 1 if f == "is_active" else 0
+            else:
+                vals[idx] = int(vals[idx])
+        with get_conn() as conn:
+            cursor = conn.execute(
+                f"INSERT INTO business_links ({','.join(allowed)}) VALUES ({','.join(['?']*len(allowed))})",
+                vals
+            )
+            conn.commit()
+            # 自动登记分类
+            cat = vals[allowed.index("category")]
+            if cat:
+                self.ensure_category(cat)
+            return cursor.lastrowid
+
+    def update_link(self, lid, **fields):
+        allowed = ["name", "url", "category", "description", "color", "sort_order", "is_active"]
+        updates = {k: v for k, v in fields.items() if k in allowed}
+        if not updates: return False
+        # 类型加固（不能用 or 判断，0 是 falsy）
+        for k in list(updates):
+            if k == "is_active":
+                updates[k] = 1 if updates[k] is None or updates[k] == "" else int(updates[k])
+            elif k == "sort_order":
+                updates[k] = 0 if updates[k] is None or updates[k] == "" else int(updates[k])
+        set_clause = ", ".join(f"{k}=?" for k in updates)
+        with get_conn() as conn:
+            cursor = conn.execute(
+                f"UPDATE business_links SET {set_clause}, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                list(updates.values()) + [lid]
+            )
+            conn.commit()
+            # 编辑后登记新分类（如果有的话）
+            new_cat = updates.get("category")
+            if new_cat:
+                self.ensure_category(new_cat)
+            return cursor.rowcount > 0
+
+    def reorder_links(self, items):
+        """批量更新排序：items = [{'id': int, 'sort_order': int}, ...]"""
+        with get_conn() as conn:
+            for item in items:
+                conn.execute(
+                    "UPDATE business_links SET sort_order=?, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                    (int(item["sort_order"]), int(item["id"]))
+                )
+            conn.commit()
+        return True
+
+    def delete_link(self, lid):
+        with get_conn() as conn:
+            cursor = conn.execute("DELETE FROM business_links WHERE id=?", (lid,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def upsert_link_by_name(self, name, **fields):
+        """按 name 幂等创建/更新（预置站点导入用）"""
+        with get_conn() as conn:
+            row = conn.execute("SELECT id FROM business_links WHERE name=?", (name,)).fetchone()
+            if row:
+                allowed = ["url", "category", "description", "color", "sort_order", "is_active"]
+                updates = {k: v for k, v in fields.items() if k in allowed}
+                if updates:
+                    set_clause = ", ".join(f"{k}=?" for k in updates)
+                    conn.execute(
+                        f"UPDATE business_links SET {set_clause}, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                        list(updates.values()) + [row["id"]]
+                    )
+                conn.commit()
+                if updates.get("category"):
+                    self.ensure_category(updates["category"])
+                return row["id"]
+            vals = {k: fields.get(k, "") for k in ["url", "category", "description", "color", "sort_order", "is_active"]}
+            # 缺省值：is_active 默认 1，sort_order 默认 0（不能用 or 判断，0 是 falsy）
+            vals["is_active"] = 1 if vals.get("is_active") is None or str(vals.get("is_active", "")) == "" else int(vals["is_active"])
+            vals["sort_order"] = 0 if vals.get("sort_order") is None or str(vals.get("sort_order", "")) == "" else int(vals["sort_order"])
+            vals["name"] = name
+            cursor = conn.execute(
+                "INSERT INTO business_links (name,url,category,description,color,sort_order,is_active) "
+                "VALUES (?,?,?,?,?,?,?)",
+                [vals["name"], vals["url"], vals["category"], vals["description"], vals.get("color", ""), vals["sort_order"], vals["is_active"]]
+            )
+            conn.commit()
+            if vals["category"]:
+                self.ensure_category(vals["category"])
+            return cursor.lastrowid
 
     def get_domain_types(self, root_domain=""):
         with get_conn() as conn:

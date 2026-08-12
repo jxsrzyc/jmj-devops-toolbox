@@ -442,6 +442,170 @@ def get_regions():
     return jsonify({"code": 0, "data": regions})
 
 
+# ==================== 业务跳转 links ====================
+import re as _re
+
+PRESET_LINKS = [
+    {"name": "阿里云", "url": "https://account.aliyun.com/login/login.htm",
+     "category": "云平台", "description": "阿里云控制台", "sort_order": 1},
+    {"name": "腾讯云", "url": "https://cloud.tencent.com/login/subAccount",
+     "category": "云平台", "description": "腾讯云子账号登录", "sort_order": 2},
+    {"name": "观测云", "url": "https://cn4-auth.guance.com/login/pwd",
+     "category": "云平台", "description": "观测云监控平台", "sort_order": 3},
+    {"name": "华为云", "url": "https://auth.huaweicloud.com/authui/login.html#/login",
+     "category": "云平台", "description": "华为云控制台", "sort_order": 4},
+    {"name": "AWS", "url": "https://us-east-2.signin.aws.amazon.com/oauth?client_id=arn%3Aaws%3Asignin%3A%3A%3Aconsole%2Fcanvas&code_challenge=K2dbVGU8SuIFy5-ifD2GSr4cMrcJ07b2jG333kNzm3E&code_challenge_method=SHA-256&response_type=code&redirect_uri=https%3A%2F%2Fconsole.aws.amazon.com%2Fconsole%2Fhome%3Fca-oauth-flow-id%3D2d71%26hashArgs%3D%2523%26isauthcode%3Dtrue%26nc2%3Dh_si%26oauthStart%3D1786505214884%26src%3Dheader-signin%26state%3DhashArgsFromTB_us-east-2_19174b4af576a4b3",
+     "category": "云平台", "description": "AWS 控制台 (us-east-2)", "sort_order": 5},
+    {"name": "蓝鲸", "url": "https://bkce7.datousoft.com/login",
+     "category": "运维平台", "description": "蓝鲸智云 PaaS", "sort_order": 6},
+    {"name": "Jarvis", "url": "https://jarvis.jmj1995.com",
+     "category": "内部系统", "description": "Jarvis 内部系统", "sort_order": 7},
+]
+
+
+def _valid_link_url(url):
+    """URL 白名单校验：仅 http/https，防 javascript: 等协议注入"""
+    if not url or len(url) > 500:
+        return False
+    return bool(_re.match(r"^https?://", url, _re.I))
+
+
+def _valid_link_color(color):
+    """图标颜色校验：HEX 颜色 (#RRGGBB) 或渐变 CSS class），或空字符串"""
+    if not color:
+        return True
+    if len(color) > 100:
+        return False
+    if color.startswith("#"):
+        return bool(_re.match(r"^#[0-9A-Fa-f]{6}$", color))
+    return False
+
+
+@app.route("/api/links", methods=["GET"])
+@login_required
+def get_links():
+    """获取业务跳转链接列表（所有登录用户）"""
+    keyword = request.args.get("keyword", "").strip()
+    category = request.args.get("category", "").strip()
+    include_inactive = request.args.get("all", "") == "1"
+    data = db.get_all_links(keyword=keyword, category=category, active_only=not include_inactive)
+    return jsonify({"code": 0, "data": data})
+
+
+@app.route("/api/links/categories", methods=["GET"])
+@login_required
+def get_link_categories():
+    return jsonify({"code": 0, "data": db.get_link_categories()})
+
+
+@app.route("/api/links", methods=["POST"])
+@require_perm("admin")
+def create_link():
+    """新增链接（管理员）"""
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()
+    url = str(body.get("url", "")).strip()
+    if not name or not url:
+        return jsonify({"code": 1, "message": "名称和 URL 必填"})
+    if not _valid_link_url(url):
+        return jsonify({"code": 1, "message": "URL 必须以 http:// 或 https:// 开头"})
+    color = str(body.get("color", "")).strip()
+    if not _valid_link_color(color):
+        return jsonify({"code": 1, "message": "颜色格式无效（需 #RRGGBB）"})
+    lid = db.create_link(
+        name=name, url=url,
+        category=str(body.get("category", "云平台")).strip() or "云平台",
+        description=str(body.get("description", "")).strip(),
+        color=color,
+        sort_order=int(body.get("sort_order", 0) or 0),
+        is_active=1 if body.get("is_active", True) else 0,
+    )
+    return jsonify({"code": 0, "data": {"id": lid}, "message": "链接已添加"})
+
+
+@app.route("/api/links/<int:lid>", methods=["PUT"])
+@require_perm("admin")
+def update_link(lid):
+    """更新链接（管理员）"""
+    body = request.get_json(silent=True) or {}
+    if "url" in body and body["url"]:
+        if not _valid_link_url(str(body["url"])):
+            return jsonify({"code": 1, "message": "URL 必须以 http:// 或 https:// 开头"})
+    if "color" in body and not _valid_link_color(str(body["color"] or "")):
+        return jsonify({"code": 1, "message": "颜色格式无效（需 #RRGGBB）"})
+    fields = {}
+    for k in ["name", "url", "category", "description", "color"]:
+        if k in body:
+            fields[k] = str(body[k]).strip()
+    if "sort_order" in body:
+        fields["sort_order"] = int(body["sort_order"] or 0)
+    if "is_active" in body:
+        fields["is_active"] = 1 if body["is_active"] else 0
+    if not fields:
+        return jsonify({"code": 1, "message": "无更新字段"})
+    ok = db.update_link(lid, **fields)
+    return jsonify({"code": 0 if ok else 1, "message": "已更新" if ok else "链接不存在"})
+
+
+@app.route("/api/links/reorder", methods=["POST"])
+@require_perm("admin")
+def reorder_links():
+    """批量重排（拖拽排序）items = [{'id': int, 'sort_order': int}]"""
+    body = request.get_json(silent=True) or {}
+    items = body.get("items", [])
+    if not isinstance(items, list) or not items:
+        return jsonify({"code": 1, "message": "items 必填且非空"})
+    try:
+        normalized = [{"id": int(i["id"]), "sort_order": int(i["sort_order"])} for i in items]
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"code": 1, "message": "items 格式错误（需 id + sort_order）"})
+    db.reorder_links(normalized)
+    return jsonify({"code": 0, "message": f"已更新 {len(normalized)} 条排序"})
+
+
+@app.route("/api/links/categories/reorder", methods=["POST"])
+@require_perm("admin")
+def reorder_link_categories():
+    """批量重排分类顺序 items = [{'name': str, 'sort_order': int}, ...]"""
+    body = request.get_json(silent=True) or {}
+    items = body.get("items", [])
+    if not isinstance(items, list) or not items:
+        return jsonify({"code": 1, "message": "items 必填且非空"})
+    try:
+        normalized = [{"name": str(i["name"]).strip(), "sort_order": int(i["sort_order"])} for i in items]
+    except (KeyError, TypeError, ValueError):
+        return jsonify({"code": 1, "message": "items 格式错误（需 name + sort_order）"})
+    db.reorder_categories(normalized)
+    return jsonify({"code": 0, "message": f"已更新 {len(normalized)} 个分类顺序"})
+
+
+@app.route("/api/links/<int:lid>", methods=["DELETE"])
+@require_perm("admin")
+def delete_link(lid):
+    """删除链接（管理员）"""
+    ok = db.delete_link(lid)
+    return jsonify({"code": 0 if ok else 1, "message": "已删除" if ok else "链接不存在"})
+
+
+@app.route("/api/links/import-preset", methods=["POST"])
+@require_perm("admin")
+def import_preset_links():
+    """导入预置站点（幂等：按 name upsert）"""
+    added = updated = 0
+    for item in PRESET_LINKS:
+        row = db.get_all_links(keyword=item["name"], active_only=False)
+        exists = any(l["name"] == item["name"] for l in row)
+        db.upsert_link_by_name(
+            item["name"], url=item["url"], category=item["category"],
+            description=item["description"], sort_order=item["sort_order"], is_active=1
+        )
+        if exists:
+            updated += 1
+        else:
+            added += 1
+    return jsonify({"code": 0, "message": f"预置站点导入完成：新增 {added}，更新 {updated}"})
+
+
 @app.route("/api/domains/import", methods=["POST"])
 def import_domains():
     """从 Excel 导入域名数据（读取全部子表）"""
