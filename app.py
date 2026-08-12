@@ -33,29 +33,10 @@ EXCEL_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", ".."
 @app.route("/")
 @login_required
 def index():
-    """首页 — 已登录才能访问"""
+    """首页 — 已登录才能访问（关键优化：不预渲染本机 IP，避免 cip.cc / ip-api 阻塞首屏）"""
     ctx = get_user_context()
-    # 服务端预渲染本机出口 IP（避免依赖前端 JS）—— 限时 1.0s
-    eip = None
-    try:
-        from nettools import _get_egress_ip
-        ip, _src = _get_egress_ip(request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr)
-        if ip:
-            # 单次查归属（ip-api 5s 超时自己控制）
-            r = nettools.myip_lookup(ip)
-            if r.get("code") == 0:
-                d = r["data"]
-                eip = {
-                    "ip": d.get("ip", ""),
-                    "country": d.get("country", "") or "-",
-                    "region": d.get("region", "") or "-",
-                    "city": d.get("city", "") or "-",
-                    "isp": d.get("isp", "") or "-",
-                    "source": d.get("_internal", False) and "内网" or "cip.cc/ipify.org",
-                }
-    except Exception:
-        eip = None
-    ctx["egress_ip"] = eip
+    # IP 由前端 JS 异步加载（XHR /api/nettools/myip），首屏立即返回
+    ctx["egress_ip"] = None
     ctx["build_ts"] = __import__("datetime").datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     return render_template("index.html", **ctx)
 

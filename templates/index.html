@@ -4,10 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>运维工具箱</title>
-    <!-- Favicon -->
-    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/favicon-cow.png">
-    <link rel="icon" type="image/x-icon" href="/static/icons/favicon.ico">
-    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png">
+    <!-- Favicon：运维工具箱（齿轮 + 扳手） -->
+    <link rel="icon" type="image/svg+xml" href="/static/icons/favicon-toolbox.svg">
+    <link rel="icon" type="image/png" sizes="192x192" href="/static/icons/favicon-toolbox.png">
+    <link rel="icon" type="image/x-icon" href="/static/icons/favicon-toolbox.ico">
+    <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/favicon-toolbox.png">
     <meta name="theme-color" content="#3b82f6">
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
@@ -1269,24 +1270,36 @@
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <label class="text-xs font-medium text-gray-500">文本 A</label>
-                            <label class="text-xs text-blue-600 cursor-pointer hover:underline">上传文件<input type="file" id="utDiffFileA" class="hidden" accept=".txt,.log,.conf,.yaml,.yml,.json,.md,.csv"></label>
+                            <div class="flex items-center gap-3">
+                                <label class="text-xs text-blue-600 cursor-pointer hover:underline">上传文件<input type="file" id="utDiffFileA" class="hidden" accept=".txt,.log,.conf,.yaml,.yml,.json,.md,.csv"></label>
+                                <span class="text-[11px] text-gray-400">相同 <b class="text-gray-600">0</b> · 删除 <b class="text-red-500">0</b></span>
+                            </div>
                         </div>
                         <textarea id="utDiffA" rows="10" placeholder="粘贴文本 A 或上传文件..." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                        <!-- 高亮视图（比较后显示） -->
+                        <div id="utDiffViewA" class="hidden border border-gray-200 rounded-lg overflow-y-auto max-h-[300px] bg-white text-sm font-mono leading-relaxed"></div>
                     </div>
                     <div>
                         <div class="flex items-center justify-between mb-1">
                             <label class="text-xs font-medium text-gray-500">文本 B</label>
-                            <label class="text-xs text-blue-600 cursor-pointer hover:underline">上传文件<input type="file" id="utDiffFileB" class="hidden" accept=".txt,.log,.conf,.yaml,.yml,.json,.md,.csv"></label>
+                            <div class="flex items-center gap-3">
+                                <label class="text-xs text-blue-600 cursor-pointer hover:underline">上传文件<input type="file" id="utDiffFileB" class="hidden" accept=".txt,.log,.conf,.yaml,.yml,.json,.md,.csv"></label>
+                                <span class="text-[11px] text-gray-400">相同 <b class="text-gray-600">0</b> · 新增 <b class="text-green-600">0</b></span>
+                            </div>
                         </div>
                         <textarea id="utDiffB" rows="10" placeholder="粘贴文本 B 或上传文件..." class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                        <!-- 高亮视图（比较后显示） -->
+                        <div id="utDiffViewB" class="hidden border border-gray-200 rounded-lg overflow-y-auto max-h-[300px] bg-white text-sm font-mono leading-relaxed"></div>
                     </div>
                 </div>
                 <div class="flex flex-wrap items-center gap-4 mt-3">
                     <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDiffTrim" class="rounded"> 忽略行首尾空白</label>
                     <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDiffCase" class="rounded"> 忽略大小写</label>
                     <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDiffOnlyDiff" class="rounded"> 仅显示差异行</label>
+                    <label class="flex items-center gap-1.5 text-sm text-gray-600"><input type="checkbox" id="utDiffInline" class="rounded" checked> 字符级高亮差异</label>
                     <button onclick="utDiffRun()" class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700">比较</button>
                     <button onclick="utDiffSwap()" class="px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">A ⇄ B 对调</button>
+                    <button id="utDiffEditBtn" onclick="utDiffBackToEdit()" class="hidden px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-100 border border-amber-200">✎ 恢复编辑</button>
                 </div>
             </div>
             <div id="utDiffResult" class="flex-1"></div>
@@ -4180,12 +4193,19 @@
         async function utDiffRun() {
             const a = $('#utDiffA').value, b = $('#utDiffB').value;
             if (!a.trim() && !b.trim()) return showToast('请输入或上传文本', 'error');
-            const trim = $('#utDiffTrim').checked, caseIns = $('#utDiffCase').checked, onlyDiff = $('#utDiffOnlyDiff').checked;
+            const trim = $('#utDiffTrim').checked, caseIns = $('#utDiffCase').checked,
+                  onlyDiff = $('#utDiffOnlyDiff').checked, inline = $('#utDiffInline').checked;
             const aLines = a.replace(/\r\n/g, '\n').split('\n');
             const bLines = b.replace(/\r\n/g, '\n').split('\n');
             const diff = lcsDiff(aLines, bLines, trim, caseIns);
             const stats = { same: 0, del: 0, add: 0 };
             diff.forEach(d => stats[d.type]++);
+
+            // ===== 1. 文本框内高亮视图（替换 textarea） =====
+            renderUtDiffViews(aLines, bLines, diff, trim, caseIns, inline, onlyDiff);
+            $('#utDiffEditBtn').classList.remove('hidden');
+
+            // ===== 2. 下方完整 diff 结果 =====
             const rows = diff.filter(d => !onlyDiff || d.type !== 'same').map(d => {
                 const cls = d.type === 'same' ? 'bg-white text-gray-700' : d.type === 'del' ? 'bg-red-50 text-red-700' : 'bg-green-50 text-green-700';
                 const prefix = d.type === 'same' ? '  ' : d.type === 'del' ? '─' : '+';
@@ -4200,6 +4220,172 @@
                     <button onclick="copyText(this.dataset.t)" data-t="${esc(JSON.stringify(diff.filter(d => d.type === 'del' || d.type === 'add').map(d => d.text).join('\n')))}" class="ml-auto px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border border-gray-300">复制差异</button>
                 </div>
                 <div class="border border-gray-200 rounded-lg overflow-y-auto max-h-[50vh]">${rows || '<p class="p-4 text-gray-400 text-sm">两文本完全相同</p>'}</div>`);
+        }
+
+        // ===== 文本框内高亮视图 =====
+        // 字符级 LCS：返回 a/b 中差异字符的区间
+        function utDiffCharMarks(a, b) {
+            const n = a.length, m = b.length;
+            const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
+            for (let i = n - 1; i >= 0; i--)
+                for (let j = m - 1; j >= 0; j--)
+                    dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
+            const marksA = [], marksB = [];
+            let i = 0, j = 0;
+            while (i < n && j < m) {
+                if (a[i] === b[j]) { i++; j++; }
+                else if (dp[i + 1][j] >= dp[i][j + 1]) { marksA.push([i, i + 1]); i++; }
+                else { marksB.push([j, j + 1]); j++; }
+            }
+            while (i < n) { marksA.push([i, i + 1]); i++; }
+            while (j < m) { marksB.push([j, j + 1]); j++; }
+            // 合并相邻区间
+            const merge = (ms) => {
+                if (!ms.length) return [];
+                ms.sort((x, y) => x[0] - y[0]);
+                const out = [ms[0].slice()];
+                for (let k = 1; k < ms.length; k++) {
+                    const last = out[out.length - 1];
+                    if (ms[k][0] <= last[1]) last[1] = Math.max(last[1], ms[k][1]);
+                    else out.push(ms[k].slice());
+                }
+                return out;
+            };
+            return { a: merge(marksA), b: merge(marksB) };
+        }
+
+        // 构建带 mark 的 HTML 行
+        function utDiffHighlightText(text, marks, markCls) {
+            if (!marks || !marks.length) return esc(text);
+            let html = '';
+            let last = 0;
+            for (const [s, e] of marks) {
+                if (s > last) html += esc(text.slice(last, s));
+                html += `<mark class="${markCls}">${esc(text.slice(s, e)) || ' '}</mark>`;
+                last = e;
+            }
+            html += esc(text.slice(last));
+            return html;
+        }
+
+        // 构造并排对齐的显示行：每行 [aLine|null, bLine|null, type]
+        // type: same | del(仅左) | add(仅右) | mod(左右都有，配对做字符级 diff)
+        function utDiffBuildRows(diff) {
+            const rows = [];
+            let i = 0;
+            while (i < diff.length) {
+                const d = diff[i];
+                if (d.type === 'same') {
+                    rows.push({ a: d, b: d, type: 'same' });
+                    i++;
+                } else {
+                    // 收集连续的 del/add 块（处理 1:1 / 1:N / N:1 / N:M）
+                    const dels = [], adds = [];
+                    while (i < diff.length && diff[i].type !== 'same') {
+                        if (diff[i].type === 'del') dels.push(diff[i]);
+                        else adds.push(diff[i]);
+                        i++;
+                    }
+                    const n = Math.max(dels.length, adds.length);
+                    for (let j = 0; j < n; j++) {
+                        const dl = dels[j] || null;
+                        const al = adds[j] || null;
+                        rows.push({
+                            a: dl,
+                            b: al,
+                            type: dl && al ? 'mod' : (dl ? 'del' : 'add'),
+                            _pairDel: dl,
+                            _pairAdd: al,
+                        });
+                    }
+                }
+            }
+            // 行号
+            let aNo = 1, bNo = 1;
+            rows.forEach(r => {
+                r.lineA = r.a ? aNo++ : '';
+                r.lineB = r.b ? bNo++ : '';
+            });
+            return rows;
+        }
+
+        // 渲染一行（A 或 B 列）
+        function utDiffRenderRow(r, side) {
+            // side: 'a' 或 'b'
+            const line = side === 'a' ? r.a : r.b;
+            const lineNo = side === 'a' ? r.lineA : r.lineB;
+            let bgCls = 'bg-white', textCls = 'text-gray-700', marks = null, markCls = '';
+            // 字符级 mark（仅 mod 行 + 有内容侧）
+            if (r.type === 'mod' && line && r._pairDel && r._pairAdd) {
+                const m = utDiffCharMarks(r._pairDel.text, r._pairAdd.text);
+                if (side === 'a') { marks = m.a; markCls = 'bg-red-300 text-red-900 rounded px-0.5'; }
+                else { marks = m.b; markCls = 'bg-green-300 text-green-900 rounded px-0.5'; }
+            }
+            // 整行背景色 + 行号颜色
+            let noCls = 'text-gray-400';
+            if (r.type === 'del' && side === 'a') { bgCls = 'bg-red-50'; noCls = 'text-red-400'; }
+            if (r.type === 'add' && side === 'b') { bgCls = 'bg-green-50'; noCls = 'text-green-500'; }
+            if (r.type === 'mod' && side === 'a') { bgCls = 'bg-red-50'; noCls = 'text-red-400'; }
+            if (r.type === 'mod' && side === 'b') { bgCls = 'bg-green-50'; noCls = 'text-green-500'; }
+            // 占位符（无内容的行显示斜线纹理）
+            const body = line
+                ? `<span class="flex-1 whitespace-pre-wrap break-all">${utDiffHighlightText(line.text, marks, markCls)}</span>`
+                : `<span class="flex-1 select-none text-gray-300" style="background: repeating-linear-gradient(45deg, transparent, transparent 4px, rgba(0,0,0,0.06) 4px, rgba(0,0,0,0.06) 8px);">&nbsp;</span>`;
+            // 仅 A 列显示行号（前 8 字符）；B 列无行号
+            const noCol = side === 'a'
+                ? `<span class="w-8 flex-shrink-0 select-none text-right pr-2 ${noCls}">${lineNo}</span>`
+                : `<span class="w-8 flex-shrink-0"></span>`;
+            // 前缀符号（A 列 − 删除 / B 列 + 新增 / 其他空格）
+            let signChar = '&nbsp;';
+            let signCls = 'text-gray-300';
+            if (side === 'a' && r.type === 'del') { signChar = '−'; signCls = 'text-red-500'; }
+            else if (side === 'a' && r.type === 'mod') { signChar = '−'; signCls = 'text-red-500'; }
+            else if (side === 'b' && r.type === 'add') { signChar = '+'; signCls = 'text-green-600'; }
+            else if (side === 'b' && r.type === 'mod') { signChar = '+'; signCls = 'text-green-600'; }
+            if (!line) signChar = '&nbsp;';
+            const sign = `<span class="w-4 select-none ${signCls}">${signChar}</span>`;
+            return `<div class="flex ${bgCls}" style="min-height: 22px;">${noCol}${sign}${body}</div>`;
+        }
+
+        function renderUtDiffViews(aLines, bLines, diff, trim, caseIns, inline, onlyDiff) {
+            const rows = utDiffBuildRows(diff);
+            // 仅显示差异行过滤
+            const visible = rows.filter(r => !onlyDiff || r.type !== 'same');
+            // 渲染 A / B 两列（行号相同 → 视觉对齐）
+            $('#utDiffViewA').innerHTML = visible.map(r => utDiffRenderRow(r, 'a')).join('');
+            $('#utDiffViewB').innerHTML = visible.map(r => utDiffRenderRow(r, 'b')).join('');
+            $('#utDiffA').classList.add('hidden');
+            $('#utDiffB').classList.add('hidden');
+            $('#utDiffViewA').classList.remove('hidden');
+            $('#utDiffViewB').classList.remove('hidden');
+            // 同步滚动（A 列滚动时 B 列跟着）
+            $('#utDiffViewA').onscroll = () => { $('#utDiffViewB').scrollTop = $('#utDiffViewA').scrollTop; };
+            $('#utDiffViewB').onscroll = () => { $('#utDiffViewA').scrollTop = $('#utDiffViewB').scrollTop; };
+            // 更新头部统计
+            const stats = { same: 0, del: 0, add: 0 };
+            diff.forEach(d => stats[d.type]++);
+            const qs = (ta, sel) => { const c = $(ta).closest('div'); return c ? c.querySelector(sel) : null; };
+            const sA = qs('#utDiffA', 'b.text-gray-600'), sDel = qs('#utDiffA', 'b.text-red-500'),
+                  sB = qs('#utDiffB', 'b.text-gray-600'), sAdd = qs('#utDiffB', 'b.text-green-600');
+            if (sA) sA.textContent = stats.same;
+            if (sDel) sDel.textContent = stats.del;
+            if (sB) sB.textContent = stats.same;
+            if (sAdd) sAdd.textContent = stats.add;
+        }
+
+        // 恢复编辑模式（textarea）
+        function utDiffBackToEdit() {
+            ['A', 'B'].forEach(s => {
+                $('#utDiffView' + s).classList.add('hidden');
+                $('#utDiff' + s).classList.remove('hidden');
+            });
+            $('#utDiffEditBtn').classList.add('hidden');
+            // 统计归零
+            const stats = [$('#utDiffA'), $('#utDiffB')];
+            stats.forEach(ta => {
+                const c = ta.closest('div');
+                if (c) c.querySelectorAll('b').forEach(b => b.textContent = '0');
+            });
         }
         document.getElementById('utDiffFileA').addEventListener('change', () => utDiffReadFile('utDiffFileA', 'utDiffA'));
         document.getElementById('utDiffFileB').addEventListener('change', () => utDiffReadFile('utDiffFileB', 'utDiffB'));

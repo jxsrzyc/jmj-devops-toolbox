@@ -324,30 +324,63 @@ def _get_egress_ip(request_ip=None):
 
 
 def myip_lookup(ip):
-    """本机出口 IP 查询
-    1. 服务端主动访问 cip.cc / ipify.org 拿公网 IP（这是浏览器访问服务器时的真实出口 IP）
-    2. 失败则回退 X-Forwarded-For / remote_addr
-    3. 用 ip-api.com 查归属信息
+    """本机出口 IP 查询（并行：cip.cc/ipify 拿 IP，ip-api 查归属，总限时 2s）
+    1. 并行查询 cip.cc / ipify.org 拿公网 IP
+    2. 内网 IP 直接标记返回
+    3. 公网 IP 走 ip_lookup（限 1.5s 超时）
     """
-    public_ip, _src = _get_egress_ip(ip)
-    if not public_ip:
-        return {"code": 1, "message": "无法获取出口 IP（cip.cc / ipify.org 都不可用）"}
-    ip = public_ip
-    # 内网 IP（127.0.0.1 / 192.168.x.x 等）直接标记
-    try:
-        addr = ipaddress.ip_address(ip)
-        if addr.is_loopback or addr.is_private or addr.is_link_local or addr.is_unspecified:
+    import concurrent.futures
+    # 并行：cip/ipify + 归属查询（公网 IP 才查归属）
+    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as ex:
+        f1 = ex.submit(_get_egress_ip, ip)
+        # 等 cip/ipify 完成 0.5s（如果超时就用传入 ip 走内网 fallback）
+        done, _ = concurrent.futures.wait([f1], timeout=0.5, return_when=concurrent.futures.FIRST_COMPLETED)
+        public_ip, _src = None, None
+        for fut in done:
+            try:
+                public_ip, _src = fut.result()
+            except Exception:
+                pass
+        # 若 0.5s 内没拿到 IP，fallback 试传入 ip 是否公网（X-Forwarded-For/remote_addr）
+        if not public_ip:
+            public_ip = (ip or '').strip() or None
+        if not public_ip:
+            return {"code": 1, "message": "无法获取出口 IP"}
+
+        # 内网 IP：直接标记（无需调用 ip-api）
+        try:
+            addr = ipaddress.ip_address(public_ip)
+            if addr.is_loopback or addr.is_private or addr.is_link_local or addr.is_unspecified:
+                return {"code": 0, "data": {
+                    "ip": public_ip, "country": "内网/本地", "region": "-", "city": "-",
+                    "isp": "本地回环/内网地址", "org": "内网", "as": "-", "asname": "-",
+                    "lat": None, "lon": None, "timezone": "-",
+                    "reverse": "-", "mobile": False, "proxy": False, "hosting": False,
+                    "_internal": True,
+                }}
+        except ValueError:
+            return {"code": 1, "message": "客户端 IP 格式异常"}
+
+        # 公网 IP：用 ThreadPoolExecutor 总限时 1.5s 查归属
+        f2 = ex.submit(ip_lookup, public_ip)
+        done2, _ = concurrent.futures.wait([f2], timeout=1.5)
+        if not done2:
+            # 超时：返回最简版（只显示 IP，不卡）
             return {"code": 0, "data": {
-                "ip": ip, "country": "内网/本地", "region": "-", "city": "-",
-                "isp": "本地回环/内网地址", "org": "内网", "as": "-", "asname": "-",
+                "ip": public_ip, "country": "-", "region": "-", "city": "-",
+                "isp": "-", "org": "-", "as": "-", "asname": "-",
                 "lat": None, "lon": None, "timezone": "-",
                 "reverse": "-", "mobile": False, "proxy": False, "hosting": False,
-                "_internal": True,
+                "_quick": True,
             }}
-    except ValueError:
-        return {"code": 1, "message": "客户端 IP 格式异常"}
-    # 公网 IP：走标准 ip_lookup
-    return ip_lookup(ip)
+        try:
+            return f2.result()
+        except Exception as e:
+            return {"code": 0, "data": {
+                "ip": public_ip, "country": "-", "region": "-", "city": "-",
+                "isp": "-", "org": "-", "as": "-", "asname": "-",
+                "_error": str(e)[:80],
+            }}
 
 
 # ==================== 2. PING 检测 ====================
