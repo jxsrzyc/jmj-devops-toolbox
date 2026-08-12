@@ -498,6 +498,31 @@ def get_link_categories():
     return jsonify({"code": 0, "data": db.get_link_categories()})
 
 
+@app.route("/api/links/categories", methods=["POST"])
+@require_perm("admin")
+def add_link_category():
+    """新增分类（管理员）"""
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()
+    if not name:
+        return jsonify({"code": 1, "message": "分类名称必填"})
+    if len(name) > 50:
+        return jsonify({"code": 1, "message": "分类名称过长（最多 50 字符）"})
+    db.ensure_category(name)
+    return jsonify({"code": 0, "data": name, "message": f"分类「{name}」已新增"})
+
+
+@app.route("/api/links/categories/<path:cat_name>", methods=["DELETE"])
+@require_perm("admin")
+def delete_link_category(cat_name):
+    """删除分类（管理员）：该分类下链接将变为未分类"""
+    name = cat_name.strip()
+    if not name:
+        return jsonify({"code": 1, "message": "分类名称无效"})
+    cnt = db.delete_category(name)
+    return jsonify({"code": 0, "message": f"分类「{name}」已删除，{cnt} 个链接变为未分类"})
+
+
 @app.route("/api/links", methods=["POST"])
 @require_perm("admin")
 def create_link():

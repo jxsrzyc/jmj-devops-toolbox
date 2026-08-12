@@ -829,6 +829,31 @@ class Database:
             )
             conn.commit()
 
+    def get_category_link_count(self, name):
+        """获取某分类下的链接数量"""
+        with get_conn() as conn:
+            row = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM business_links WHERE category = ?", (name,)
+            ).fetchone()
+            return int(row["cnt"]) if row else 0
+
+    def delete_category(self, name):
+        """删除分类：该分类下链接的 category 置空（变为未分类），并删除分类行。
+        返回受影响链接数"""
+        if not name:
+            return 0
+        with get_conn() as conn:
+            cnt_row = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM business_links WHERE category = ?", (name,)
+            ).fetchone()
+            cnt = int(cnt_row["cnt"]) if cnt_row else 0
+            conn.execute(
+                "UPDATE business_links SET category = '' WHERE category = ?", (name,)
+            )
+            conn.execute("DELETE FROM bizlink_categories WHERE name = ?", (name,))
+            conn.commit()
+        return cnt
+
     def reorder_categories(self, items):
         """批量更新分类顺序 items = [{'name': str, 'sort_order': int}, ...]"""
         with get_conn() as conn:
