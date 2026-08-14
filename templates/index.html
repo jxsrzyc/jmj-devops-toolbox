@@ -1271,7 +1271,7 @@
         </div>
 
         <!-- 运维小工具：文本比较 -->
-        <div id="page-utdiff" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+        <div id="page-utdiff" class="p-6 flex-1 overflow-y-auto hidden">
             <div class="flex items-center justify-between mb-6">
                 <div><h2 class="text-xl font-bold text-gray-900">文本比较</h2><p class="text-sm text-gray-500">逐行 Diff 对比（支持粘贴或上传文件）</p></div>
             </div>
@@ -1312,7 +1312,7 @@
                     <button id="utDiffEditBtn" onclick="utDiffBackToEdit()" class="hidden px-4 py-2 bg-amber-50 text-amber-700 text-sm font-medium rounded-lg hover:bg-amber-100 border border-amber-200">✎ 恢复编辑</button>
                 </div>
             </div>
-            <div id="utDiffResult" class="flex-1"></div>
+            <div id="utDiffResult"></div>
         </div>
 
         <!-- 运维小工具：文本去重 -->
@@ -4318,6 +4318,8 @@
             const diff = lcsDiff(aLines, bLines, trim, caseIns);
             const stats = { same: 0, del: 0, add: 0 };
             diff.forEach(d => stats[d.type]++);
+            // 缓存差异行（供复制按钮使用）
+            window._utDiffChanges = diff.filter(d => d.type === 'del' || d.type === 'add').map(d => d.text);
 
             // ===== 1. 文本框内高亮视图（替换 textarea） =====
             renderUtDiffViews(aLines, bLines, diff, trim, caseIns, inline, onlyDiff);
@@ -4335,9 +4337,12 @@
                     <span class="text-gray-600">相同 <b class="text-gray-800">${stats.same}</b></span>
                     <span class="text-red-600">删除 <b>${stats.del}</b></span>
                     <span class="text-green-600">新增 <b>${stats.add}</b></span>
-                    <button onclick="copyText(this.dataset.t)" data-t="${esc(JSON.stringify(diff.filter(d => d.type === 'del' || d.type === 'add').map(d => d.text).join('\n')))}" class="ml-auto px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 rounded border border-gray-300">复制差异</button>
+                    <button onclick="utDiffCopy()" title="复制所有删除/新增行（带真换行）" class="ml-auto inline-flex items-center gap-1 px-3 py-1 text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 rounded border border-blue-200">
+                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg>
+                        复制差异
+                    </button>
                 </div>
-                <div class="border border-gray-200 rounded-lg overflow-y-auto max-h-[50vh]">${rows || '<p class="p-4 text-gray-400 text-sm">两文本完全相同</p>'}</div>`);
+                <div id="utDiffChanges" class="border border-gray-200 rounded-lg overflow-y-auto max-h-[50vh] select-text" tabindex="0">${rows || '<p class="p-4 text-gray-400 text-sm">两文本完全相同</p>'}</div>`);
         }
 
         // ===== 文本框内高亮视图 =====
@@ -4428,16 +4433,28 @@
         }
 
         // 渲染一行（A 或 B 列）
-        function utDiffRenderRow(r, side) {
+        function utDiffRenderRow(r, side, inline) {
             // side: 'a' 或 'b'
             const line = side === 'a' ? r.a : r.b;
             const lineNo = side === 'a' ? r.lineA : r.lineB;
             let bgCls = 'bg-white', textCls = 'text-gray-700', marks = null, markCls = '';
-            // 字符级 mark（仅 mod 行 + 有内容侧）
-            if (r.type === 'mod' && line && r._pairDel && r._pairAdd) {
-                const m = utDiffCharMarks(r._pairDel.text, r._pairAdd.text);
-                if (side === 'a') { marks = m.a; markCls = 'bg-red-300 text-red-900 rounded px-0.5'; }
-                else { marks = m.b; markCls = 'bg-green-300 text-green-900 rounded px-0.5'; }
+            // 字符级 mark：
+            //   mod 行（配对 del+add）→ LCS 字符级差异 mark
+            //   del/add 单独行（无配对）→ 整行字符级 mark（用户期望"整个单词高亮"）
+            if (inline && line) {
+                if (r.type === 'mod' && r._pairDel && r._pairAdd) {
+                    const m = utDiffCharMarks(r._pairDel.text, r._pairAdd.text);
+                    if (side === 'a') { marks = m.a; markCls = 'bg-red-300 text-red-900 rounded px-0.5'; }
+                    else { marks = m.b; markCls = 'bg-green-300 text-green-900 rounded px-0.5'; }
+                } else if (r.type === 'del' && side === 'a') {
+                    // 单独删除行：整行字符级 mark
+                    marks = [[0, line.text.length]];
+                    markCls = 'bg-red-200 text-red-900 rounded px-0.5';
+                } else if (r.type === 'add' && side === 'b') {
+                    // 单独新增行：整行字符级 mark
+                    marks = [[0, line.text.length]];
+                    markCls = 'bg-green-200 text-green-900 rounded px-0.5';
+                }
             }
             // 整行背景色 + 行号颜色
             let noCls = 'text-gray-400';
@@ -4470,8 +4487,8 @@
             // 仅显示差异行过滤
             const visible = rows.filter(r => !onlyDiff || r.type !== 'same');
             // 渲染 A / B 两列（行号相同 → 视觉对齐）
-            $('#utDiffViewA').innerHTML = visible.map(r => utDiffRenderRow(r, 'a')).join('');
-            $('#utDiffViewB').innerHTML = visible.map(r => utDiffRenderRow(r, 'b')).join('');
+            $('#utDiffViewA').innerHTML = visible.map(r => utDiffRenderRow(r, 'a', inline)).join('');
+            $('#utDiffViewB').innerHTML = visible.map(r => utDiffRenderRow(r, 'b', inline)).join('');
             $('#utDiffA').classList.add('hidden');
             $('#utDiffB').classList.add('hidden');
             $('#utDiffViewA').classList.remove('hidden');
@@ -4504,6 +4521,24 @@
                 const c = ta.closest('div');
                 if (c) c.querySelectorAll('b').forEach(b => b.textContent = '0');
             });
+        }
+
+        // 复制差异（删除+新增行，纯 JS 字符串传 clipboard）
+        async function utDiffCopy() {
+            const lines = window._utDiffChanges || [];
+            if (!lines.length) return showToast('暂无差异可复制', 'info');
+            const text = lines.join('\n');
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                try {
+                    await navigator.clipboard.writeText(text);
+                    showToast(`已复制 ${lines.length} 行差异到剪贴板`, 'success');
+                    return;
+                } catch (e) {
+                    console.warn('clipboard API 失败，降级 fallback:', e);
+                }
+            }
+            fallbackCopy(text);
+            showToast(`已复制 ${lines.length} 行差异（fallback）`, 'success');
         }
         document.getElementById('utDiffFileA').addEventListener('change', () => utDiffReadFile('utDiffFileA', 'utDiffA'));
         document.getElementById('utDiffFileB').addEventListener('change', () => utDiffReadFile('utDiffFileB', 'utDiffB'));
@@ -4559,6 +4594,9 @@
 
         // 复制辅助
         function copyText(text) {
+            if (typeof text !== 'string') return;
+            // 反转义：JSON.stringify 把换行变成字面 \n（两字符），HTML attribute 又会保留
+            text = text.replace(/\\n/g, '\n').replace(/\\t/g, '\t').replace(/&#10;/g, '\n');
             if (navigator.clipboard && navigator.clipboard.writeText) {
                 navigator.clipboard.writeText(text).then(() => showToast('已复制', 'success')).catch(() => fallbackCopy(text));
             } else fallbackCopy(text);
