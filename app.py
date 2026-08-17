@@ -10,6 +10,7 @@ from database import db
 from models import ServiceParam
 from excel_utils import excel_response, format_dt
 from auth import login_required, require_perm, hash_password, get_user_context, ALL_PERMISSIONS, PERMISSIONS
+from holidays_data import get_builtin_holidays
 
 app = Flask(__name__)
 CORS(app, supports_credentials=True)
@@ -383,6 +384,11 @@ def get_domains():
 
     items, total = db.get_domains(root_domain=root, keyword=keyword, env=env, dtype=dtype,
                                    region=region, page=page, page_size=page_size)
+    # 格式化 cert_expiry 为 YYYY-MM-DD HH:MM:SS（避免 Flask 默认 RFC 822 格式被前端 slice 截断）
+    for it in items:
+        it["cert_expiry"] = format_dt(it.get("cert_expiry"))
+        if it.get("created_at"): it["created_at"] = format_dt(it["created_at"])
+        if it.get("updated_at"): it["updated_at"] = format_dt(it["updated_at"])
     return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
 
 
@@ -466,6 +472,46 @@ def dashboard_data():
     except Exception:
         stats = {"services": 0, "domains": 0, "credentials": 0, "links": 0}
     recent = db.get_recent_activities(8)
+    # 格式化 created_at 为 YYYY-MM-DD HH:MM:SS（避免 Flask 默认 RFC 822 格式被前端 slice 截断）
+    for r in recent:
+        r["created_at"] = format_dt(r.get("created_at"))
+    # 证书到期预警（30 天内）
+    cert_alerts = []
+    try:
+        for c in db.get_cert_alerts(days=30, limit=10):
+            exp = c.get("cert_expiry")
+            if isinstance(exp, datetime):
+                days_left = int((exp - datetime.now()).total_seconds() / 86400)
+            elif isinstance(exp, str) and exp:
+                try:
+                    from datetime import datetime as _dt
+                    days_left = int((_dt.fromisoformat(exp) - _dt.now()).total_seconds() / 86400)
+                except Exception:
+                    days_left = 0
+            else:
+                days_left = 0
+            cert_alerts.append({
+                "id": c["id"],
+                "domain_name": c["domain_name"],
+                "env": c.get("env", ""),
+                "region": c.get("region", ""),
+                "cert_expiry": format_dt(exp),
+                "days_left": days_left,
+            })
+    except Exception:
+        pass
+    # 当月日历 + 每日活动数
+    try:
+        activity_by_day = db.get_activity_by_day(days=31)
+    except Exception:
+        activity_by_day = {}
+    today = datetime.now()
+    calendar = {
+        "year": today.year,
+        "month": today.month,
+        "today": today.day,
+        "by_day": activity_by_day,
+    }
     # 问候语（按当前时间）
     hour = datetime.now().hour
     if hour < 6:
@@ -491,8 +537,105 @@ def dashboard_data():
             "weekday": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][datetime.now().weekday()],
             "date": datetime.now().strftime("%Y-%m-%d"),
             "time": datetime.now().strftime("%H:%M"),
+            "cert_alerts": cert_alerts,
+            "calendar": calendar,
+            "holidays": get_holidays_map(today.year),
         }
     })
+
+
+# ==================== 节假日 API（补班/休息提醒） ====================
+import json as _json
+import time as _time
+import urllib.request as _urllib
+
+_HOLIDAY_CACHE = {}          # year -> {MM-DD: {name, isOffDay}}
+_HOLIDAY_CACHE_TS = {}       # year -> 拉取时间戳
+_HOLIDAY_CACHE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "holiday_cache.json")
+
+
+def _load_holiday_file_cache():
+    """启动时加载文件缓存（重启不丢）"""
+    try:
+        if os.path.exists(_HOLIDAY_CACHE_FILE):
+            with open(_HOLIDAY_CACHE_FILE, "r", encoding="utf-8") as f:
+                data = _json.load(f)
+                for y, items in data.items():
+                    _HOLIDAY_CACHE[int(y)] = items
+                    _HOLIDAY_CACHE_TS[int(y)] = 0  # 文件缓存视为过期，会重新尝试在线
+    except Exception:
+        pass
+
+
+_load_holiday_file_cache()
+
+
+def _fetch_holidays_online(year):
+    """从 timor-api 拉取当年节假日，失败返回 None"""
+    try:
+        req = _urllib.Request(
+            f"https://timor-api.zhheo.com/holiday/list/{year}",
+            headers={"User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7)"},
+        )
+        with _urllib.urlopen(req, timeout=6) as resp:
+            body = resp.read().decode("utf-8", "ignore")
+        data = _json.loads(body)
+        holiday = (data or {}).get("holiday") or {}
+        out = {}
+        for mmdd, item in holiday.items():
+            if not isinstance(item, dict):
+                continue
+            out[mmdd] = {"name": str(item.get("name", "")), "isOffDay": bool(item.get("isOffDay", True))}
+        if out:
+            return out
+    except Exception:
+        pass
+    return None
+
+
+def _persist_holiday_cache(year, items):
+    """把在线数据写文件（下次离线也能用）"""
+    try:
+        cache = {}
+        if os.path.exists(_HOLIDAY_CACHE_FILE):
+            with open(_HOLIDAY_CACHE_FILE, "r", encoding="utf-8") as f:
+                cache = _json.load(f)
+        cache[str(year)] = items
+        with open(_HOLIDAY_CACHE_FILE, "w", encoding="utf-8") as f:
+            _json.dump(cache, f, ensure_ascii=False)
+    except Exception:
+        pass
+
+
+def get_holidays_map(year):
+    """返回 {MM-DD: {name, isOffDay}}：在线(缓存24h) → 文件缓存 → 内置兜底"""
+    y = int(year)
+    now = _time.time()
+    # 24h 内在线缓存命中
+    if y in _HOLIDAY_CACHE and now - _HOLIDAY_CACHE_TS.get(y, 0) < 86400:
+        return _HOLIDAY_CACHE[y]
+    online = _fetch_holidays_online(y)
+    if online:
+        _HOLIDAY_CACHE[y] = online
+        _HOLIDAY_CACHE_TS[y] = now
+        _persist_holiday_cache(y, online)
+        return online
+    # 在线失败 → 文件缓存（重启前拉过的）
+    if y in _HOLIDAY_CACHE:
+        return _HOLIDAY_CACHE[y]
+    # 最终兜底：内置 JSON（2026 国办安排）
+    return get_builtin_holidays(y)
+
+
+@app.route("/api/holidays/<int:year>", methods=["GET"])
+@login_required
+def holidays_api(year):
+    """节假日列表（补班/休息），供日历渲染"""
+    try:
+        data = get_holidays_map(year)
+        return jsonify({"code": 0, "data": data})
+    except Exception as e:
+        return jsonify({"code": 1, "message": str(e)})
 
 
 # ==================== 业务跳转 links ====================

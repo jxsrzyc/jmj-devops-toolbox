@@ -59,6 +59,8 @@ class _MyConn:
             autocommit=False,
         )
         self._cur = self._conn.cursor()
+        # 禁用 STRICT_TRANS_TABLES 等所有严格模式（避免 DATETIME 列遇空字符串报错）
+        self._cur.execute("SET SESSION sql_mode = ''")
 
     @staticmethod
     def _fix(sql):
@@ -914,6 +916,35 @@ class Database:
                 (limit,)
             ).fetchall()
             return [dict(r) for r in rows]
+
+    def get_cert_alerts(self, days=30, limit=10):
+        """30 天内到期的证书（首页 dashboard 预警）"""
+        with get_conn() as conn:
+            from datetime import datetime, timedelta
+            now = datetime.now()
+            cutoff = now + timedelta(days=days)
+            rows = conn.execute(
+                "SELECT id, domain_name, env, region, cert_expiry, cert_progress "
+                "FROM domains WHERE cert_expiry IS NOT NULL AND cert_expiry > '' "
+                "AND cert_expiry <= %s ORDER BY cert_expiry ASC LIMIT %s" if False else
+                "SELECT id, domain_name, env, region, cert_expiry, cert_progress "
+                "FROM domains WHERE cert_expiry IS NOT NULL "
+                "AND cert_expiry <= ? ORDER BY cert_expiry ASC LIMIT ?",
+                (cutoff, limit)
+            ).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_activity_by_day(self, days=30):
+        """按日期聚合 activity_log（首页日历热力）"""
+        with get_conn() as conn:
+            from datetime import datetime, timedelta
+            cutoff = datetime.now() - timedelta(days=days - 1)
+            rows = conn.execute(
+                "SELECT DATE(created_at) AS day, COUNT(*) AS cnt FROM activity_log "
+                "WHERE created_at >= ? GROUP BY DATE(created_at)",
+                (cutoff,)
+            ).fetchall()
+            return {str(r["day"]): int(r["cnt"]) for r in rows}
 
     def reorder_categories(self, items):
         """批量更新分类顺序 items = [{'name': str, 'sort_order': int}, ...]"""
