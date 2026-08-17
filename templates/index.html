@@ -53,8 +53,29 @@
         </div>
 
         <!-- 导航菜单 -->
-        <nav class="flex-1 py-3 overflow-y-auto">
+        <nav id="sidebarMenu" class="flex-1 py-3 overflow-y-auto">
+            <!-- 菜单搜索框 -->
+            <div class="px-4 mb-3">
+                <div class="relative">
+                    <svg class="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                    <input id="menuSearch" type="text" placeholder="搜索菜单... (⌘K)" oninput="menuSearchFilter()" onfocus="this.select()"
+                        class="w-full pl-9 pr-8 py-2 text-xs border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-gray-50">
+                    <kbd class="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-gray-400 border border-gray-200 rounded px-1 bg-white">⌘K</kbd>
+                </div>
+            </div>
             <p class="px-5 py-1.5 text-[11px] font-medium text-gray-400 uppercase tracking-wider">核心功能</p>
+
+            <!-- 首页 -->
+            <a href="#" onclick="switchPage('dashboard'); return false;"
+                class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
+                data-page="dashboard" id="dashboardMenu">
+                <svg class="w-4 h-4 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l9-9 9 9M5 10v10a1 1 0 001 1h3a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1h3a1 1 0 001-1V10M9 21h6"/>
+                </svg>
+                首页
+            </a>
 
             {% if has_perm('release') %}
             <!-- 发版管理（可展开） -->
@@ -366,6 +387,38 @@
 
     <!-- ==================== 右侧主内容区 ==================== -->
     <main class="flex-1 min-w-0 h-screen overflow-hidden flex flex-col">
+
+        <!-- 首页 Dashboard -->
+        <div id="page-dashboard" class="p-6 flex-1 overflow-y-auto hidden">
+            <div id="dashTop" class="flex items-center gap-3 mb-6">
+                <div id="dashAvatar" class="w-14 h-14 rounded-2xl bg-gradient-to-br from-blue-500 to-indigo-600 text-white flex items-center justify-center text-2xl shadow-sm flex-shrink-0"></div>
+                <div>
+                    <h2 id="dashGreeting" class="text-xl font-bold text-gray-900"></h2>
+                    <p id="dashSub" class="text-sm text-gray-500"></p>
+                </div>
+            </div>
+
+            <!-- 统计卡片 -->
+            <div id="dashStats" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6"></div>
+
+            <!-- 快捷入口 + 最近活动 -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-gray-800">快捷入口</h3>
+                        <span class="text-[11px] text-gray-400">常用模块直达</span>
+                    </div>
+                    <div id="dashQuick" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="text-sm font-semibold text-gray-800">最近活动</h3>
+                        <span class="text-[11px] text-gray-400">最新操作记录</span>
+                    </div>
+                    <div id="dashActivity" class="space-y-1 max-h-[280px] overflow-y-auto"></div>
+                </div>
+            </div>
+        </div>
 
         <!-- 发版参数管理页面 -->
         <div id="page-params" class="p-6 flex-1 flex flex-col min-h-0">
@@ -1998,14 +2051,157 @@
 
         // ==================== 页面切换 ====================
         function switchPage(page) {
+            const pageEl = document.getElementById(`page-${page}`);
+            if (!pageEl) return;  // 页面不存在时跳过（避免白屏）
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
-            document.querySelector(`[data-page="${page}"]`).classList.add('active');
+            const linkEl = document.querySelector(`[data-page="${page}"]`);
+            if (linkEl) linkEl.classList.add('active');
             document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
-            document.getElementById(`page-${page}`).classList.remove('hidden');
+            pageEl.classList.remove('hidden');
+            if (page === 'dashboard') loadDashboard();
             if (page === 'users') loadUsers();
             if (page === 'credentials') { loadCredDatalists(); loadCredentials(); }
             if (page === 'netip') netIpLoadMyip();
             if (page === 'bizlinks') bizLinkLoad();
+        }
+
+        // ==================== 首页 Dashboard ====================
+        const DASH_STAT_CARDS = [
+            { key: 'services', label: '发版服务', icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6', grad: 'from-blue-500 to-indigo-600', page: 'params' },
+            { key: 'domains', label: '域名总数', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', grad: 'from-emerald-500 to-teal-600', page: 'domains' },
+            { key: 'credentials', label: '凭证总数', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', grad: 'from-amber-500 to-orange-600', page: 'credentials' },
+            { key: 'links', label: '业务跳转', icon: 'M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5', grad: 'from-violet-500 to-purple-600', page: 'bizlinks' },
+        ];
+        const DASH_QUICK = [
+            { label: '业务跳转', icon: 'M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5', color: 'text-blue-600 bg-blue-50', page: 'bizlinks' },
+            { label: '域名管理', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', color: 'text-emerald-600 bg-emerald-50', page: 'domains' },
+            { label: '凭证管理', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', color: 'text-amber-600 bg-amber-50', page: 'credentials' },
+            { label: '发版管理', icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6', color: 'text-indigo-600 bg-indigo-50', page: 'params' },
+            { label: '网络工具', icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-sky-600 bg-sky-50', page: 'netping' },
+            { label: '运维小工具', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', color: 'text-rose-600 bg-rose-50', page: 'opsutils' },
+        ];
+        const ACT_COLOR = { create: 'bg-emerald-500', update: 'bg-blue-500', delete: 'bg-red-500', login: 'bg-violet-500' };
+        const ACT_LABEL = { create: '新增', update: '更新', delete: '删除', login: '登录' };
+
+        async function loadDashboard() {
+            const res = await api('/api/dashboard');
+            if (res.code !== 0) return;
+            const d = res.data;
+            // 欢迎区
+            const initial = (d.username || 'U')[0].toUpperCase();
+            $('#dashAvatar').textContent = initial;
+            $('#dashGreeting').textContent = `${d.greeting}，${d.username}`;
+            $('#dashSub').textContent = `运维工具箱 · ${d.weekday} ${d.date}`;
+            // 统计卡片
+            $('#dashStats').innerHTML = DASH_STAT_CARDS.map(c => {
+                const v = d.stats[c.key] ?? 0;
+                return `<div onclick="switchPage('${c.page}')" class="group bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer">
+                    <div class="flex items-center justify-between">
+                        <div class="w-11 h-11 rounded-xl bg-gradient-to-br ${c.grad} text-white flex items-center justify-center shadow-sm">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${c.icon}"/></svg>
+                        </div>
+                        <svg class="w-4 h-4 text-gray-300 group-hover:text-blue-400 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/></svg>
+                    </div>
+                    <p class="mt-3 text-2xl font-bold text-gray-900">${v}</p>
+                    <p class="text-xs text-gray-500 mt-0.5">${c.label} · 点击进入</p>
+                </div>`;
+            }).join('');
+            // 快捷入口
+            $('#dashQuick').innerHTML = DASH_QUICK.map(q =>
+                `<div onclick="switchPage('${q.page}')" class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all cursor-pointer">
+                    <div class="w-9 h-9 rounded-lg ${q.color} flex items-center justify-center flex-shrink-0">
+                        <svg class="w-4.5 h-4.5 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="${q.icon}"/></svg>
+                    </div>
+                    <span class="text-sm font-medium text-gray-700">${q.label}</span>
+                </div>`
+            ).join('');
+            // 最近活动
+            const acts = d.recent || [];
+            $('#dashActivity').innerHTML = acts.length ? acts.map(a => {
+                const color = ACT_COLOR[a.action] || 'bg-gray-400';
+                const label = ACT_LABEL[a.action] || a.action;
+                const time = (a.created_at || '').replace('T', ' ').slice(5, 16);
+                return `<div class="flex items-start gap-3 py-2 px-2 rounded-lg hover:bg-gray-50">
+                    <span class="w-2 h-2 rounded-full ${color} mt-1.5 flex-shrink-0"></span>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-[13px] text-gray-700 truncate"><span class="font-medium">${esc(a.username || '')}</span> ${label} <span class="text-gray-400">${esc(a.module || '')}</span></p>
+                        <p class="text-xs text-gray-400 truncate">${esc(a.detail || '')}</p>
+                    </div>
+                    <span class="text-[11px] text-gray-400 flex-shrink-0">${time}</span>
+                </div>`;
+            }).join('') : '<p class="text-sm text-gray-400 py-6 text-center">暂无操作记录</p>';
+        }
+
+        // ==================== 菜单搜索（侧边栏过滤 + Cmd+K） ====================
+        function menuSearchFilter() {
+            const kw = $('#menuSearch').value.trim().toLowerCase();
+            // 所有可搜索项：侧边栏所有 a（含父、子）
+            const items = document.querySelectorAll('#sidebarMenu a');
+            let any = false;
+            items.forEach(el => {
+                const text = (el.textContent || '').toLowerCase();
+                const hit = !kw || text.includes(kw);
+                el.style.display = hit ? '' : 'none';
+                if (hit) any = true;
+            });
+            // 父菜单：自身不匹配但子菜单有匹配 → 强制显示 + 自动展开子菜单
+            const parentMap = {
+                ciMenuToggle: 'ciSubmenu',
+                credMenuToggle: 'credSubmenu',
+                domainMenuToggle: 'domainSubmenu',
+                netMenuToggle: 'netSubmenu',
+                utilsMenuToggle: 'utilsSubmenu',
+            };
+            for (const [pid, sid] of Object.entries(parentMap)) {
+                const parent = document.getElementById(pid);
+                const sub = document.getElementById(sid);
+                if (!parent || !sub) continue;
+                if (!kw) { sub.classList.add('hidden'); continue; }
+                const subMatch = [...sub.querySelectorAll('a')].some(a => a.textContent.toLowerCase().includes(kw));
+                if (subMatch) {
+                    parent.style.display = '';
+                    sub.classList.remove('hidden');
+                }
+            }
+            // 空结果提示
+            let hint = document.getElementById('menuSearchEmpty');
+            if (kw && !any) {
+                if (!hint) {
+                    hint = document.createElement('p');
+                    hint.id = 'menuSearchEmpty';
+                    hint.className = 'px-5 py-3 text-xs text-gray-400 text-center';
+                    document.getElementById('sidebarMenu').appendChild(hint);
+                }
+                hint.textContent = `未找到「${$('#menuSearch').value.trim()}」`;
+                hint.style.display = '';
+            } else if (hint) hint.style.display = 'none';
+        }
+        function menuSearchClear() {
+            const items = document.querySelectorAll('#sidebarMenu a');
+            items.forEach(el => el.style.display = '');
+            ['ciSubmenu', 'credSubmenu', 'domainSubmenu', 'netSubmenu', 'utilsSubmenu'].forEach(id => {
+                const sub = document.getElementById(id);
+                if (sub) sub.classList.add('hidden');
+            });
+            const hint = document.getElementById('menuSearchEmpty');
+            if (hint) hint.style.display = 'none';
+        }
+        // Cmd+K 全局快捷键
+        function bindMenuSearchShortcut() {
+            document.addEventListener('keydown', (e) => {
+                if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === 'k') {
+                    e.preventDefault();
+                    const input = $('#menuSearch');
+                    input.focus();
+                    input.select();
+                }
+                // Esc 清空搜索
+                if (e.key === 'Escape' && document.activeElement === $('#menuSearch')) {
+                    $('#menuSearch').value = '';
+                    menuSearchClear();
+                    $('#menuSearch').blur();
+                }
+            });
         }
 
         // ==================== 初始化 ====================
@@ -2018,14 +2214,15 @@
         let batchResultText = '';
 
         async function init() {
-            // 初始默认激活第一个子标签
-            document.getElementById('ciSub-params').classList.add('active');
+            // 默认进入首页（不再直接进发版管理）
+            switchPage('dashboard');
             // 绑定弹窗内的下拉面板事件（仅一次）
             bindCredFormPanel('credFormService');
             bindCredFormPanel('credFormProvider');
             await loadEnvs();
             await loadModules();
             await loadServices();
+            bindMenuSearchShortcut();
         }
 
         async function loadEnvs() {
@@ -2548,15 +2745,11 @@
         let ciActiveTab = 'params';
 
         function toggleCiMenu() {
+            // 父标签点击仅展开/收起子菜单，不跳转页面（保持当前页面）
             const sub = document.getElementById('ciSubmenu');
             const arrow = document.getElementById('ciMenuArrow');
-            const wasHidden = sub.classList.contains('hidden');
             sub.classList.toggle('hidden');
             arrow.classList.toggle('rotate-180');
-            // 父菜单点击：始终导航到「蓝鲸发版参数管理」子标签页，并保持子菜单展开
-            if (wasHidden) {
-                switchCiTab('params');
-            }
         }
 
         function switchCiTab(tab) {
@@ -3036,15 +3229,11 @@
 
         // 侧边栏凭证子菜单展开/折叠
         function toggleCredMenu() {
+            // 父标签点击仅展开/收起子菜单，不跳转页面（保持当前页面）
             const sub = $('#credSubmenu');
             const arrow = $('#credMenuArrow');
             sub.classList.toggle('hidden');
             arrow.classList.toggle('rotate-180');
-            // 切到凭证页（switchPage 会清掉 active，所以先切再加父菜单 active）
-            switchPage('credentials');
-            // 激活父菜单
-            document.querySelectorAll('[data-page]').forEach(l => l.classList.remove('active'));
-            document.getElementById('credMenuToggle').classList.add('active');
         }
         // 切换环境子标签（侧边栏）
         function switchCredEnv(env, e) {
@@ -3263,12 +3452,11 @@
         }
 
         function toggleDomainMenu() {
+            // 父标签点击仅展开/收起子菜单，不跳转页面（保持当前页面）
             const sub = document.getElementById('domainSubmenu');
             const arrow = document.getElementById('domainMenuArrow');
             sub.classList.toggle('hidden');
             arrow.classList.toggle('rotate-180');
-            switchPage('domains');
-            loadDomains();
         }
 
         async function loadFilterOptions() {
@@ -3521,14 +3709,11 @@
         let netActiveTab = 'ip';
 
         function toggleNetMenu() {
+            // 父标签点击仅展开/收起子菜单，不跳转页面（保持当前页面）
             const sub = $('#netSubmenu');
             const arrow = $('#netMenuArrow');
             sub.classList.toggle('hidden');
             arrow.classList.toggle('rotate-180');
-            // 切到网络工具页（保持当前子标签）
-            switchPage('nettools');
-            document.querySelectorAll('[data-page]').forEach(l => l.classList.remove('active'));
-            document.getElementById('netMenuToggle').classList.add('active');
         }
 
         function switchNetTab(tab) {
@@ -4065,13 +4250,11 @@
         let utilsActiveTab = 'cidr';
 
         function toggleUtilsMenu() {
+            // 父标签点击仅展开/收起子菜单，不跳转页面（保持当前页面）
             const sub = $('#utilsSubmenu');
             const arrow = $('#utilsMenuArrow');
             sub.classList.toggle('hidden');
             arrow.classList.toggle('rotate-180');
-            switchPage('opsutils');
-            document.querySelectorAll('[data-page]').forEach(l => l.classList.remove('active'));
-            document.getElementById('utilsMenuToggle').classList.add('active');
         }
 
         function switchUtilsTab(tab) {

@@ -279,6 +279,18 @@ def _init_db_sqlite():
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);")
+        # 操作日志表（首页最近活动）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username VARCHAR(100) NOT NULL,
+                action VARCHAR(50) NOT NULL,
+                module VARCHAR(50) NOT NULL DEFAULT '',
+                detail VARCHAR(500) DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log(created_at);")
         conn.commit()
 
         from auth import hash_password
@@ -482,6 +494,18 @@ def _init_db_mysql():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
         _mysql_ensure_index(conn, "users", "idx_users_username", "username")
+        # 操作日志表（首页最近活动）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS activity_log (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100) NOT NULL,
+                action VARCHAR(50) NOT NULL,
+                module VARCHAR(50) NOT NULL DEFAULT '',
+                detail VARCHAR(500) DEFAULT '',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "activity_log", "idx_activity_created", "created_at")
         conn.commit()
 
         # 默认 admin 账号
@@ -853,6 +877,43 @@ class Database:
             conn.execute("DELETE FROM bizlink_categories WHERE name = ?", (name,))
             conn.commit()
         return cnt
+
+    # ---------- activity_log（操作日志） ----------
+    def count_rows(self, table):
+        """通用计数（首页统计卡片）"""
+        try:
+            with get_conn() as conn:
+                row = conn.execute(f"SELECT COUNT(*) AS cnt FROM {table}").fetchone()
+                return int(row["cnt"]) if row else 0
+        except Exception:
+            return 0
+
+    def add_activity(self, username, action, module="", detail=""):
+        """记录一条操作日志（首页最近活动）"""
+        try:
+            with get_conn() as conn:
+                conn.execute(
+                    "INSERT INTO activity_log (username, action, module, detail) VALUES (?, ?, ?, ?)",
+                    (username[:100], action[:50], module[:50], detail[:500])
+                )
+                # 只保留最近 200 条（外层再包一层 SELECT，兼容 MySQL 1093 同表更新限制）
+                conn.execute(
+                    "DELETE FROM activity_log WHERE id NOT IN "
+                    "(SELECT id FROM (SELECT id FROM activity_log ORDER BY id DESC LIMIT 200) keep)"
+                )
+                conn.commit()
+        except Exception as e:
+            print(f"[activity_log] 写入失败: {e}")
+
+    def get_recent_activities(self, limit=8):
+        """最近操作日志"""
+        with get_conn() as conn:
+            rows = conn.execute(
+                "SELECT username, action, module, detail, created_at FROM activity_log "
+                "ORDER BY id DESC LIMIT ?",
+                (limit,)
+            ).fetchall()
+            return [dict(r) for r in rows]
 
     def reorder_categories(self, items):
         """批量更新分类顺序 items = [{'name': str, 'sort_order': int}, ...]"""

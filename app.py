@@ -93,6 +93,7 @@ def login_page():
         session["display_name"] = user["display_name"] or user["username"]
         session["permissions"] = user["permissions"]
         session["auth_source"] = user.get("auth_source", "local")
+        db.add_activity(user["username"], "login", "系统", "登录了系统")
         return jsonify({"code": 0, "message": "登录成功", "data": {"username": user["username"]}})
     # GET — 已登录直接跳首页
     if "user_id" in session:
@@ -299,6 +300,8 @@ def create_credential():
     if data.get("password"):
         data["password"] = encrypt_password(data["password"])
     cid = db.create_credential(**data)
+    db.add_activity(session.get("username", ""), "create", "服务凭证",
+                    f"新增凭证「{data.get('service_name', '')}」")
     return jsonify({"code": 0, "message": "新增成功", "data": {"id": cid}})
 
 
@@ -316,6 +319,7 @@ def update_credential(cid):
     ok = db.update_credential(cid, **data)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
+    db.add_activity(session.get("username", ""), "update", "服务凭证", f"更新凭证#{cid}")
     return jsonify({"code": 0, "message": "更新成功"})
 
 
@@ -325,6 +329,7 @@ def delete_credential(cid):
     ok = db.delete_credential(cid)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
+    db.add_activity(session.get("username", ""), "delete", "服务凭证", f"删除凭证#{cid}")
     return jsonify({"code": 0, "message": "删除成功"})
 
 
@@ -395,6 +400,8 @@ def create_domain():
     if not data.get("domain_name"):
         return jsonify({"code": 400, "message": "缺少必填字段: domain_name"}), 400
     did = db.create_domain(**data)
+    db.add_activity(session.get("username", ""), "create", "域名管理",
+                    f"新增域名「{data.get('domain_name', '')}」")
     return jsonify({"code": 0, "message": "新增成功", "data": {"id": did}})
 
 
@@ -404,6 +411,7 @@ def update_domain(did):
     ok = db.update_domain(did, **data)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
+    db.add_activity(session.get("username", ""), "update", "域名管理", f"更新域名#{did}")
     return jsonify({"code": 0, "message": "更新成功"})
 
 
@@ -412,6 +420,7 @@ def delete_domain(did):
     ok = db.delete_domain(did)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
+    db.add_activity(session.get("username", ""), "delete", "域名管理", f"删除域名#{did}")
     return jsonify({"code": 0, "message": "删除成功"})
 
 
@@ -440,6 +449,50 @@ def get_regions():
     root = request.args.get("root", "").strip()
     regions = db.get_regions(root_domain=root)
     return jsonify({"code": 0, "data": regions})
+
+
+# ==================== 首页 Dashboard ====================
+@app.route("/api/dashboard", methods=["GET"])
+@login_required
+def dashboard_data():
+    """首页聚合数据：统计卡片 + 最近活动"""
+    try:
+        stats = {
+            "services": db.count_rows("service_params"),
+            "domains": db.count_rows("domains"),
+            "credentials": db.count_rows("service_credentials"),
+            "links": db.count_rows("business_links"),
+        }
+    except Exception:
+        stats = {"services": 0, "domains": 0, "credentials": 0, "links": 0}
+    recent = db.get_recent_activities(8)
+    # 问候语（按当前时间）
+    hour = datetime.now().hour
+    if hour < 6:
+        greeting = "夜深了"
+    elif hour < 9:
+        greeting = "早上好"
+    elif hour < 12:
+        greeting = "上午好"
+    elif hour < 14:
+        greeting = "中午好"
+    elif hour < 18:
+        greeting = "下午好"
+    else:
+        greeting = "晚上好"
+    username = session.get("display_name") or session.get("username", "")
+    return jsonify({
+        "code": 0,
+        "data": {
+            "stats": stats,
+            "recent": recent,
+            "greeting": greeting,
+            "username": username,
+            "weekday": ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][datetime.now().weekday()],
+            "date": datetime.now().strftime("%Y-%m-%d"),
+            "time": datetime.now().strftime("%H:%M"),
+        }
+    })
 
 
 # ==================== 业务跳转 links ====================
@@ -545,6 +598,7 @@ def create_link():
         sort_order=int(body.get("sort_order", 0) or 0),
         is_active=1 if body.get("is_active", True) else 0,
     )
+    db.add_activity(session.get("username", ""), "create", "业务跳转", f"新增链接「{name}」")
     return jsonify({"code": 0, "data": {"id": lid}, "message": "链接已添加"})
 
 
@@ -569,6 +623,9 @@ def update_link(lid):
     if not fields:
         return jsonify({"code": 1, "message": "无更新字段"})
     ok = db.update_link(lid, **fields)
+    if ok:
+        db.add_activity(session.get("username", ""), "update", "业务跳转",
+                        f"更新链接#{lid}「{fields.get('name', '') or ''}」")
     return jsonify({"code": 0 if ok else 1, "message": "已更新" if ok else "链接不存在"})
 
 
@@ -608,7 +665,11 @@ def reorder_link_categories():
 @require_perm("admin")
 def delete_link(lid):
     """删除链接（管理员）"""
+    link = db.get_link_by_id(lid)
     ok = db.delete_link(lid)
+    if ok:
+        db.add_activity(session.get("username", ""), "delete", "业务跳转",
+                        f"删除链接「{link['name'] if link else '#' + str(lid)}」")
     return jsonify({"code": 0 if ok else 1, "message": "已删除" if ok else "链接不存在"})
 
 
