@@ -262,21 +262,45 @@ def import_excel():
 
 @app.route("/api/credentials", methods=["GET"])
 def get_credentials():
-    """查询凭证列表（支持 env + 业务名称 name + 关键词 keyword + 密码脱敏）"""
+    """查询凭证列表（支持 env + 业务名称 name + 关键词 keyword + 业务用途 purpose + 密码脱敏）"""
     env = request.args.get("env", "").strip()
     name = request.args.get("name", "").strip()
     keyword = request.args.get("keyword", "").strip()
     ctype = request.args.get("type", "").strip()
     status = request.args.get("status", "").strip()
+    purpose = request.args.get("purpose", "").strip()
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 20))
 
     items, total = db.get_credentials(env=env, name=name, keyword=keyword, type=ctype, status=status,
-                                      page=page, page_size=page_size)
+                                      purpose=purpose, page=page, page_size=page_size)
     # 密码脱敏：列表不返回明文，只返回是否已设置
     for it in items:
         it["password"] = "●●●●●●●●" if it.get("password") else ""
     return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
+
+
+@app.route("/api/credentials/business-purposes", methods=["GET"])
+def get_credential_business_purposes():
+    """业务用途列表 + 颜色映射（供下拉/徽章/颜色配置）"""
+    purposes = db.get_credential_purposes()
+    colors = db.get_business_colors()
+    return jsonify({"code": 0, "data": {"purposes": purposes, "colors": colors}})
+
+
+@app.route("/api/credentials/business-purposes/colors", methods=["PUT"])
+@require_perm("admin")
+def set_credential_business_color():
+    """设置业务用途颜色（管理员）"""
+    body = request.get_json(silent=True) or {}
+    purpose = str(body.get("purpose", "")).strip()
+    color = str(body.get("color", "")).strip()
+    if not purpose:
+        return jsonify({"code": 1, "message": "业务用途必填"})
+    if not (len(color) == 7 and color.startswith("#")):
+        return jsonify({"code": 1, "message": "颜色格式需为 #RRGGBB"})
+    ok = db.set_business_color(purpose, color)
+    return jsonify({"code": 0 if ok else 1, "message": f"「{purpose}」颜色已更新" if ok else "更新失败"})
 
 
 @app.route("/api/credentials/<int:cid>", methods=["GET"])
@@ -1233,6 +1257,7 @@ def import_credentials_xlsx():
                 port_col = _match_col(df, "端口", "服务连接端口", "连接端口")
                 user_col = _match_col(df, "账号", "用户名", "用户")
                 notes_col = _match_col(df, "备注")
+                purpose_col = _match_col(df, "业务用途")
 
                 # 端口：同时写入内网/公网端口（保持一致，后续可编辑调整）
                 port = _to_int(row.get(port_col)) if port_col else None
@@ -1240,6 +1265,7 @@ def import_credentials_xlsx():
                 db.create_credential(
                     env=env_name,
                     service_name=svc,
+                    business_purpose=_to_str(row.get(purpose_col)) if purpose_col else "通用服务",
                     app_type=_to_str(row.get(app_type_col)) if app_type_col else "",
                     version=_to_str(row.get(version_col)) if version_col else "",
                     access_url=_to_str(row.get(access_url_col)) if access_url_col else "",
@@ -1269,11 +1295,12 @@ def export_credentials_xlsx():
     keyword = request.args.get("keyword", "").strip()
     ctype = request.args.get("type", "").strip()
     status = request.args.get("status", "").strip()
+    purpose = request.args.get("purpose", "").strip()
 
-    items = db.get_credentials(env=env, name=name, keyword=keyword, type=ctype, status=status, page=1, page_size=10000)[0]
-    headers = ["环境", "业务名称", "应用类型", "版本", "服务连接地址", "用户名", "密码",
+    items = db.get_credentials(env=env, name=name, keyword=keyword, type=ctype, status=status, purpose=purpose, page=1, page_size=10000)[0]
+    headers = ["业务用途", "环境", "业务名称", "应用类型", "版本", "服务连接地址", "用户名", "密码",
                "内网地址", "内网端口", "公网地址", "公网端口", "备注"]
-    data = [[r["env"], r["service_name"], r["app_type"], r["version"], r["access_url"], r["username"],
+    data = [[r["business_purpose"] or "通用服务", r["env"], r["service_name"], r["app_type"], r["version"], r["access_url"], r["username"],
              "●●●●●●●●" if r["password"] else "",
              r["internal_url"], r["internal_port"],
              r["external_url"], r["external_port"], r["notes"]] for r in items]
@@ -1284,17 +1311,17 @@ def export_credentials_xlsx():
 @app.route("/api/credentials/template", methods=["GET"])
 def credentials_template():
     """下载服务凭证导入模板"""
-    headers = ["服务名", "凭证类型", "访问链接", "用户名", "密码",
+    headers = ["业务用途", "服务名", "凭证类型", "访问链接", "用户名", "密码",
                "SSH私钥", "API Token", "内网地址", "内网端口",
                "公网地址", "公网端口", "数据库名", "负责人", "过期时间", "状态", "备注"]
     example = [
-        ["member-admin", "用户名密码", "https://admin.example.com", "admin", "your_password",
+        ["会员业务", "member-admin", "用户名密码", "https://admin.example.com", "admin", "your_password",
          "", "", "http://10.0.1.50", 8080, "https://api.example.com", 443, "",
          "张三", "2026-12-31", "正常", "测试凭证"],
-        ["gateway", "API Token", "https://gateway.example.com", "", "",
+        ["通用服务", "gateway", "API Token", "https://gateway.example.com", "", "",
          "", "sk-abc123def456", "http://10.0.0.1", 80, "", "", "",
          "李四", "", "正常", "统一网关"],
-        ["oms-server", "SSH密钥", "ssh://oms", "deploy", "",
+        ["供应链", "oms-server", "SSH密钥", "ssh://oms", "deploy", "",
          "-----BEGIN OPENSSH PRIVATE KEY-----\nxxx\n-----END OPENSSH PRIVATE KEY-----",
          "", "10.0.5.20", 22, "", "", "",
          "王五", "", "正常", "供应链 OMS"],

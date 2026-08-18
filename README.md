@@ -219,7 +219,10 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 云效运行研发流程：id, delivery_service, env, wf_sn, stage_sn, created_at, updated_at
 
 ### `service_credentials`
-服务凭证（6 环境统一表）：id, **env**, service_name(业务名称), **service_provider(服务供应商)**, **app_type, version**, username(账号), **password(加密存储)**, internal_url, internal_port, external_url, external_port, notes, created_at, updated_at
+服务凭证（6 环境统一表）：id, **business_purpose(业务用途, 默认'通用服务')**, **env**, service_name(业务名称), **service_provider(服务供应商)**, **app_type, version**, username(账号), **password(加密存储)**, internal_url, internal_port, external_url, external_port, notes, created_at, updated_at
+
+### `cred_business_colors`
+业务用途颜色配置（可自定义）：id, purpose(唯一), color(#RRGGBB), updated_at
 
 ### `domains`
 域名管理：id, root_domain, region, service_name, domain_name, domain_type, env, cert_progress, cert_expiry, notes, created_at, updated_at
@@ -300,6 +303,14 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 - ✨ 新增 `service_credentials.service_provider` 字段（数据库双模式 ALTER 兼容）
 - ✨ 新增 `/api/credential-service-names` 和 `/api/credential-providers` 两个 API（用于 datalist 自动补全）
 - 🐛 修复编辑按钮失效的根因：域名弹窗 domFormModal 缺 `</div>` 嵌套，导致 credFormModal 等被嵌套在 display:none 父级里（lxml 验证）
+
+### v1.6 (2026-08-17)
+- 🎨 服务凭证新增 **「业务用途」列**（表格第一列，彩色徽章）：预设 5 类（点餐业务/会员业务/外卖业务/供应链/通用服务）+ 自定义输入
+- 🎨 **🎨 颜色按钮**（仅管理员）：弹窗内为每个业务用途配置颜色（`input type=color` 选色，保存即时生效）
+- ✨ 新增 `service_credentials.business_purpose` 字段（默认 '通用服务'，双模式 ALTER 兼容，不动现有数据）
+- ✨ 新增 `cred_business_colors` 表（purpose/color 颜色映射）
+- ✨ 新增 API：`GET /api/credentials/business-purposes`（用途+颜色）、`PUT /api/credentials/business-purposes/colors`（改色）
+- ✨ 凭证列表支持 `?purpose=` 筛选；导出/模板/导入均支持「业务用途」列（导入缺省 '通用服务'）
 
 ### v1.4 (2026-08-07)
 - 🎨 服务凭证管理 **6 环境子标签移到左侧侧边栏**（与域名管理一致的展开式菜单），页面顶部不再有切换按钮

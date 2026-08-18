@@ -123,41 +123,41 @@
                 </svg>
             </a>
             <!-- 凭证子菜单 -->
-            <div id="credSubmenu" class="hidden">
+            <div id="credSubmenu" class="hidden ml-9 border-l border-gray-200">
                 <a href="#" onclick="switchCredEnv('', event); return false;"
-                    class="sidebar-link sidebar-sub flex items-center gap-3 pl-11 pr-5 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-all" data-cred-env="">
-                    <span class="w-1 h-1 bg-gray-400 rounded-full"></span> 业务环境汇总
+                    业务环境汇总
                 </a>
                 <a href="#" onclick="switchCredEnv('超融合电信开发环境', event); return false;"
-                    class="sidebar-link sidebar-sub flex items-center gap-3 pl-11 pr-5 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-超融合电信开发环境" data-cred-env="超融合电信开发环境">
-                    <span class="w-1 h-1 bg-gray-400 rounded-full"></span> 超融合电信开发环境
+                    超融合电信开发环境
                 </a>
                 <a href="#" onclick="switchCredEnv('超融合南沙生产环境', event); return false;"
-                    class="sidebar-link sidebar-sub flex items-center gap-3 pl-11 pr-5 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-超融合南沙生产环境" data-cred-env="超融合南沙生产环境">
-                    <span class="w-1 h-1 bg-gray-400 rounded-full"></span> 超融合南沙生产环境
+                    超融合南沙生产环境
                 </a>
                 <a href="#" onclick="switchCredEnv('预生产环境', event); return false;"
-                    class="sidebar-link sidebar-sub flex items-center gap-3 pl-11 pr-5 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-预生产环境" data-cred-env="预生产环境">
-                    <span class="w-1 h-1 bg-gray-400 rounded-full"></span> 预生产环境
+                    预生产环境
                 </a>
                 <a href="#" onclick="switchCredEnv('国内生产环境', event); return false;"
-                    class="sidebar-link sidebar-sub flex items-center gap-3 pl-11 pr-5 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-国内生产环境" data-cred-env="国内生产环境">
-                    <span class="w-1 h-1 bg-gray-400 rounded-full"></span> 国内生产环境
+                    国内生产环境
                 </a>
                 <a href="#" onclick="switchCredEnv('新加坡生产环境', event); return false;"
-                    class="sidebar-link sidebar-sub flex items-center gap-3 pl-11 pr-5 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-新加坡生产环境" data-cred-env="新加坡生产环境">
-                    <span class="w-1 h-1 bg-gray-400 rounded-full"></span> 新加坡生产环境
+                    新加坡生产环境
                 </a>
                 <a href="#" onclick="switchCredEnv('北美生产环境', event); return false;"
-                    class="sidebar-link sidebar-sub flex items-center gap-3 pl-11 pr-5 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-北美生产环境" data-cred-env="北美生产环境">
-                    <span class="w-1 h-1 bg-gray-400 rounded-full"></span> 北美生产环境
+                    北美生产环境
                 </a>
             </div>
             {% endif %}
@@ -688,6 +688,18 @@
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-medium text-gray-500">业务用途</label>
+                            {% if permissions == '*' %}
+                            <button onclick="openBizColorModal()" class="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1.5 py-0.5" title="调整业务用途颜色">🎨 颜色</button>
+                            {% endif %}
+                        </div>
+                        <select id="credPurposeFilter" onchange="credSearch()"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <option value="">全部业务</option>
+                        </select>
+                    </div>
+                    <div class="flex-1 min-w-0">
                         <label class="block text-xs font-medium text-gray-500 mb-1">关键词</label>
                         <div class="relative">
                             <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -712,6 +724,7 @@
                     <table class="w-full text-sm text-left table-fixed">
                         <colgroup>
                             <col style="width:3rem"><!-- # -->
+                            <col style="width:7rem"><!-- 业务用途 -->
                             <col style="width:10rem"><!-- 业务名称 -->
                             <col style="width:7rem"><!-- 服务供应商 -->
                             <col style="width:6rem"><!-- 应用类型 -->
@@ -728,6 +741,7 @@
                         <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
                             <tr>
                                 <th class="px-3 py-3 font-medium text-gray-600">#</th>
+                                <th class="px-3 py-3 font-medium text-gray-600">业务用途</th>
                                 <th class="px-3 py-3 font-medium text-gray-600">业务名称</th>
                                 <th class="px-3 py-3 font-medium text-gray-600">服务供应商</th>
                                 <th class="px-3 py-3 font-medium text-gray-600">应用类型</th>
@@ -743,7 +757,7 @@
                             </tr>
                         </thead>
                         <tbody id="credTableBody">
-                            <tr><td colspan="13" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr>
+                            <tr><td colspan="14" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -1871,6 +1885,19 @@
                 <input type="hidden" id="credFormId">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">业务用途</label>
+                        <select id="credFormPurpose" onchange="credFormPurposeChange()"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
+                            <option value="点餐业务">🍚 点餐业务</option>
+                            <option value="会员业务">👥 会员业务</option>
+                            <option value="外卖业务">🛵 外卖业务</option>
+                            <option value="供应链">📦 供应链</option>
+                            <option value="通用服务">⚙️ 通用服务</option>
+                            <option value="__custom__">✏️ 自定义...</option>
+                        </select>
+                        <input id="credFormPurposeCustom" type="text" placeholder="输入新的业务用途..." class="hidden mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">环境 <span class="text-red-500">*</span></label>
                         <select id="credFormEnv" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                             <option value="超融合电信开发环境">超融合电信开发环境</option>
@@ -1996,6 +2023,24 @@
                         class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <!-- 业务用途颜色配置弹窗 -->
+    <div id="bizColorModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeBizColorModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">业务用途颜色</h3>
+                <button onclick="closeBizColorModal()" class="p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 mb-4">点击色块选择新颜色，保存后表格徽章即时生效</p>
+            <div id="bizColorList" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
+            <div class="flex justify-end gap-3 mt-5">
+                <button onclick="closeBizColorModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">关闭</button>
+            </div>
         </div>
     </div>
 
@@ -3153,9 +3198,10 @@
         // 加载凭证模块下拉数据（业务名称去重 / 服务供应商合并预填默认值）
         async function loadCredDatalists() {
             try {
-                const [namesRes, providersRes] = await Promise.all([
+                const [namesRes, providersRes, purpRes] = await Promise.all([
                     api('/api/credential-service-names'),
                     api('/api/credential-providers'),
+                    api('/api/credentials/business-purposes'),
                 ]);
                 credNameAll = (namesRes.data || []).filter((v, i, a) => a.indexOf(v) === i); // 去重
                 // 弹窗业务名称下拉面板
@@ -3165,6 +3211,17 @@
                 credFormProviderList = [...DEFAULT_PROVIDERS, ...userProviders].filter((v, i, a) => a.indexOf(v) === i);
                 // 顶部业务名称下拉面板
                 if ($('#credNameUl')) renderCredNameUl();
+                // 业务用途：下拉 + 颜色映射
+                const purpData = (purpRes && purpRes.data) || {};
+                window._credBizPurposes = purpData.purposes || [];
+                window._credBizColors = Object.assign({}, purpData.colors || {});
+                const pf = $('#credPurposeFilter');
+                if (pf) {
+                    const cur = pf.value;
+                    pf.innerHTML = '<option value="">全部业务</option>' +
+                        window._credBizPurposes.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
+                    pf.value = cur;
+                }
             } catch (err) {
                 console.error('加载凭证下拉数据失败:', err);
             }
@@ -3367,6 +3424,8 @@
             if (credEnv) params.set('env', credEnv);
             if (credName) params.set('name', credName);
             if (credKeyword) params.set('keyword', credKeyword);
+            const pf = $('#credPurposeFilter');
+            if (pf && pf.value) params.set('purpose', pf.value);
             params.set('page', credPage);
             params.set('page_size', credPageSize);
 
@@ -3408,15 +3467,20 @@
         }
 
         function renderCredTable(items) {
+            window._credLastItems = items;
             const tbody = $('#credTableBody');
             if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="13" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="14" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>`;
                 return;
             }
+            const bizColors = window._credBizColors || {};
             tbody.innerHTML = items.map((d, i) => {
+                const purpose = d.business_purpose || '通用服务';
+                const color = bizColors[purpose] || '#9ca3af';
                 return `
                 <tr class="table-row-hover border-b border-gray-100">
                   <td class="px-3 py-3 text-gray-400 text-xs">${(credPage - 1) * credPageSize + i + 1}</td>
+                  <td class="px-3 py-3 whitespace-nowrap"><span class="inline-block px-2 py-0.5 rounded-md text-xs font-medium" style="background:${color}1a;color:${color};border:1px solid ${color}40">${esc(purpose)}</span></td>
                   <td class="px-3 py-3 font-medium text-gray-900 whitespace-nowrap">${esc(d.service_name) || '-'}</td>
                   <td class="px-3 py-3 text-gray-700">${esc(d.service_provider) || '-'}</td>
                   <td class="px-3 py-3 text-gray-700">${esc(d.app_type) || '-'}</td>
@@ -3445,6 +3509,7 @@
         }
         function credReset() {
             $('#credFilterKeyword').value = '';
+            const pf = $('#credPurposeFilter'); if (pf) pf.value = '';
             credName = ''; credKeyword = ''; credPage = 1;
             $('#credNameTriggerLabel').textContent = '全部';
             $('#credNameTriggerLabel').className = 'text-gray-400 truncate';
@@ -3466,6 +3531,19 @@
             }
         });
 
+        // 业务用途：选择自定义时显示输入框
+        function credFormPurposeChange() {
+            const sel = $('#credFormPurpose');
+            const custom = $('#credFormPurposeCustom');
+            if (sel.value === '__custom__') { custom.classList.remove('hidden'); custom.focus(); }
+            else { custom.classList.add('hidden'); custom.value = ''; }
+        }
+        function credFormReadPurpose() {
+            let p = $('#credFormPurpose').value;
+            if (p === '__custom__') p = $('#credFormPurposeCustom').value.trim();
+            return p || '通用服务';
+        }
+
         // 凭证弹窗
         async function openCredAddModal() {
             closeAllModals();
@@ -3474,6 +3552,9 @@
             // 重置所有表单字段（包括下拉触发按钮的 label 和 dataset）
             $('#credForm').reset();
             $('#credFormEnv').value = credEnv || CRED_ENVS[0];
+            $('#credFormPurpose').value = '通用服务';
+            $('#credFormPurposeCustom').value = '';
+            $('#credFormPurposeCustom').classList.add('hidden');
             $('#credFormServiceTriggerLabel').textContent = '请选择或输入...';
             $('#credFormServiceTriggerLabel').className = 'text-gray-400 truncate';
             delete $('#credFormServiceTriggerLabel').dataset.value;
@@ -3494,6 +3575,18 @@
                     $('#credFormId').value = d.id;
                     $('#credModalTitle').textContent = '编辑凭证';
                     $('#credFormEnv').value = d.env || credEnv || '';
+                    // 业务用途：预设内直接选，预设外走自定义输入
+                    const PRE = ['点餐业务', '会员业务', '外卖业务', '供应链', '通用服务'];
+                    const curPurpose = d.business_purpose || '通用服务';
+                    $('#credFormPurposeCustom').value = '';
+                    $('#credFormPurposeCustom').classList.add('hidden');
+                    if (PRE.includes(curPurpose)) {
+                        $('#credFormPurpose').value = curPurpose;
+                    } else {
+                        $('#credFormPurpose').value = '__custom__';
+                        $('#credFormPurposeCustom').classList.remove('hidden');
+                        $('#credFormPurposeCustom').value = curPurpose;
+                    }
                     // 业务名称触发按钮
                     if (d.service_name) {
                         $('#credFormServiceTriggerLabel').textContent = d.service_name;
@@ -3533,6 +3626,45 @@
         }
         function closeCredFormModal() { $('#credFormModal').classList.add('hidden'); $('#credFormModal').classList.remove('flex'); }
 
+        // ===== 业务用途颜色配置 =====
+        const BIZ_COLOR_PRESETS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#64748b', '#9ca3af'];
+        async function openBizColorModal() {
+            closeAllModals();
+            try {
+                const res = await api('/api/credentials/business-purposes');
+                const purpData = (res && res.data) || {};
+                const colors = Object.assign({}, purpData.colors || {});
+                const purposes = purpData.purposes && purpData.purposes.length ? purpData.purposes : ['点餐业务', '会员业务', '外卖业务', '供应链', '通用服务'];
+                window._credBizColors = colors;
+                $('#bizColorList').innerHTML = purposes.map(p => {
+                    const c = colors[p] || '#9ca3af';
+                    return `<div class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50">
+                        <span class="flex-1 text-sm text-gray-800">${esc(p)}</span>
+                        <input type="color" value="${c}" onchange="saveBizColor('${esc(p)}', this.value)" class="w-8 h-8 rounded cursor-pointer border border-gray-200 bg-white p-0.5" title="点击选择颜色">
+                        <span class="text-[10px] text-gray-400 font-mono w-16 truncate">${c}</span>
+                    </div>`;
+                }).join('');
+                $('#bizColorModal').classList.remove('hidden');
+                $('#bizColorModal').classList.add('flex');
+            } catch (err) {
+                showToast('加载业务用途失败: ' + err.message, 'error');
+            }
+        }
+        function closeBizColorModal() { $('#bizColorModal').classList.add('hidden'); $('#bizColorModal').classList.remove('flex'); }
+        async function saveBizColor(purpose, color) {
+            try {
+                const res = await api('/api/credentials/business-purposes/colors', {
+                    method: 'PUT', body: JSON.stringify({ purpose, color })
+                });
+                if (res.code === 0) {
+                    if (!window._credBizColors) window._credBizColors = {};
+                    window._credBizColors[purpose] = color;
+                    showToast(res.message || '颜色已更新');
+                    renderCredTable(window._credLastItems || []);
+                } else showToast(res.message || '保存失败', 'error');
+            } catch (err) { showToast('保存失败: ' + err.message, 'error'); }
+        }
+
         async function saveCredential(e) {
             e.preventDefault();
             const id = $('#credFormId').value;
@@ -3544,6 +3676,7 @@
                 return;
             }
             const body = {
+                business_purpose: credFormReadPurpose(),
                 env: $('#credFormEnv').value,
                 service_name: svcName,
                 service_provider: $('#credFormProviderTriggerLabel').dataset.value || '',

@@ -308,10 +308,19 @@ def _init_db_sqlite():
             conn.commit()
         # 兼容旧库：service_credentials 补充 env/app_type/version 列
         cred_cols = [r["name"] for r in conn.execute("PRAGMA table_info(service_credentials)").fetchall()]
-        for col, ddl in [("env", "TEXT DEFAULT ''"), ("app_type", "TEXT DEFAULT ''"), ("version", "TEXT DEFAULT ''"), ("service_provider", "TEXT DEFAULT ''")]:
+        for col, ddl in [("env", "TEXT DEFAULT ''"), ("app_type", "TEXT DEFAULT ''"), ("version", "TEXT DEFAULT ''"), ("service_provider", "TEXT DEFAULT ''"), ("business_purpose", "TEXT DEFAULT '通用服务'")]:
             if col not in cred_cols:
                 conn.execute(f"ALTER TABLE service_credentials ADD COLUMN {col} {ddl}")
                 conn.commit()
+        # 业务类型颜色表（可配置）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cred_business_colors (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                purpose TEXT NOT NULL UNIQUE,
+                color VARCHAR(7) DEFAULT '#9ca3af',
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         # 兼容旧库：business_links 补充 color 列（自定义图标颜色）
         link_cols = [r["name"] for r in conn.execute("PRAGMA table_info(business_links)").fetchall()]
         if "color" not in link_cols:
@@ -393,7 +402,7 @@ def _init_db_mysql():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
         # 兼容旧库：service_credentials 补充 env/app_type/version 列（必须在建索引前）
-        for col, ddl in [("env", "VARCHAR(50) DEFAULT ''"), ("app_type", "VARCHAR(50) DEFAULT ''"), ("version", "VARCHAR(50) DEFAULT ''"), ("service_provider", "VARCHAR(100) DEFAULT ''")]:
+        for col, ddl in [("env", "VARCHAR(50) DEFAULT ''"), ("app_type", "VARCHAR(50) DEFAULT ''"), ("version", "VARCHAR(50) DEFAULT ''"), ("service_provider", "VARCHAR(100) DEFAULT ''"), ("business_purpose", "VARCHAR(50) DEFAULT '通用服务'")]:
             row = conn.execute(
                 "SELECT COUNT(*) AS cnt FROM information_schema.columns WHERE table_schema=%s AND table_name='service_credentials' AND column_name=%s",
                 (DB_NAME, col)
@@ -402,6 +411,14 @@ def _init_db_mysql():
                 conn.execute(f"ALTER TABLE service_credentials ADD COLUMN {col} {ddl}")
                 conn.commit()
         _mysql_ensure_index(conn, "service_credentials", "idx_cred_env", "env")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cred_business_colors (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                purpose VARCHAR(50) NOT NULL UNIQUE,
+                color VARCHAR(7) DEFAULT '#9ca3af',
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """)
         conn.execute("""
             CREATE TABLE IF NOT EXISTS domains (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -611,7 +628,7 @@ class Database:
 
     # ---- 服务凭证 CRUD ----
 
-    def get_credentials(self, env="", name="", keyword="", type="", status="", page=1, page_size=20):
+    def get_credentials(self, env="", name="", keyword="", type="", status="", purpose="", page=1, page_size=20):
         """查询凭证列表（name: 业务名称模糊；keyword: 地址/账号/备注等）"""
         conditions, params = [], []
         if env:
@@ -630,6 +647,9 @@ class Database:
         if status:
             conditions.append("status = ?")
             params.append(status)
+        if purpose:
+            conditions.append("business_purpose = ?")
+            params.append(purpose)
 
         where = " WHERE " + " AND ".join(conditions) if conditions else ""
         with get_conn() as conn:
@@ -649,12 +669,14 @@ class Database:
 
     def create_credential(self, **fields):
         """新增凭证"""
-        allowed = ["env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
+        allowed = ["business_purpose", "env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
                    "username", "password", "ssh_key", "api_token", "internal_url", "internal_port",
                    "external_url", "external_port", "db_name", "owner", "expires_at", "status", "notes"]
         cols = ["env", "service_name"]
         vals = [fields.get("env", ""), fields.get("service_name", "")]
-        for f in allowed[2:]:
+        for f in allowed:
+            if f in ("env", "service_name"):
+                continue
             cols.append(f)
             vals.append(_clean_dt(fields.get(f, "")))
 
@@ -669,7 +691,7 @@ class Database:
 
     def update_credential(self, cid, **fields):
         """更新凭证"""
-        allowed = ["env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
+        allowed = ["business_purpose", "env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
                    "username", "password", "ssh_key", "api_token", "internal_url", "internal_port",
                    "external_url", "external_port", "db_name", "owner", "expires_at", "status", "notes"]
         updates = {k: v for k, v in fields.items() if k in allowed}
@@ -692,6 +714,39 @@ class Database:
             cursor = conn.execute("DELETE FROM service_credentials WHERE id=?", (cid,))
             conn.commit()
             return cursor.rowcount > 0
+
+    # ---------- 业务用途（business_purpose）+ 颜色配置 ----------
+    def get_credential_purposes(self):
+        """获取业务用途列表（去重，按使用次数降序）"""
+        with get_conn() as conn:
+            rows = conn.execute(
+                "SELECT business_purpose AS p, COUNT(*) AS cnt FROM service_credentials "
+                "WHERE business_purpose IS NOT NULL AND business_purpose != '' "
+                "GROUP BY business_purpose ORDER BY cnt DESC, business_purpose ASC"
+            ).fetchall()
+            return [r["p"] for r in rows]
+
+    def get_business_colors(self):
+        """获取业务用途颜色映射 {purpose: color}（缺省灰色）"""
+        with get_conn() as conn:
+            rows = conn.execute("SELECT purpose, color FROM cred_business_colors").fetchall()
+            return {r["purpose"]: r["color"] for r in rows}
+
+    def set_business_color(self, purpose, color):
+        """设置业务用途颜色（UPSERT）"""
+        if not purpose or not color:
+            return False
+        color = color.strip()
+        if not (len(color) == 7 and color.startswith("#")):
+            return False
+        with get_conn() as conn:
+            row = conn.execute("SELECT id FROM cred_business_colors WHERE purpose=?", (purpose,)).fetchone()
+            if row:
+                conn.execute("UPDATE cred_business_colors SET color=? WHERE purpose=?", (color, purpose))
+            else:
+                conn.execute("INSERT INTO cred_business_colors (purpose, color) VALUES (?, ?)", (purpose, color))
+            conn.commit()
+            return True
 
     def get_credential_envs(self):
         """获取凭证环境列表（去重）"""
