@@ -208,35 +208,41 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </a>
-            <!-- 网络工具子菜单 -->
+            <!-- 网络工具子菜单（分组折叠，默认全折叠） -->
             <div id="netSubmenu" class="hidden ml-9 border-l border-gray-200">
-                <a href="#" onclick="switchNetTab('ip'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="ip" id="netSub-ip">IP 查询</a>
-                <a href="#" onclick="switchNetTab('ping'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="ping" id="netSub-ping">PING 检测</a>
-                <a href="#" onclick="switchNetTab('tcping'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="tcping" id="netSub-tcping">TCPing</a>
-                <a href="#" onclick="switchNetTab('dns'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="dns" id="netSub-dns">DNS 查询</a>
-                <a href="#" onclick="switchNetTab('route'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="route" id="netSub-route">路由查询</a>
-                <a href="#" onclick="switchNetTab('mtr'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="mtr" id="netSub-mtr">MTR 路由</a>
-                <a href="#" onclick="switchNetTab('cdn'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="cdn" id="netSub-cdn">CDN 查询</a>
-                <a href="#" onclick="switchNetTab('whois'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="whois" id="netSub-whois">Whois 查询</a>
-                <a href="#" onclick="switchNetTab('ssl'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-net-tab="ssl" id="netSub-ssl">SSL 检测</a>
+                <div data-net-group="netg-diag">
+                    <button onclick="toggleToolGroup('netg-diag', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>网络诊断</span>
+                    </button>
+                    <div id="netg-diag" class="hidden">
+                        <a href="#" onclick="switchNetTab('ping'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="ping" id="netSub-ping">PING 检测</a>
+                        <a href="#" onclick="switchNetTab('tcping'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="tcping" id="netSub-tcping">TCPing</a>
+                        <a href="#" onclick="switchNetTab('route'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="route" id="netSub-route">路由查询</a>
+                        <a href="#" onclick="switchNetTab('mtr'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="mtr" id="netSub-mtr">MTR 路由</a>
+                    </div>
+                </div>
+                <div data-net-group="netg-dns">
+                    <button onclick="toggleToolGroup('netg-dns', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>DNS 域名</span>
+                    </button>
+                    <div id="netg-dns" class="hidden">
+                        <a href="#" onclick="switchNetTab('dns'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="dns" id="netSub-dns">DNS 查询</a>
+                        <a href="#" onclick="switchNetTab('whois'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="whois" id="netSub-whois">Whois 查询</a>
+                        <a href="#" onclick="switchNetTab('ssl'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="ssl" id="netSub-ssl">SSL 检测</a>
+                    </div>
+                </div>
+                <div data-net-group="netg-ip">
+                    <button onclick="toggleToolGroup('netg-ip', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>IP 查询</span>
+                    </button>
+                    <div id="netg-ip" class="hidden">
+                        <a href="#" onclick="switchNetTab('ip'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="ip" id="netSub-ip">IP 查询</a>
+                        <a href="#" onclick="switchNetTab('cdn'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="cdn" id="netSub-cdn">CDN 查询</a>
+                    </div>
+                </div>
             </div>
             {% endif %}
 
@@ -253,48 +259,70 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </a>
-            <!-- 运维小工具子菜单 -->
+            <!-- 运维小工具子菜单（分组折叠，默认全折叠） -->
             <div id="utilsSubmenu" class="hidden ml-9 border-l border-gray-200">
-                <a href="#" onclick="switchUtilsTab('cidr'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="cidr" id="utilsSub-cidr">CIDR 子网计算器</a>
-                <a href="#" onclick="switchUtilsTab('timestamp'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="timestamp" id="utilsSub-timestamp">时间戳换算</a>
-                <a href="#" onclick="switchUtilsTab('json'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="json" id="utilsSub-json">JSON 格式化</a>
-                <a href="#" onclick="switchUtilsTab('encode'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="encode" id="utilsSub-encode">编解码/哈希</a>
-                <a href="#" onclick="switchUtilsTab('webhook'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="webhook" id="utilsSub-webhook">Webhook 测试</a>
-                <a href="#" onclick="switchUtilsTab('batch'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="batch" id="utilsSub-batch">批量端口连通检查</a>
-                <a href="#" onclick="switchUtilsTab('health'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="health" id="utilsSub-health">HTTP 健康检查</a>
-                <a href="#" onclick="switchUtilsTab('cert'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="cert" id="utilsSub-cert">证书批量到期监控</a>
-                <a href="#" onclick="switchUtilsTab('yaml'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="yaml" id="utilsSub-yaml">K8s Yaml 检测</a>
-                <a href="#" onclick="switchUtilsTab('curl'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="curl" id="utilsSub-curl">Curl 请求调试</a>
-                <a href="#" onclick="switchUtilsTab('diff'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="diff" id="utilsSub-diff">文本比较</a>
-                <a href="#" onclick="switchUtilsTab('dedup'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="dedup" id="utilsSub-dedup">文本去重</a>
-                <a href="#" onclick="switchUtilsTab('generator'); return false;"
-                    class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    data-utils-tab="generator" id="utilsSub-generator">生成器</a>
+                <div data-utils-group="utg-encode">
+                    <button onclick="toggleToolGroup('utg-encode', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>编码校验</span>
+                    </button>
+                    <div id="utg-encode" class="hidden">
+                        <a href="#" onclick="switchUtilsTab('json'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="json" id="utilsSub-json">JSON 格式化</a>
+                        <a href="#" onclick="switchUtilsTab('encode'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="encode" id="utilsSub-encode">编码解码·哈希</a>
+                        <a href="#" onclick="switchUtilsTab('yaml'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="yaml" id="utilsSub-yaml">K8s YAML 检测</a>
+                    </div>
                 </div>
+                <div data-utils-group="utg-http">
+                    <button onclick="toggleToolGroup('utg-http', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>接口调试</span>
+                    </button>
+                    <div id="utg-http" class="hidden">
+                        <a href="#" onclick="switchUtilsTab('health'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="health" id="utilsSub-health">HTTP 健康检查</a>
+                        <a href="#" onclick="switchUtilsTab('curl'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="curl" id="utilsSub-curl">Curl 请求调试</a>
+                        <a href="#" onclick="switchUtilsTab('webhook'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="webhook" id="utilsSub-webhook">Webhook 调试</a>
+                    </div>
+                </div>
+                <div data-utils-group="utg-batch">
+                    <button onclick="toggleToolGroup('utg-batch', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>批量检测</span>
+                    </button>
+                    <div id="utg-batch" class="hidden">
+                        <a href="#" onclick="switchUtilsTab('cert'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="cert" id="utilsSub-cert">证书批量到期检测</a>
+                        <a href="#" onclick="switchUtilsTab('batch'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="batch" id="utilsSub-batch">批量端口连通性检测</a>
+                    </div>
+                </div>
+                <div data-utils-group="utg-text">
+                    <button onclick="toggleToolGroup('utg-text', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>文本工具</span>
+                    </button>
+                    <div id="utg-text" class="hidden">
+                        <a href="#" onclick="switchUtilsTab('diff'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="diff" id="utilsSub-diff">文本比较</a>
+                        <a href="#" onclick="switchUtilsTab('dedup'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="dedup" id="utilsSub-dedup">文本去重</a>
+                    </div>
+                </div>
+                <div data-utils-group="utg-gen">
+                    <button onclick="toggleToolGroup('utg-gen', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>辅助生成</span>
+                    </button>
+                    <div id="utg-gen" class="hidden">
+                        <a href="#" onclick="switchUtilsTab('generator'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="generator" id="utilsSub-generator">生成器</a>
+                    </div>
+                </div>
+                <div data-utils-group="utg-calc">
+                    <button onclick="toggleToolGroup('utg-calc', this)" class="w-full flex items-center gap-1.5 pl-1 pr-3 py-1.5 text-base font-normal text-gray-700 hover:text-gray-900 hover:bg-gray-50 transition-colors" title="展开/收起">
+                        <svg class="toolg-arrow w-2.5 h-2.5 text-gray-400 transition-transform -rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                        <span>计算换算</span>
+                    </button>
+                    <div id="utg-calc" class="hidden">
+                        <a href="#" onclick="switchUtilsTab('cidr'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="cidr" id="utilsSub-cidr">CIDR 子网计算器</a>
+                        <a href="#" onclick="switchUtilsTab('timestamp'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="timestamp" id="utilsSub-timestamp">时间戳换算</a>
+                    </div>
+                </div>
+            </div>
             {% endif %}
 
             <!-- 业务跳转（所有登录用户可见） -->
@@ -2341,6 +2369,14 @@
                 const hit = !kw || text.includes(kw);
                 el.style.display = hit ? '' : 'none';
                 if (hit) any = true;
+                // 命中工具子项 → 自动展开其分组（网络工具/运维小工具分组折叠）
+                if (hit && kw) {
+                    const groupWrap = el.closest('[data-net-group],[data-utils-group]');
+                    if (groupWrap) {
+                        const gid = groupWrap.getAttribute('data-net-group') || groupWrap.getAttribute('data-utils-group');
+                        if (gid) toolGroupOpen(gid);
+                    }
+                }
             });
             // 父菜单：自身不匹配但子菜单有匹配 → 强制显示 + 自动展开子菜单
             const parentMap = {
@@ -2381,6 +2417,12 @@
                 const sub = document.getElementById(id);
                 if (sub) sub.classList.add('hidden');
             });
+            // 工具分组恢复默认全折叠（不持久化）
+            ['netg-diag', 'netg-dns', 'netg-ip', 'utg-encode', 'utg-http', 'utg-batch', 'utg-text', 'utg-gen', 'utg-calc'].forEach(gid => {
+                const g = document.getElementById(gid);
+                if (g) g.classList.add('hidden');
+            });
+            document.querySelectorAll('.toolg-arrow').forEach(a => a.classList.add('-rotate-90'));
             const hint = document.getElementById('menuSearchEmpty');
             if (hint) hint.style.display = 'none';
         }
@@ -4028,6 +4070,26 @@
             arrow.classList.toggle('rotate-180');
         }
 
+        // 工具分组折叠（网络工具/运维小工具共用）：点击分组标题展开/收起组内子项
+        function toggleToolGroup(groupId, btn) {
+            const g = document.getElementById(groupId);
+            if (!g) return;
+            g.classList.toggle('hidden');
+            const arrow = btn ? btn.querySelector('.toolg-arrow') : null;
+            if (arrow) arrow.classList.toggle('-rotate-90');
+        }
+        // 展开指定分组（跳转/搜索命中时用，不持久化）
+        function toolGroupOpen(groupId) {
+            const g = document.getElementById(groupId);
+            if (!g) return;
+            g.classList.remove('hidden');
+            const wrap = g.closest('[data-net-group],[data-utils-group]');
+            if (wrap) {
+                const arrow = wrap.querySelector('.toolg-arrow');
+                if (arrow) arrow.classList.remove('-rotate-90');
+            }
+        }
+
         function switchNetTab(tab) {
             netActiveTab = tab;
             // 先切页（switchPage 会清 active），再设置高亮
@@ -4040,9 +4102,11 @@
             const el = document.getElementById(`netSub-${tab}`);
             if (el) el.classList.add('active');
             document.getElementById('netMenuToggle').classList.add('active');
-            // 展开子菜单
+            // 展开子菜单 + 自动展开当前工具所在分组
             document.getElementById('netSubmenu').classList.remove('hidden');
             document.getElementById('netMenuArrow').classList.add('rotate-180');
+            const NET_GROUP_MAP = { ping: 'netg-diag', tcping: 'netg-diag', route: 'netg-diag', mtr: 'netg-diag', dns: 'netg-dns', whois: 'netg-dns', ssl: 'netg-dns', ip: 'netg-ip', cdn: 'netg-ip' };
+            if (NET_GROUP_MAP[tab]) toolGroupOpen(NET_GROUP_MAP[tab]);
         }
 
         // --- 网络工具通用辅助 ---
@@ -4581,6 +4645,9 @@
             document.getElementById('utilsMenuToggle').classList.add('active');
             document.getElementById('utilsSubmenu').classList.remove('hidden');
             document.getElementById('utilsMenuArrow').classList.add('rotate-180');
+            // 自动展开当前工具所在分组
+            const UTILS_GROUP_MAP = { json: 'utg-encode', encode: 'utg-encode', yaml: 'utg-encode', health: 'utg-http', curl: 'utg-http', webhook: 'utg-http', cert: 'utg-batch', batch: 'utg-batch', diff: 'utg-text', dedup: 'utg-text', generator: 'utg-gen', cidr: 'utg-calc', timestamp: 'utg-calc' };
+            if (UTILS_GROUP_MAP[tab]) toolGroupOpen(UTILS_GROUP_MAP[tab]);
             // 生成器相关：进入时更新历史计数徽章 + 默认生成一次
             if (tab === 'generator') { genHistoryUpdateBadge(); genSwitchTab(genActiveTab); }
         }
