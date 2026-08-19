@@ -733,8 +733,8 @@
                             <col style="width:5rem"><!-- 内网端口 -->
                             <col style="width:18rem"><!-- 公网地址（固定宽度换行） -->
                             <col style="width:5rem"><!-- 公网端口 -->
-                            <col style="width:7rem"><!-- 账号 -->
-                            <col style="width:5rem"><!-- 密码 -->
+                            <col style="width:12rem"><!-- 账号（长 ID/密钥 break-all 换行） -->
+                            <col style="width:7rem"><!-- 密码 -->
                             <col style="width:9rem"><!-- 备注 -->
                             <col style="width:6rem"><!-- 操作 -->
                         </colgroup>
@@ -3489,8 +3489,13 @@
                   <td class="px-3 py-3 text-gray-700 whitespace-nowrap">${d.internal_port || '-'}</td>
                   <td class="px-3 py-3 align-top"><div class="cursor-pointer copy-btn text-gray-700 break-all leading-relaxed" onclick="copySingle('${esc(d.external_url)}')" title="${esc(d.external_url)}">${esc(d.external_url) || '-'}</div></td>
                   <td class="px-3 py-3 text-gray-700 whitespace-nowrap">${d.external_port || '-'}</td>
-                  <td class="px-3 py-3 align-top"><span class="inline-flex items-center gap-1 cursor-pointer copy-btn" onclick="copySingle('${esc(d.username)}')"><code class="bg-gray-50 px-1.5 py-0.5 rounded text-gray-700">${esc(d.username) || '-'}</code></span></td>
-                  <td class="px-3 py-3 align-top"><span class="px-2 py-0.5 rounded text-xs font-mono text-gray-700">${d.password ? '●●●●●●●●' : '-'}</span></td>
+                  <td class="px-3 py-3 align-top"><code class="inline-block max-w-full bg-gray-50 px-1.5 py-0.5 rounded text-gray-700 break-all leading-relaxed cursor-pointer copy-btn" onclick="copySingle('${esc(d.username)}')" title="${esc(d.username || '')}">${esc(d.username) || '-'}</code></td>
+                  <td class="px-3 py-3 align-top">
+                    <div class="flex items-center gap-1">
+                      <span id="credPw-${d.id}" class="font-mono text-gray-700">${d.password ? '***' : '-'}</span>
+                      ${d.password ? `<button onclick="copyCredPw(${d.id}, this)" class="px-1 py-0.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded transition-colors" title="复制明文密码（仅管理员）"><svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/></svg></button>` : ''}
+                    </div>
+                  </td>
                   <td class="px-3 py-3 text-gray-700 break-all" title="${esc(d.notes || '')}">${esc(d.notes) || '-'}</td>
                   <td class="px-3 py-3 whitespace-nowrap align-top">
                     <div class="flex items-center gap-1">
@@ -3625,6 +3630,27 @@
             }
         }
         function closeCredFormModal() { $('#credFormModal').classList.add('hidden'); $('#credFormModal').classList.remove('flex'); }
+
+        // 密码复制：管理员点按钮 → 调 reveal API → 写入剪贴板 → 仅提示「已复制」不暴露明文
+        async function copyCredPw(cid, btn) {
+            if (!window.__isAdmin) return showToast('仅管理员可复制密码', 'error');
+            try {
+                const res = await api(`/api/credentials/${cid}/reveal-password`);
+                if (res.code !== 0) return showToast(res.message || '获取失败', 'error');
+                const pw = (res.data && res.data.password) || '';
+                if (!pw) return showToast('该凭证无密码', 'error');
+                await navigator.clipboard.writeText(pw);  // 直接写入剪贴板（不显示明文）
+                showToast('密码已复制到剪贴板');
+                btn.classList.add('text-blue-600', 'bg-blue-50');
+                btn.classList.remove('text-gray-400');
+                setTimeout(() => {
+                    btn.classList.remove('text-blue-600', 'bg-blue-50');
+                    btn.classList.add('text-gray-400');
+                }, 1500);
+            } catch (err) {
+                showToast('复制失败: ' + err.message, 'error');
+            }
+        }
 
         // ===== 业务用途颜色配置 =====
         const BIZ_COLOR_PRESETS = ['#ef4444', '#f97316', '#eab308', '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#6366f1', '#a855f7', '#ec4899', '#64748b', '#9ca3af'];

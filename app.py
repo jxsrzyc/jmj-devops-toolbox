@@ -314,6 +314,19 @@ def get_credential(cid):
     return jsonify({"code": 0, "data": item})
 
 
+@app.route("/api/credentials/<int:cid>/reveal-password", methods=["GET"])
+@require_perm("admin")
+def reveal_credential_password(cid):
+    """管理员查看密码明文（解密返回，仅供紧急排障）"""
+    from crypto import decrypt_password
+    item = db.get_credential_by_id(cid)
+    if not item:
+        return jsonify({"code": 404, "message": "记录不存在"}), 404
+    cipher = item.get("password", "") or ""
+    plain = decrypt_password(cipher) if cipher else ""
+    return jsonify({"code": 0, "data": {"password": plain}})
+
+
 @app.route("/api/credentials", methods=["POST"])
 def create_credential():
     """新增凭证（密码加密存储）"""
