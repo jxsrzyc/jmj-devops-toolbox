@@ -124,6 +124,11 @@
                     data-ci-tab="cidevflow" id="ciSub-cidevflow">
                     云效运行研发流程参数
                 </a>
+                <a href="#" onclick="switchCiTab('fixrecords'); return false;"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    data-ci-tab="fixrecords" id="ciSub-fixrecords">
+                    发版修复记录
+                </a>
             </div>
             {% endif %}
 
@@ -846,6 +851,52 @@
                         <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50"><tr><th class="px-4 py-3 font-medium text-gray-600">应用交付服务</th><th class="px-4 py-3 font-medium text-gray-600">环境</th><th class="px-4 py-3 font-medium text-gray-600">发版分支</th><th class="px-4 py-3 font-medium text-gray-600">代码仓库标识符</th><th class="px-4 py-3 font-medium text-gray-600 w-32">操作</th></tr></thead>
                 <tbody id="cioTableBody"><tr><td colspan="5" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
             </table></div><div class="border-t border-gray-200" id="cioPagination"></div></div>
+        </div>
+        <!-- 发版修复记录页面 -->
+        <div id="page-cifixrecords" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">发版修复记录</h2><p class="text-sm text-gray-500">工单重复发版原因汇总 · 发布时间/星期/技术线/工单/服务/修复原因</p></div>
+                <div class="flex gap-2">
+                    <div class="relative" id="fixrecordsExcelMenu">
+                        <button onclick="toggleExcelMenu('fixrecords')" class="inline-flex items-center px-3 py-2 bg-white text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-50 border border-gray-300 shadow-sm">Excel 操作 ▾</button>
+                        <div id="fixrecordsExcelDropdown" class="hidden absolute right-0 mt-1 w-44 bg-white border border-gray-200 rounded-lg shadow-lg z-20 py-1">
+                            <a href="#" onclick="importFixRecords(); closeExcelMenu('fixrecords'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📥 导入 Excel</a>
+                            <a href="#" onclick="exportFixRecords(); closeExcelMenu('fixrecords'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📤 导出当前数据</a>
+                            <a href="#" onclick="downloadTemplate('fix-records'); closeExcelMenu('fixrecords'); return false;" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">📋 下载导入模板</a>
+                        </div>
+                    </div>
+                    <button onclick="openFixAdd()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">+ 新增</button>
+                </div>
+            </div>
+            <div class="grid grid-cols-4 gap-4 mb-5">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">修复记录总数</p><p class="text-2xl font-bold text-blue-600" id="fixStatTotal">-</p></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">技术线数</p><p class="text-2xl font-bold text-green-600" id="fixStatTech">-</p></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">涉及服务数</p><p class="text-2xl font-bold text-purple-600" id="fixStatServices">-</p></div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4"><p class="text-xs text-gray-500">迭代日重复发版</p><p class="text-2xl font-bold text-amber-600" id="fixStatIterDup">-</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="flex flex-col xl:flex-row gap-3">
+                    <div class="flex-1"><label class="block text-xs font-medium text-gray-500 mb-1">搜索</label><div class="relative">
+                        <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                        <input id="fixKeyword" type="text" placeholder="搜索工单/服务/修复原因..." class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div>
+                    <div class="w-32"><label class="block text-xs font-medium text-gray-500 mb-1">技术线</label><select id="fixTechLine" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                    <div class="w-32"><label class="block text-xs font-medium text-gray-500 mb-1">发版类型</label><select id="fixType" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                    <div class="w-28"><label class="block text-xs font-medium text-gray-500 mb-1">星期</label><select id="fixWeekday" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                    <div class="w-40"><label class="block text-xs font-medium text-gray-500 mb-1">日期起</label><input id="fixDateFrom" type="date" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div class="w-40"><label class="block text-xs font-medium text-gray-500 mb-1">日期止</label><input id="fixDateTo" type="date" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div class="flex items-end gap-2"><button onclick="fixSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button><button onclick="fixReset()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button></div>
+                </div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                <div class="overflow-y-auto flex-1 min-h-0">
+                    <table class="w-full text-sm text-left">
+                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10"><tr>
+                            <th class="px-4 py-3 font-medium text-gray-600 w-16 whitespace-nowrap">序号</th><th class="px-4 py-3 font-medium text-gray-600 w-28 whitespace-nowrap">发布时间</th><th class="px-4 py-3 font-medium text-gray-600 w-16 whitespace-nowrap">星期</th><th class="px-4 py-3 font-medium text-gray-600 w-20 whitespace-nowrap">迭代日重复</th><th class="px-4 py-3 font-medium text-gray-600 w-20 whitespace-nowrap">技术线</th><th class="px-4 py-3 font-medium text-gray-600">重复发布工单</th><th class="px-4 py-3 font-medium text-gray-600">重复发布服务</th><th class="px-4 py-3 font-medium text-gray-600 w-24 whitespace-nowrap">发版类型</th><th class="px-4 py-3 font-medium text-gray-600">重复发布原因</th><th class="px-4 py-3 font-medium text-gray-600 w-32 whitespace-nowrap">操作</th>
+                        </tr></thead>
+                        <tbody id="fixTableBody"><tr><td colspan="10" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
+                    </table></div>
+                <div class="border-t border-gray-200" id="fixPagination"></div>
+            </div>
         </div>
         <!-- 云效运行研发流程页面 -->
         <div id="page-cidevflow" class="p-6 flex-1 flex flex-col min-h-0 hidden">
@@ -1961,6 +2012,32 @@
         </div>
     </div>
 
+    <div id="fixFormModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeFixForm()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-5"><h3 class="text-lg font-bold text-gray-900" id="fixModalTitle">新增修复记录</h3>
+                <button onclick="closeFixForm()" class="p-1 rounded-lg hover:bg-gray-100"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+            <form id="fixForm" onsubmit="saveFixItem(event)">
+                <input type="hidden" id="fixFormId">
+                <div class="grid grid-cols-2 gap-x-4 gap-y-3">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">发布时间</label><input id="fixFormDate" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">星期</label><select id="fixFormWeekday" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">- 请选择 -</option><option value="周一">周一</option><option value="周二">周二</option><option value="周三">周三</option><option value="周四">周四</option><option value="周五">周五</option><option value="周六">周六</option><option value="周日">周日</option></select></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">迭代日重复发版</label><select id="fixFormIterDup" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="否">否</option><option value="是">是</option></select></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">技术线</label><select id="fixFormTech" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">- 请选择 -</option><option value="前端">前端</option><option value="后端">后端</option></select></div>
+                    <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">重复发布工单（标题）</label><input id="fixFormWorkOrder" type="text" placeholder="如：《【发版】xxx》" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">工单链接</label><input id="fixFormUrl" type="url" placeholder="如：https://devops.aliyun.com/projex/task/xxx" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">重复发布服务 <span class="text-xs text-gray-400">（每行一个服务，如：big-data（大数据））</span></label><textarea id="fixFormService" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">重复发布类型</label><input id="fixFormType" type="text" list="fixTypeDatalist" value="修复发版" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><datalist id="fixTypeDatalist"><option value="修复发版"></option><option value="重复发版"></option><option value="紧急修复"></option><option value="回滚重发"></option></datalist></div>
+                    <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">重复发布原因</label><textarea id="fixFormReason" rows="4" placeholder="每行一条：1、xxx；2、xxx" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea></div>
+                </div>
+                <div class="flex justify-end gap-3 mt-6">
+                    <button type="button" onclick="closeFixForm()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
     <div id="domFormModal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeDomFormModal()"></div>
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg mx-4 p-6 modal-content">
@@ -2311,7 +2388,7 @@
             const initial = (d.username || 'U')[0].toUpperCase();
             $('#dashAvatar').textContent = initial;
             $('#dashGreeting').textContent = `${d.greeting}，${d.username}`;
-            $('#dashSub').textContent = `运维工具箱 · ${d.weekday} ${d.date}`;
+            $('#dashSub').textContent = `今天又是充满希望的一天 · ${d.weekday} ${d.date}`;
             // 统计卡片
             $('#dashStats').innerHTML = DASH_STAT_CARDS.map(c => {
                 const v = d.stats[c.key] ?? 0;
@@ -2989,7 +3066,7 @@
 
         // 关闭所有 modal（防止多个 modal 同时打开互相覆盖）
         function closeAllModals() {
-            const modals = ['formModal', 'userFormModal', 'ciFormModal', 'domFormModal', 'credFormModal', 'deleteModal', 'batchResultModal'];
+            const modals = ['formModal', 'userFormModal', 'ciFormModal', 'fixFormModal', 'domFormModal', 'credFormModal', 'deleteModal', 'batchResultModal'];
             modals.forEach(id => {
                 const el = document.getElementById(id);
                 if (el) { el.classList.add('hidden'); el.classList.remove('flex'); }
@@ -3007,6 +3084,7 @@
                     else if (endpoint === 'credentials') loadCredentials();
                     else if (endpoint === 'ci-orders') loadCiOrders();
                     else if (endpoint === 'ci-devflow') loadCiDevflows();
+                    else if (endpoint === 'fix-records') loadFixRecords();
                     else if (endpoint === 'domains') loadDomains();
                 } else {
                     alert('删除失败: ' + (res.message || '未知错误'));
@@ -3127,7 +3205,7 @@
             document.getElementById('ciSubmenu').classList.remove('hidden');
             document.getElementById('ciMenuArrow').classList.add('rotate-180');
             // 切换页面
-            const pageMap = { params: 'page-params', ciorders: 'page-ciorders', cidevflow: 'page-cidevflow' };
+            const pageMap = { params: 'page-params', ciorders: 'page-ciorders', cidevflow: 'page-cidevflow', fixrecords: 'page-cifixrecords' };
             document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
             const page = document.getElementById(pageMap[tab]);
             if (page) page.classList.remove('hidden');
@@ -3135,6 +3213,7 @@
             if (tab === 'ciorders') loadCiOrders();
             if (tab === 'cidevflow') loadCiDevflows();
             if (tab === 'params') { loadServices(); }
+            if (tab === 'fixrecords') loadFixRecords();
         }
 
         // --- 云效创建变更单 ---
@@ -3330,6 +3409,176 @@
 
         function exportCiOrders() { downloadWithParams('/api/ci-orders/export', { keyword: cioKeyword, env: cioEnv }); }
         function exportCiDevflow() { downloadWithParams('/api/ci-devflow/export', { keyword: cidKeyword, env: cidEnv }); }
+
+        // ==================== 发版修复记录 ====================
+        let fixPage = 1, fixPageSize = 20, fixKeyword = '', fixTechLine = '', fixType = '', fixWeekday = '', fixDateFrom = '', fixDateTo = '', fixFiltersLoaded = false;
+
+        async function loadFixFilters() {
+            try {
+                const res = await api('/api/fix-records/filters');
+                if (res.code !== 0 || !res.data) return;
+                const d = res.data;
+                const optionsHtml = (vals) => ['<option value="">全部</option>'].concat(
+                    (vals || []).map(v => `<option value="${esc(v)}">${esc(v)}</option>`)
+                ).join('');
+                const techSel = document.getElementById('fixTechLine');
+                const typeSel = document.getElementById('fixType');
+                const wkSel = document.getElementById('fixWeekday');
+                if (techSel) techSel.innerHTML = optionsHtml(d.tech_lines || []);
+                if (typeSel) typeSel.innerHTML = optionsHtml(d.release_types || []);
+                if (wkSel) wkSel.innerHTML = optionsHtml(d.weekdays || []);
+            } catch (e) {
+                console.error('[fix] loadFixFilters error:', e.message);
+            }
+            fixFiltersLoaded = true;
+        }
+
+        async function loadFixRecords() {
+            try {
+                if (!fixFiltersLoaded) await loadFixFilters();
+                const params = new URLSearchParams({
+                    page: fixPage, page_size: fixPageSize, keyword: fixKeyword,
+                    tech_line: fixTechLine, release_type: fixType, weekday: fixWeekday,
+                    date_from: fixDateFrom, date_to: fixDateTo
+                });
+                const res = await api(`/api/fix-records?${params}`);
+                if (res.code === 0) {
+                    const body = document.getElementById('fixTableBody');
+                    if (!body) { console.error('[fix] fixTableBody 不存在'); return; }
+                    body.innerHTML = res.data.length === 0 ? '<tr><td colspan="10" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>'
+                        : res.data.map((d, i) => {
+                            const rowNo = (res.page - 1) * res.page_size + i + 1;  // 序号按当前排序位置生成（连续 1,2,3...）
+                            const wo = d.work_order_url
+                                ? `<a href="${esc(d.work_order_url)}" target="_blank" rel="noopener" class="text-blue-600 hover:underline break-all">${esc(d.work_order || d.work_order_url)}</a>`
+                                : esc(d.work_order || '-');
+                            const services = (d.service_name || '').split('\n').filter(s => s.trim())
+                                .map(s => `<span class="inline-block bg-gray-50 border border-gray-200 rounded px-1.5 py-0.5 text-xs text-gray-700 mr-1 mb-1">${esc(s.trim())}</span>`).join('') || '-';
+                            const reason = (d.fix_reason || '').split('\n').filter(s => s.trim()).join('<br>') || '-';
+                            return `<tr class="table-row-hover border-b border-gray-100">
+                                <td class="px-4 py-3 text-gray-500 whitespace-nowrap">${rowNo}</td>
+                                <td class="px-4 py-3 font-mono whitespace-nowrap">${esc(d.release_date)}</td>
+                                <td class="px-4 py-3 text-gray-600 whitespace-nowrap">${esc(d.weekday)}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">${d.iter_day_dup === '是' ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">是</span>' : '<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">否</span>'}</td>
+                                <td class="px-4 py-3 whitespace-nowrap">${d.tech_line ? `<span class="px-2 py-0.5 rounded text-xs font-medium ${d.tech_line === '后端' ? 'bg-blue-100 text-blue-700' : d.tech_line === '前端' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'}">${esc(d.tech_line)}</span>` : '-'}</td>
+                                <td class="px-4 py-3 max-w-[220px]">${wo}</td>
+                                <td class="px-4 py-3 max-w-[240px]">${services}</td>
+                                <td class="px-4 py-3"><span class="px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 whitespace-nowrap">${esc(d.release_type)}</span></td>
+                                <td class="px-4 py-3 max-w-[300px] text-gray-600"><div class="line-clamp-2">${reason}</div></td>
+                                <td class="px-4 py-3 whitespace-nowrap"><button onclick="openFixEdit(${d.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button><button onclick="quickDelete('fix-records', ${d.id}, '${esc(d.work_order || d.service_name || ('记录' + d.id))}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded">删除</button></td>
+                            </tr>`;
+                        }).join('');
+                    const statTotal = document.getElementById('fixStatTotal');
+                    if (statTotal) statTotal.textContent = res.total;
+                    renderPagination('fixPagination', res.total, res.page, fixPageSize,
+                        (p) => { fixPage = p; loadFixRecords(); },
+                        (s) => { fixPageSize = s; fixPage = 1; loadFixRecords(); }
+                    );
+                    // 统计（基于全量数据）
+                    try {
+                        const all = await api('/api/fix-records?page=1&page_size=10000');
+                        if (all.code === 0) {
+                            const techSet = new Set(all.data.map(d => d.tech_line).filter(Boolean));
+                            const svcSet = new Set();
+                            all.data.forEach(d => (d.service_name || '').split('\n').forEach(s => { if (s.trim()) svcSet.add(s.trim()); }));
+                            const st1 = document.getElementById('fixStatTech');
+                            const st2 = document.getElementById('fixStatServices');
+                            const st3 = document.getElementById('fixStatIterDup');
+                            if (st1) st1.textContent = techSet.size;
+                            if (st2) st2.textContent = svcSet.size;
+                            if (st3) st3.textContent = all.data.filter(d => d.iter_day_dup === '是').length;
+                        }
+                    } catch (e) { console.error('[fix] stats error:', e.message); }
+                }
+            } catch (e) {
+                console.error('[fix] loadFixRecords error:', e.message, '\n', e.stack);
+                const body = document.getElementById('fixTableBody');
+                if (body) body.innerHTML = `<tr><td colspan="10" class="px-4 py-12 text-center text-red-500">加载失败：${esc(e.message || String(e))}</td></tr>`;
+            }
+        }
+        function fixSearch() {
+            fixKeyword = $('#fixKeyword').value.trim(); fixTechLine = $('#fixTechLine').value; fixType = $('#fixType').value;
+            fixWeekday = $('#fixWeekday').value; fixDateFrom = $('#fixDateFrom').value; fixDateTo = $('#fixDateTo').value;
+            fixPage = 1; loadFixRecords();
+        }
+        function fixReset() {
+            ['fixKeyword', 'fixTechLine', 'fixType', 'fixWeekday', 'fixDateFrom', 'fixDateTo'].forEach(id => { $(id).value = ''; });
+            fixKeyword = ''; fixTechLine = ''; fixType = ''; fixWeekday = ''; fixDateFrom = ''; fixDateTo = ''; fixPage = 1; loadFixRecords();
+        }
+        $('#fixKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') fixSearch(); });
+        $('#fixTechLine').addEventListener('change', fixSearch);
+        $('#fixType').addEventListener('change', fixSearch);
+        $('#fixWeekday').addEventListener('change', fixSearch);
+        $('#fixDateFrom').addEventListener('change', fixSearch);
+        $('#fixDateTo').addEventListener('change', fixSearch);
+
+        // 日期 → 星期自动带出
+        $('#fixFormDate').addEventListener('change', function () {
+            const v = this.value;
+            if (!v) { $('#fixFormWeekday').value = ''; return; }
+            const parts = v.split('-');
+            const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
+            $('#fixFormWeekday').value = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+        });
+
+        async function openFixAdd() {
+            closeAllModals();
+            $('#fixFormId').value = ''; $('#fixModalTitle').textContent = '新增修复记录';
+            $('#fixForm').reset();
+            $('#fixFormIterDup').value = '否'; $('#fixFormType').value = '修复发版';
+            $('#fixFormModal').classList.remove('hidden'); $('#fixFormModal').classList.add('flex');
+        }
+        async function openFixEdit(id) {
+            closeAllModals();
+            const res = await api(`/api/fix-records/${id}`);
+            if (res.code === 0) {
+                const d = res.data;
+                const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
+                setVal('fixFormId', d.id); document.getElementById('fixModalTitle').textContent = '编辑修复记录';
+                setVal('fixFormDate', d.release_date || '');
+                setVal('fixFormWeekday', d.weekday || '');
+                setVal('fixFormIterDup', d.iter_day_dup === '是' ? '是' : '否');
+                setVal('fixFormTech', d.tech_line || '');
+                setVal('fixFormWorkOrder', d.work_order || '');
+                setVal('fixFormUrl', d.work_order_url || '');
+                setVal('fixFormService', d.service_name || '');
+                setVal('fixFormType', d.release_type || '修复发版');
+                setVal('fixFormReason', d.fix_reason || '');
+                document.getElementById('fixFormModal').classList.remove('hidden');
+                document.getElementById('fixFormModal').classList.add('flex');
+            }
+        }
+        function closeFixForm() { $('#fixFormModal').classList.add('hidden'); $('#fixFormModal').classList.remove('flex'); }
+
+        async function saveFixItem(e) {
+            e.preventDefault();
+            const $ = (id) => document.getElementById(id);
+            const v = (id) => { const el = $(id); return el ? el.value : ''; };
+            const body = {
+                release_date: v('fixFormDate'),
+                weekday: v('fixFormWeekday').trim(),
+                iter_day_dup: v('fixFormIterDup') || '否',
+                tech_line: v('fixFormTech').trim(),
+                work_order: v('fixFormWorkOrder').trim(),
+                work_order_url: v('fixFormUrl').trim(),
+                service_name: v('fixFormService').trim(),
+                release_type: v('fixFormType').trim() || '修复发版',
+                fix_reason: v('fixFormReason').trim(),
+            };
+            const id = v('fixFormId');
+            const res = id ? await api(`/api/fix-records/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+                           : await api('/api/fix-records', { method: 'POST', body: JSON.stringify(body) });
+            if (res.code === 0) { showToast(id ? '更新成功' : '新增成功'); closeFixForm(); loadFixRecords(); }
+            else { showToast(res.message || '操作失败', 'error'); }
+        }
+
+        async function importFixRecords() {
+            if (!confirm('将从 ~/Downloads/发版修复记录.xlsx 导入数据（覆盖式），确认继续？')) return;
+            const res = await api('/api/fix-records/import', { method: 'POST' });
+            if (res.code === 0) { showToast(res.message); loadFixRecords(); } else { showToast(res.message, 'error'); }
+        }
+        function exportFixRecords() {
+            downloadWithParams('/api/fix-records/export', { keyword: fixKeyword, tech_line: fixTechLine, release_type: fixType, weekday: fixWeekday, date_from: fixDateFrom, date_to: fixDateTo });
+        }
 
         // ==================== Excel 导入 ====================
         async function importFromExcel() {

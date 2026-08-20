@@ -1525,6 +1525,120 @@ def ci_devflow_template():
     return excel_response(headers, example, "云效运行研发流程_导入模板.xlsx", sheet_name="运行研发流程(请按此格式填写)")
 
 
+# ==================== 发版修复记录 ====================
+
+@app.route("/api/fix-records", methods=["GET"])
+def get_fix_records():
+    """发版修复记录列表（关键词/技术线/类型/星期/日期范围 多条件筛选）"""
+    page = int(request.args.get("page", 1))
+    page_size = int(request.args.get("page_size", 20))
+    items, total = db.get_fix_records(
+        keyword=request.args.get("keyword", "").strip(),
+        tech_line=request.args.get("tech_line", "").strip(),
+        release_type=request.args.get("release_type", "").strip(),
+        weekday=request.args.get("weekday", "").strip(),
+        date_from=request.args.get("date_from", "").strip(),
+        date_to=request.args.get("date_to", "").strip(),
+        page=page,
+        page_size=page_size,
+    )
+    return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
+
+
+@app.route("/api/fix-records/filters", methods=["GET"])
+def fix_records_filters():
+    """发版修复记录筛选下拉选项"""
+    return jsonify({"code": 0, "data": db.get_fix_filters()})
+
+
+@app.route("/api/fix-records/<int:rid>", methods=["GET"])
+def get_fix_record(rid):
+    item = db.get_fix_record_by_id(rid)
+    if not item: return jsonify({"code": 404, "message": "记录不存在"}), 404
+    return jsonify({"code": 0, "data": item})
+
+
+@app.route("/api/fix-records", methods=["POST"])
+def create_fix_record():
+    data = request.get_json() or {}
+    if not data.get("release_date") and not data.get("work_order") and not data.get("service_name"):
+        return jsonify({"code": 400, "message": "请至少填写发布时间、工单或服务"}), 400
+    rid = db.create_fix_record(**data)
+    db.add_activity(session.get("username", ""), "create", "发版修复记录", f"新增记录 #{rid}")
+    return jsonify({"code": 0, "data": {"id": rid}})
+
+
+@app.route("/api/fix-records/<int:rid>", methods=["PUT"])
+def update_fix_record(rid):
+    ok = db.update_fix_record(rid, **request.get_json())
+    if not ok: return jsonify({"code": 404, "message": "记录不存在"}), 404
+    db.add_activity(session.get("username", ""), "update", "发版修复记录", f"更新记录 #{rid}")
+    return jsonify({"code": 0, "message": "更新成功"})
+
+
+@app.route("/api/fix-records/<int:rid>", methods=["DELETE"])
+def delete_fix_record(rid):
+    if not db.delete_fix_record(rid): return jsonify({"code": 404, "message": "记录不存在"}), 404
+    db.add_activity(session.get("username", ""), "delete", "发版修复记录", f"删除记录 #{rid}")
+    return jsonify({"code": 0, "message": "删除成功"})
+
+
+@app.route("/api/fix-records/import", methods=["POST"])
+def import_fix_records():
+    """Excel 导入（覆盖式）：读取 ~/Downloads/发版修复记录.xlsx，支持中文表头"""
+    try:
+        import pandas as pd
+        fp = os.path.expanduser("~/Downloads/发版修复记录.xlsx")
+        if not os.path.exists(fp):
+            return jsonify({"code": 400, "message": f"未找到文件: {fp}"}), 400
+        df = pd.read_excel(fp)
+        col_map = {
+            "序号": "seq_no", "发布时间": "release_date", "星期": "weekday",
+            "迭代日重复发版": "iter_day_dup", "技术线": "tech_line",
+            "重复发布工单": "work_order", "工单链接": "work_order_url",
+            "重复发布服务": "service_name", "重复发布类型": "release_type",
+            "重复发布原因": "fix_reason",
+        }
+        df = df.rename(columns={k: v for k, v in col_map.items() if k in df.columns})
+        keep = list(col_map.values())
+        df = df[[c for c in keep if c in df.columns]].fillna("")
+        db.delete_all_fix_records()
+        count = 0
+        for _, row in df.iterrows():
+            db.create_fix_record(**{c: str(row[c]).strip() for c in df.columns})
+            count += 1
+        return jsonify({"code": 0, "message": f"导入成功，共 {count} 条记录"})
+    except Exception as e:
+        return jsonify({"code": 500, "message": str(e)}), 500
+
+
+@app.route("/api/fix-records/export", methods=["GET"])
+def export_fix_records():
+    """导出当前筛选结果为 xlsx"""
+    items, _ = db.get_fix_records(
+        keyword=request.args.get("keyword", "").strip(),
+        tech_line=request.args.get("tech_line", "").strip(),
+        release_type=request.args.get("release_type", "").strip(),
+        weekday=request.args.get("weekday", "").strip(),
+        date_from=request.args.get("date_from", "").strip(),
+        date_to=request.args.get("date_to", "").strip(),
+        page=1, page_size=10000,
+    )
+    headers = ["序号", "发布时间", "星期", "迭代日重复发版", "技术线", "重复发布工单", "工单链接", "重复发布服务", "重复发布类型", "重复发布原因"]
+    rows = [[i.get("seq_no", ""), i.get("release_date", ""), i.get("weekday", ""), i.get("iter_day_dup", ""),
+             i.get("tech_line", ""), i.get("work_order", ""), i.get("work_order_url", ""),
+             i.get("service_name", ""), i.get("release_type", ""), i.get("fix_reason", "")] for i in items]
+    return excel_response(headers, rows, f"发版修复记录_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", sheet_name="发版修复记录")
+
+
+@app.route("/api/fix-records/template", methods=["GET"])
+def fix_records_template():
+    headers = ["序号", "发布时间", "星期", "迭代日重复发版", "技术线", "重复发布工单", "工单链接", "重复发布服务", "重复发布类型", "重复发布原因"]
+    example = [[1, "2026-01-08", "周四", "是", "后端", "《【发版】示例工单》",
+                "https://devops.aliyun.com/projex/task/example", "big-data（大数据）", "修复发版", "1、示例：发版后存在问题，回滚镜像"]]
+    return excel_response(headers, example, "发版修复记录_导入模板.xlsx", sheet_name="发版修复记录(请按此格式填写)")
+
+
 # ==================== 用户管理 API（仅管理员可访问）====================
 
 @app.route("/api/users", methods=["GET"])

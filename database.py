@@ -269,6 +269,26 @@ def _init_db_sqlite():
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_ci_devflow_service ON ci_devflow(delivery_service);")
         conn.execute("""
+            CREATE TABLE IF NOT EXISTS release_fix_records (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                seq_no INTEGER DEFAULT 0,
+                release_date TEXT DEFAULT '',
+                weekday TEXT DEFAULT '',
+                iter_day_dup TEXT DEFAULT '否',
+                tech_line TEXT DEFAULT '',
+                work_order TEXT DEFAULT '',
+                work_order_url TEXT DEFAULT '',
+                service_name TEXT DEFAULT '',
+                release_type TEXT DEFAULT '修复发版',
+                fix_reason TEXT DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_fix_release_date ON release_fix_records(release_date);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_fix_service ON release_fix_records(service_name);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_fix_type ON release_fix_records(release_type);")
+        conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 username TEXT NOT NULL UNIQUE,
@@ -500,6 +520,26 @@ def _init_db_mysql():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
         _mysql_ensure_index(conn, "ci_devflow", "idx_ci_devflow_service", "delivery_service")
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS release_fix_records (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                seq_no INT DEFAULT 0,
+                release_date VARCHAR(20) DEFAULT '',
+                weekday VARCHAR(10) DEFAULT '',
+                iter_day_dup VARCHAR(5) DEFAULT '否',
+                tech_line VARCHAR(50) DEFAULT '',
+                work_order VARCHAR(1000) DEFAULT '',
+                work_order_url VARCHAR(2000) DEFAULT '',
+                service_name VARCHAR(1000) DEFAULT '',
+                release_type VARCHAR(50) DEFAULT '修复发版',
+                fix_reason TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "release_fix_records", "idx_fix_release_date", "release_date")
+        _mysql_ensure_index(conn, "release_fix_records", "idx_fix_service", "service_name")
+        _mysql_ensure_index(conn, "release_fix_records", "idx_fix_type", "release_type")
         conn.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INT AUTO_INCREMENT PRIMARY KEY,
@@ -1229,6 +1269,102 @@ class Database:
         with get_conn() as conn:
             rows = conn.execute(f"SELECT DISTINCT env FROM {table} WHERE env != '' ORDER BY env").fetchall()
             return [r["env"] for r in rows]
+
+    # ---- 发版修复记录 ----
+
+    FIX_UPDATE_FIELDS = ["seq_no", "release_date", "weekday", "iter_day_dup", "tech_line",
+                         "work_order", "work_order_url", "service_name", "release_type", "fix_reason"]
+
+    def get_fix_records(self, keyword="", tech_line="", release_type="", weekday="",
+                        date_from="", date_to="", page=1, page_size=20):
+        """发版修复记录多条件分页查询（关键词/技术线/类型/星期/日期范围）"""
+        conditions, params = [], []
+        if keyword:
+            conditions.append("(work_order LIKE ? OR service_name LIKE ? OR fix_reason LIKE ?)")
+            params += [f"%{keyword}%", f"%{keyword}%", f"%{keyword}%"]
+        if tech_line:
+            conditions.append("tech_line = ?"); params.append(tech_line)
+        if release_type:
+            conditions.append("release_type = ?"); params.append(release_type)
+        if weekday:
+            conditions.append("weekday = ?"); params.append(weekday)
+        if date_from:
+            conditions.append("release_date >= ?"); params.append(date_from)
+        if date_to:
+            conditions.append("release_date <= ?"); params.append(date_to)
+        where = " WHERE " + " AND ".join(conditions) if conditions else ""
+        with get_conn() as conn:
+            total = conn.execute(f"SELECT COUNT(*) as cnt FROM release_fix_records{where}", params).fetchone()["cnt"]
+            rows = conn.execute(
+                f"SELECT * FROM release_fix_records{where} ORDER BY release_date ASC, id ASC LIMIT ? OFFSET ?",
+                params + [page_size, (page - 1) * page_size]
+            ).fetchall()
+            return [dict(r) for r in rows], total
+
+    def get_fix_record_by_id(self, rid):
+        with get_conn() as conn:
+            row = conn.execute("SELECT * FROM release_fix_records WHERE id=?", (rid,)).fetchone()
+            return dict(row) if row else None
+
+    def create_fix_record(self, **fields):
+        """新增发版修复记录 — 插入传入的非空字段；seq_no 缺省自动取 max(seq_no)+1"""
+        cols = [k for k, v in fields.items() if k != 'id']
+        vals = [fields[k] for k in cols]
+        # seq_no 自动递增：缺省/为空/为 0 时取 max(seq_no)+1
+        if 'seq_no' not in cols or not fields.get('seq_no') or str(fields['seq_no']) == '0':
+            if 'seq_no' in cols:
+                cols.remove('seq_no')
+                vals.remove(fields['seq_no'])
+            with get_conn() as conn:
+                max_row = conn.execute("SELECT COALESCE(MAX(seq_no), 0) AS m FROM release_fix_records").fetchone()
+                cols.append('seq_no')
+                vals.append(int(max_row['m']) + 1)
+        placeholders = ",".join(["?"] * len(cols))
+        with get_conn() as conn:
+            cursor = conn.execute(
+                f"INSERT INTO release_fix_records ({','.join(cols)}) VALUES ({placeholders})", vals
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def update_fix_record(self, rid, **fields):
+        """更新发版修复记录 — 只更新白名单字段"""
+        updates = {k: v for k, v in fields.items() if k in self.FIX_UPDATE_FIELDS}
+        if not updates: return False
+        set_clause = ", ".join(f"{k}=?" for k in updates)
+        with get_conn() as conn:
+            cursor = conn.execute(
+                f"UPDATE release_fix_records SET {set_clause}, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                list(updates.values()) + [rid]
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def delete_fix_record(self, rid):
+        with get_conn() as conn:
+            cursor = conn.execute("DELETE FROM release_fix_records WHERE id=?", (rid,))
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def delete_all_fix_records(self):
+        """清空发版修复记录（导入前使用）"""
+        with get_conn() as conn:
+            conn.execute("DELETE FROM release_fix_records")
+            conn.commit()
+
+    def get_fix_filters(self):
+        """发版修复记录筛选下拉（技术线/类型/星期 去重）"""
+        with get_conn() as conn:
+            def distinct(col):
+                rows = conn.execute(
+                    f"SELECT DISTINCT {col} AS v FROM release_fix_records WHERE {col} != '' AND {col} IS NOT NULL ORDER BY {col}"
+                ).fetchall()
+                return [r["v"] for r in rows]
+            return {
+                "tech_lines": distinct("tech_line"),
+                "release_types": distinct("release_type"),
+                "weekdays": distinct("weekday"),
+            }
 
     # ---- 用户管理 ----
 
