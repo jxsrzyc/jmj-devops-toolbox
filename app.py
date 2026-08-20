@@ -93,7 +93,7 @@ def login_page():
         session["username"] = user["username"]
         session["display_name"] = user["display_name"] or user["username"]
         session["permissions"] = user["permissions"]
-        session["auth_source"] = user.get("auth_source", "local")
+        session["auth_source"] = dict(user).get("auth_source", "local")
         db.add_activity(user["username"], "login", "系统", "登录了系统")
         return jsonify({"code": 0, "message": "登录成功", "data": {"username": user["username"]}})
     # GET — 已登录直接跳首页

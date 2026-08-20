@@ -31,6 +31,24 @@
         .sidebar-sub.active span { color: #1d4ed8 !important; background-color: #bfdbfe !important; }
         .batch-btn { transition: all 0.15s; }
         .batch-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        /* 科学计算器按键（纯 CSS，与项目无构建工具风格一致） */
+        .sc-btn-num, .sc-btn-op, .sc-btn-fn, .sc-btn-const, .sc-btn-danger, .sc-btn-eq {
+            transition: all 0.12s; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+            padding: 0.6rem 0.4rem; border-radius: 0.5rem; font-weight: 600;
+        }
+        .sc-btn-num, .sc-btn-op, .sc-btn-fn, .sc-btn-const, .sc-btn-danger, .sc-btn-eq:active { transform: scale(0.94); }
+        .sc-btn-num { font-size: 1rem; color: #374151; background-color: #f3f4f6; }
+        .sc-btn-num:hover { background-color: #e5e7eb; }
+        .sc-btn-op { font-size: 1rem; color: #1d4ed8; background-color: #eff6ff; }
+        .sc-btn-op:hover { background-color: #dbeafe; }
+        .sc-btn-fn { font-size: 0.85rem; font-weight: 500; color: #4b5563; background-color: #f9fafb; }
+        .sc-btn-fn:hover { background-color: #f3f4f6; }
+        .sc-btn-const { font-size: 1rem; color: #7e22ce; background-color: #faf5ff; }
+        .sc-btn-const:hover { background-color: #f3e8ff; }
+        .sc-btn-danger { font-size: 1rem; color: #dc2626; background-color: #fef2f2; }
+        .sc-btn-danger:hover { background-color: #fee2e2; }
+        .sc-btn-eq { font-size: 1.1rem; font-weight: 700; color: #fff; background-color: #2563eb; box-shadow: 0 1px 2px rgba(0,0,0,0.1); }
+        .sc-btn-eq:hover { background-color: #1d4ed8; }
     </style>
 </head>
 <body class="bg-gray-50 h-screen overflow-hidden flex">
@@ -320,6 +338,7 @@
                     <div id="utg-calc" class="hidden">
                         <a href="#" onclick="switchUtilsTab('cidr'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="cidr" id="utilsSub-cidr">CIDR 子网计算器</a>
                         <a href="#" onclick="switchUtilsTab('timestamp'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="timestamp" id="utilsSub-timestamp">时间戳换算</a>
+                        <a href="#" onclick="switchUtilsTab('scicalc'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="scicalc" id="utilsSub-scicalc">科学计算器</a>
                     </div>
                 </div>
             </div>
@@ -1254,6 +1273,91 @@
                 </div>
             </div>
             <div id="utTsResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：科学计算器 -->
+        <div id="page-utscicalc" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">科学计算器</h2><p class="text-sm text-gray-500">表达式计算 · 科学函数 · 角度/弧度切换 · 历史记录</p></div>
+            </div>
+            <div class="flex flex-col xl:flex-row gap-5 flex-1 min-h-0">
+                <!-- 计算器主体 -->
+                <div class="flex-1 flex flex-col min-h-0">
+                    <!-- 显示区 -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <span id="scModeTag" class="px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 rounded">角度 DEG</span>
+                            <div class="flex gap-1 bg-gray-100 p-0.5 rounded-lg">
+                                <button id="scModeBtn-deg" onclick="scSetMode('deg')" class="px-3 py-1 text-xs font-medium rounded-md bg-white text-blue-600 shadow-sm">角度 DEG</button>
+                                <button id="scModeBtn-rad" onclick="scSetMode('rad')" class="px-3 py-1 text-xs font-medium rounded-md text-gray-600 hover:bg-gray-50">弧度 RAD</button>
+                            </div>
+                        </div>
+                        <div id="scExpression" class="text-right text-2xl font-mono text-gray-900 min-h-[2rem] break-all leading-snug">0</div>
+                        <div id="scResult" class="text-right text-base font-mono min-h-[1.5rem] text-gray-400 break-all">点击按钮或使用键盘输入表达式</div>
+                    </div>
+                    <!-- 按键区 -->
+                    <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 flex-1 flex flex-col justify-center">
+                        <div class="grid grid-cols-5 gap-1.5">
+                            <button class="sc-btn-fn" onclick="scAppendFunc('sin')">sin</button>
+                            <button class="sc-btn-fn" onclick="scAppendFunc('cos')">cos</button>
+                            <button class="sc-btn-fn" onclick="scAppendFunc('tan')">tan</button>
+                            <button class="sc-btn-fn" onclick="scAppendFunc('ln')">ln</button>
+                            <button class="sc-btn-fn" onclick="scAppendFunc('log')">log</button>
+
+                            <button class="sc-btn-fn" onclick="scAppendFunc('asin')">asin</button>
+                            <button class="sc-btn-fn" onclick="scAppendFunc('acos')">acos</button>
+                            <button class="sc-btn-fn" onclick="scAppendFunc('atan')">atan</button>
+                            <button class="sc-btn-fn" onclick="scAppendOp('√(')">√</button>
+                            <button class="sc-btn-fn" onclick="scAppendOp('²')">x²</button>
+
+                            <button class="sc-btn-fn" onclick="scAppendOp('!')">x!</button>
+                            <button class="sc-btn-const" onclick="scAppendConst('π')">π</button>
+                            <button class="sc-btn-const" onclick="scAppendConst('e')">e</button>
+                            <button class="sc-btn-fn" onclick="scAppendOp('1/')">1/x</button>
+                            <button class="sc-btn-fn" onclick="scAppendOp('%')">%</button>
+
+                            <button class="sc-btn-danger" onclick="scClear()">C</button>
+                            <button class="sc-btn-op" onclick="scAppendOp('(')">(</button>
+                            <button class="sc-btn-op" onclick="scAppendOp(')')">)</button>
+                            <button class="sc-btn-op" onclick="scBackspace()">⌫</button>
+                            <button class="sc-btn-op" onclick="scAppendOp('÷')">÷</button>
+
+                            <button class="sc-btn-num" onclick="scAppendNum('7')">7</button>
+                            <button class="sc-btn-num" onclick="scAppendNum('8')">8</button>
+                            <button class="sc-btn-num" onclick="scAppendNum('9')">9</button>
+                            <button class="sc-btn-op" onclick="scAppendOp('×')">×</button>
+                            <button class="sc-btn-op" onclick="scAppendOp('^')">xʸ</button>
+
+                            <button class="sc-btn-num" onclick="scAppendNum('4')">4</button>
+                            <button class="sc-btn-num" onclick="scAppendNum('5')">5</button>
+                            <button class="sc-btn-num" onclick="scAppendNum('6')">6</button>
+                            <button class="sc-btn-op" onclick="scAppendOp('−')">−</button>
+                            <button class="sc-btn-op" onclick="scAppendOp('±')">±</button>
+
+                            <button class="sc-btn-num" onclick="scAppendNum('1')">1</button>
+                            <button class="sc-btn-num" onclick="scAppendNum('2')">2</button>
+                            <button class="sc-btn-num" onclick="scAppendNum('3')">3</button>
+                            <button class="sc-btn-op" onclick="scAppendOp('+')">+</button>
+                            <button class="sc-btn-op" onclick="scAppendNum('.')">.</button>
+
+                            <button class="sc-btn-num col-span-2" onclick="scAppendNum('0')">0</button>
+                            <button class="sc-btn-eq col-span-2" onclick="scEquals()">=</button>
+                        </div>
+                        <div class="mt-3 text-xs text-gray-400 text-center">支持键盘输入：数字 / + − × ÷ * / ^ ( ) 等，Enter 计算，Backspace 退格，Esc 清空</div>
+                    </div>
+                </div>
+                <!-- 历史记录面板 -->
+                <div class="w-full xl:w-80 flex flex-col bg-white rounded-xl shadow-sm border border-gray-200 p-4 min-h-0">
+                    <div class="flex items-center justify-between mb-3">
+                        <h3 class="text-sm font-semibold text-gray-700 flex items-center gap-1.5">
+                            <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                            计算历史
+                        </h3>
+                        <button onclick="scClearHistory()" class="text-xs text-gray-400 hover:text-red-500 transition-colors">清空</button>
+                    </div>
+                    <div id="scHistory" class="flex-1 overflow-y-auto space-y-1.5 text-sm min-h-[120px]"></div>
+                </div>
+            </div>
         </div>
 
         <!-- 运维小工具：JSON 格式化 -->
@@ -2399,6 +2503,16 @@
                     sub.classList.remove('hidden');
                 }
             }
+            // 工具分组按钮（<button>）：只在该分组下有匹配子项时才显示，避免无关分组冒出来
+            document.querySelectorAll('[data-net-group],[data-utils-group]').forEach(wrap => {
+                const gid = wrap.getAttribute('data-net-group') || wrap.getAttribute('data-utils-group');
+                const sub = wrap.querySelector(`#${gid}`);
+                const btn = wrap.querySelector('button');
+                if (!btn) return;
+                if (!kw) { btn.style.display = ''; return; }
+                const hasMatch = sub && [...sub.querySelectorAll('a')].some(a => a.textContent.toLowerCase().includes(kw));
+                btn.style.display = hasMatch ? '' : 'none';
+            });
             // 空结果提示
             let hint = document.getElementById('menuSearchEmpty');
             if (kw && !any) {
@@ -2415,6 +2529,8 @@
         function menuSearchClear() {
             const items = document.querySelectorAll('#sidebarMenu a');
             items.forEach(el => el.style.display = '');
+            // 清除工具分组按钮的 inline 样式（恢复默认显示）
+            document.querySelectorAll('[data-net-group],[data-utils-group] button').forEach(btn => { btn.style.display = ''; });
             ['ciSubmenu', 'credSubmenu', 'domainSubmenu', 'netSubmenu', 'utilsSubmenu'].forEach(id => {
                 const sub = document.getElementById(id);
                 if (sub) sub.classList.add('hidden');
@@ -4648,10 +4764,12 @@
             document.getElementById('utilsSubmenu').classList.remove('hidden');
             document.getElementById('utilsMenuArrow').classList.add('rotate-180');
             // 自动展开当前工具所在分组
-            const UTILS_GROUP_MAP = { json: 'utg-encode', encode: 'utg-encode', yaml: 'utg-encode', health: 'utg-http', curl: 'utg-http', webhook: 'utg-http', cert: 'utg-batch', batch: 'utg-batch', diff: 'utg-text', dedup: 'utg-text', generator: 'utg-gen', cidr: 'utg-calc', timestamp: 'utg-calc' };
+            const UTILS_GROUP_MAP = { json: 'utg-encode', encode: 'utg-encode', yaml: 'utg-encode', health: 'utg-http', curl: 'utg-http', webhook: 'utg-http', cert: 'utg-batch', batch: 'utg-batch', diff: 'utg-text', dedup: 'utg-text', generator: 'utg-gen', cidr: 'utg-calc', timestamp: 'utg-calc', scicalc: 'utg-calc' };
             if (UTILS_GROUP_MAP[tab]) toolGroupOpen(UTILS_GROUP_MAP[tab]);
             // 生成器相关：进入时更新历史计数徽章 + 默认生成一次
             if (tab === 'generator') { genHistoryUpdateBadge(); genSwitchTab(genActiveTab); }
+            // 科学计算器：进入时刷新历史面板（localStorage 可能在其他页面变更）
+            if (tab === 'scicalc') scHistoryRender();
         }
 
         function utResultBox(html) { return `<div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 max-h-[70vh] overflow-auto">${html}</div>`; }
@@ -5323,6 +5441,414 @@
         document.getElementById('genPwdLen').addEventListener('input', e => { $('#genPwdLenVal').textContent = e.target.value; });
         document.getElementById('genPhraseCount').addEventListener('input', e => { $('#genPhraseCountVal').textContent = e.target.value; });
 
+        // ==================== 科学计算器（纯前端表达式解析） ====================
+        const SC_HISTORY_KEY = 'scicalc_history';
+        let scDeg = true;      // true=角度(DEG) / false=弧度(RAD)
+        let scExpr = '';       // 当前表达式（展示原样保留 × ÷ − π ² √ 等字符）
+
+        // ---------- 词法分析 ----------
+        function scTokenize(s) {
+            const toks = [];
+            let i = 0;
+            while (i < s.length) {
+                const ch = s[i];
+                if (/\s/.test(ch)) { i++; continue; }
+                if (/[0-9]/.test(ch) || ch === '.') {
+                    // 数字（含 .5 / 5. 形式，但一数仅一个小数点）
+                    let j = i, dots = 0;
+                    while (j < s.length && (/[0-9]/.test(s[j]) || (s[j] === '.' && dots === 0 && /[0-9]/.test(s[j + 1] || '')))) {
+                        if (s[j] === '.') dots++;
+                        j++;
+                    }
+                    if (j === i) throw new Error('数字格式错误');
+                    toks.push({ type: 'num', value: parseFloat(s.slice(i, j)) });
+                    i = j; continue;
+                }
+                if (/[a-z]/.test(ch)) {
+                    let j = i;
+                    while (j < s.length && /[a-z]/.test(s[j])) j++;
+                    const name = s.slice(i, j);
+                    const FUNCS = { sin: 1, cos: 1, tan: 1, asin: 1, acos: 1, atan: 1, ln: 1, log: 1, sqrt: 1, abs: 1 };
+                    if (FUNCS[name]) toks.push({ type: 'func', value: name });
+                    else if (name === 'pi' || name === 'e') toks.push({ type: 'const', value: name });
+                    else throw new Error(`无法识别的函数 "${name}"`);
+                    i = j; continue;
+                }
+                switch (ch) {
+                    case '+': toks.push({ type: 'op', value: '+' }); break;
+                    case '-': toks.push({ type: 'op', value: '-' }); break;
+                    case '−': toks.push({ type: 'op', value: '-' }); break;
+                    case '*': toks.push({ type: 'op', value: '*' }); break;
+                    case '×': toks.push({ type: 'op', value: '*' }); break;
+                    case '/': toks.push({ type: 'op', value: '/' }); break;
+                    case '÷': toks.push({ type: 'op', value: '/' }); break;
+                    case '^': toks.push({ type: 'op', value: '^' }); break;
+                    case '(': toks.push({ type: 'op', value: '(' }); break;
+                    case ')': toks.push({ type: 'op', value: ')' }); break;
+                    case '!': toks.push({ type: 'postfix', value: '!' }); break;
+                    case '%': toks.push({ type: 'postfix', value: '%' }); break;
+                    case '²': toks.push({ type: 'postfix', value: '²' }); break;
+                    case 'π': toks.push({ type: 'const', value: 'pi' }); break;
+                    case 'e': toks.push({ type: 'const', value: 'e' }); break;
+                    case '√': toks.push({ type: 'func', value: 'sqrt' }); break;
+                    default: throw new Error(`无法识别的字符 "${ch}"`);
+                }
+                i++;
+            }
+            return toks;
+        }
+
+        // ---------- 递归下降解析 + 求值 ----------
+        function scParseEval(s) {
+            const toks = scTokenize(s);
+            let pos = 0;
+            const peek = () => toks[pos];
+            const next = () => toks[pos++];
+            function expr() {
+                let v = term();
+                while (peek() && peek().type === 'op' && (peek().value === '+' || peek().value === '-')) {
+                    const op = next().value;
+                    const r = term();
+                    v = op === '+' ? v + r : v - r;
+                }
+                return v;
+            }
+            function term() {
+                let v = factor();
+                while (peek() && peek().type === 'op' && (peek().value === '*' || peek().value === '/')) {
+                    const op = next().value;
+                    const r = factor();
+                    if (op === '/') {
+                        if (r === 0) throw new Error('除数不能为 0');
+                        v = v / r;
+                    } else v = v * r;
+                }
+                // 隐式乘法：2π、2(3+4)、(2+3)(4+5)、2sin(30)
+                while (peek() && (peek().type === 'num' || peek().type === 'const' || peek().type === 'func' || (peek().type === 'op' && peek().value === '('))) {
+                    const r = factor();
+                    v = v * r;
+                }
+                return v;
+            }
+            function factor() {
+                const v = unary();
+                if (peek() && peek().type === 'op' && peek().value === '^') {
+                    next();
+                    const r = factor(); // 右结合 2^3^2 = 2^(3^2)
+                    return Math.pow(v, r);
+                }
+                return v;
+            }
+            function unary() {
+                if (peek() && peek().type === 'op' && peek().value === '-') { next(); return -unary(); }
+                if (peek() && peek().type === 'op' && peek().value === '+') { next(); return unary(); }
+                return postfix();
+            }
+            function postfix() {
+                let v = primary();
+                while (peek() && peek().type === 'postfix') {
+                    const op = next().value;
+                    if (op === '!') v = scFactorial(v);
+                    else if (op === '%') v = v / 100;
+                    else if (op === '²') v = v * v;
+                }
+                return v;
+            }
+            function primary() {
+                const t = peek();
+                if (!t) throw new Error('表达式不完整');
+                if (t.type === 'num') { next(); return t.value; }
+                if (t.type === 'const') { next(); return t.value === 'pi' ? Math.PI : Math.E; }
+                if (t.type === 'op' && t.value === '(') {
+                    next();
+                    const v = expr();
+                    const c = peek();
+                    if (!c || c.type !== 'op' || c.value !== ')') throw new Error('括号不匹配');
+                    next();
+                    return v;
+                }
+                if (t.type === 'func') {
+                    const name = next().value;
+                    const lp = peek();
+                    if (!lp || lp.type !== 'op' || lp.value !== '(') throw new Error(`函数 ${name}() 缺少括号`);
+                    next();
+                    const arg = expr();
+                    const rp = peek();
+                    if (!rp || rp.type !== 'op' || rp.value !== ')') throw new Error('括号不匹配');
+                    next();
+                    return scApplyFunc(name, arg);
+                }
+                if (t.type === 'postfix') throw new Error(`运算符 ${t.value} 缺少操作数`);
+                throw new Error('表达式格式错误');
+            }
+            const result = expr();
+            if (pos < toks.length) {
+                // 剩余内容：优先提示括号问题（如 (2+3)) 多余右括号）
+                if (toks.slice(pos).some(t => t.type === 'op' && t.value === ')')) throw new Error('括号不匹配');
+                throw new Error('表达式不完整或有多余内容');
+            }
+            return result;
+        }
+
+        // ---------- 函数求值 ----------
+        function scApplyFunc(name, x) {
+            const rad = !scDeg;
+            switch (name) {
+                case 'sin': return Math.sin(rad ? x : x * Math.PI / 180);
+                case 'cos': return Math.cos(rad ? x : x * Math.PI / 180);
+                case 'tan': {
+                    const r = rad ? x : x * Math.PI / 180;
+                    if (Math.abs(Math.cos(r)) < 1e-15) throw new Error('tan 在 90°/270° 处无定义');
+                    return Math.tan(r);
+                }
+                case 'asin': {
+                    if (x < -1 || x > 1) throw new Error('asin 定义域为 [-1, 1]');
+                    const v = Math.asin(x);
+                    return rad ? v : v * 180 / Math.PI;
+                }
+                case 'acos': {
+                    if (x < -1 || x > 1) throw new Error('acos 定义域为 [-1, 1]');
+                    const v = Math.acos(x);
+                    return rad ? v : v * 180 / Math.PI;
+                }
+                case 'atan': {
+                    const v = Math.atan(x);
+                    return rad ? v : v * 180 / Math.PI;
+                }
+                case 'ln': if (x <= 0) throw new Error('ln 仅支持正数'); return Math.log(x);
+                case 'log': if (x <= 0) throw new Error('log 仅支持正数'); return Math.log10(x);
+                case 'sqrt': if (x < 0) throw new Error('负数不能开平方'); return Math.sqrt(x);
+                case 'abs': return Math.abs(x);
+                default: throw new Error(`未知函数 ${name}`);
+            }
+        }
+
+        function scFactorial(v) {
+            if (!Number.isInteger(v) || v < 0) throw new Error('阶乘仅支持非负整数');
+            if (v > 170) throw new Error('阶乘结果过大');
+            let r = 1;
+            for (let i = 2; i <= v; i++) r *= i;
+            return r;
+        }
+
+        // ---------- 结果格式化（浮点误差收敛） ----------
+        function scFmt(v) {
+            if (!Number.isFinite(v)) return '∞';
+            if (Object.is(v, -0)) v = 0;
+            const r = parseFloat(v.toPrecision(12));
+            if (r !== 0 && (Math.abs(r) >= 1e15 || Math.abs(r) < 1e-9)) return v.toExponential(6);
+            return String(r);
+        }
+
+        function scEval(expr) {
+            try {
+                const v = scParseEval(expr);
+                if (!Number.isFinite(v)) return { ok: false, error: '结果超出可表示范围' };
+                return { ok: true, value: v };
+            } catch (e) {
+                return { ok: false, error: e.message || '表达式错误' };
+            }
+        }
+
+        // ---------- 状态更新与实时预览 ----------
+        function scSetExpr(s) {
+            scExpr = s;
+            $('#scExpression').textContent = s === '' ? '0' : s;
+            scPreview();
+        }
+
+        function scPreview() {
+            const res = $('#scResult');
+            if (!res) return;
+            if (!scExpr) {
+                res.textContent = '点击按钮或使用键盘输入表达式';
+                res.className = 'text-right text-base font-mono min-h-[1.5rem] text-gray-400 break-all';
+                return;
+            }
+            let open = 0;
+            for (const c of scExpr) { if (c === '(') open++; else if (c === ')') open--; }
+            const r = scEval(scExpr);
+            if (r.ok) {
+                res.textContent = '= ' + scFmt(r.value);
+                res.className = 'text-right text-base font-mono min-h-[1.5rem] text-blue-600 break-all';
+            } else if (open > 0) {
+                res.textContent = `还有 ${open} 个括号未闭合`;
+                res.className = 'text-right text-base font-mono min-h-[1.5rem] text-gray-400 break-all';
+            } else if (/[+−×÷^]$/.test(scExpr)) {
+                res.textContent = '表达式不完整';
+                res.className = 'text-right text-base font-mono min-h-[1.5rem] text-gray-400 break-all';
+            } else {
+                res.textContent = r.error;
+                res.className = 'text-right text-base font-mono min-h-[1.5rem] text-red-500 break-all';
+            }
+        }
+
+        // ---------- 按钮输入 ----------
+        function scAppendNum(d) {
+            let s = scExpr;
+            if (s === '' || s === '0') {
+                if (d === '.') s = '0.';
+                else s = d;
+            } else if (d === '.') {
+                const m = s.match(/(\d*\.?\d*)$/);
+                if (m && m[1].includes('.')) return;          // 当前数字已有点
+                s += m && m[1] ? '.' : '0.';
+            } else {
+                const m = s.match(/^(.*)([+−×÷^(])0$/);
+                s = m ? m[1] + m[2] + d : s + d;               // 2+0→2+3，避免 03
+            }
+            scSetExpr(s);
+        }
+
+        function scAppendOp(op) {
+            let s = scExpr;
+            const last = s[s.length - 1];
+            if (op === '(') {
+                if (last && /[0-9)πe!%²]/.test(last)) s += '×(';  // 2(3+4) 隐式乘法
+                else s += '(';
+            } else if (op === ')') {
+                if (!last || !/[0-9)πe!%²]/.test(last)) return;    // 空括号/运算符后忽略
+                s += ')';
+            } else if (op === '±') {
+                const m = s.match(/(\d+\.?\d*)$/);
+                if (m) {
+                    const before = s.slice(0, s.length - m[1].length);
+                    s = before.endsWith('-') ? before.slice(0, -1) + m[1] : before + '-' + m[1];
+                } else if (last === ')') {
+                    s += '×(-1)';                                  // (2+3) ± → ×(-1)
+                } else if (last !== '-' && !/[+−×÷^]/.test(last)) {
+                    s += '-';                                      // 开头/左括号后 → 一元负号
+                }
+            } else if (op === '1/') {
+                if (!s) s = '1/';
+                else if (/[+−×÷^()]/.test(last)) return;
+                else s = '1/(' + s + ')';
+            } else if (['+', '−', '×', '÷', '^'].includes(op)) {
+                if (!last) {
+                    if (op === '−') scSetExpr('−');   // 空输入时允许一元负号开头
+                    return;
+                }
+                if (op === '−' && /[+−×÷^(]/.test(last)) s += '-';  // 5×-3 / (-5 一元负号
+                else if (/[+−×÷^]/.test(last)) s = s.slice(0, -1) + op;  // 替换末尾运算符
+                else s += op;
+            } else if (['!', '%', '²'].includes(op)) {
+                if (!last || !/[0-9)πe]/.test(last)) return;       // 需数字/右括号/常量
+                s += op;
+            }
+            scSetExpr(s);
+        }
+
+        function scAppendConst(c) {
+            let s = scExpr;
+            const last = s[s.length - 1];
+            if (last && /[0-9)πe!%²]/.test(last)) s += '×' + c;  // 2π → 2×π（隐式乘法）
+            else s += c;
+            scSetExpr(s);
+        }
+
+        function scAppendFunc(f) {
+            let s = scExpr;
+            const last = s[s.length - 1];
+            if (last && /[0-9)πe!%²]/.test(last)) s += '×';       // 2sin(30) 隐式乘法
+            s += f + '(';
+            scSetExpr(s);
+        }
+
+        function scBackspace() { scSetExpr(scExpr.slice(0, -1)); }
+        function scClear() { scSetExpr(''); }
+
+        function scEquals() {
+            if (!scExpr) return;
+            const r = scEval(scExpr);
+            if (!r.ok) { showToast(r.error, 'error'); scPreview(); return; }
+            const fmt = scFmt(r.value);
+            scHistoryAdd(scExpr, fmt);
+            scExpr = fmt;
+            $('#scExpression').textContent = fmt;
+            const res = $('#scResult');
+            res.textContent = '= ' + fmt + ' · 已存入历史';
+            res.className = 'text-right text-base font-mono min-h-[1.5rem] text-blue-600 break-all';
+        }
+
+        // ---------- 角度/弧度 ----------
+        function scSetMode(mode) {
+            scDeg = mode === 'deg';
+            const on = 'px-3 py-1 text-xs font-medium rounded-md bg-white text-blue-600 shadow-sm';
+            const off = 'px-3 py-1 text-xs font-medium rounded-md text-gray-600 hover:bg-gray-50';
+            $('#scModeBtn-deg').className = scDeg ? on : off;
+            $('#scModeBtn-rad').className = scDeg ? off : on;
+            const tag = $('#scModeTag');
+            if (tag) tag.textContent = scDeg ? '角度 DEG' : '弧度 RAD';
+            scPreview();
+        }
+
+        // ---------- 历史记录（localStorage 最近 20 条） ----------
+        function scGetHistory() {
+            try { return JSON.parse(localStorage.getItem(SC_HISTORY_KEY)) || []; } catch (e) { return []; }
+        }
+        function scHistoryAdd(expr, result) {
+            const items = scGetHistory();
+            items.unshift({ expr, result, ts: new Date().toLocaleString('zh-CN', { hour12: false }) });
+            try { localStorage.setItem(SC_HISTORY_KEY, JSON.stringify(items.slice(0, 20))); } catch (e) { }
+            scHistoryRender();
+        }
+        function scClearHistory() {
+            localStorage.removeItem(SC_HISTORY_KEY);
+            scHistoryRender();
+            showToast('计算历史已清空');
+        }
+        function scHistoryRender() {
+            const box = $('#scHistory');
+            if (!box) return;
+            const items = scGetHistory();
+            if (!items.length) {
+                box.innerHTML = '<div class="text-center text-gray-400 text-sm py-8">暂无计算记录<br><span class="text-xs">按 = 后将自动保存</span></div>';
+                return;
+            }
+            box.innerHTML = items.map((it, idx) => `
+                <div class="group p-2.5 rounded-lg border border-gray-100 hover:border-blue-200 hover:bg-blue-50/50 cursor-pointer transition-all" onclick="scHistoryFill(${idx})" title="点击回填表达式">
+                    <div class="font-mono text-gray-800 text-[13px] break-all">${esc(it.expr)}</div>
+                    <div class="flex items-center justify-between mt-0.5">
+                        <span class="font-mono text-blue-600 text-[13px] break-all">= ${esc(it.result)}</span>
+                        <span class="text-[10px] text-gray-400 flex-shrink-0 ml-2">${esc(it.ts)}</span>
+                    </div>
+                </div>`).join('');
+        }
+        function scHistoryFill(idx) {
+            const items = scGetHistory();
+            const it = items[idx];
+            if (!it) return;
+            scExpr = it.expr;
+            $('#scExpression').textContent = it.expr;
+            const res = $('#scResult');
+            res.textContent = '= ' + it.result;
+            res.className = 'text-right text-base font-mono min-h-[1.5rem] text-blue-600 break-all';
+        }
+
+        // ---------- 物理键盘输入 ----------
+        document.addEventListener('keydown', function (e) {
+            if (typeof utilsActiveTab === 'undefined' || utilsActiveTab !== 'scicalc') return;
+            if (e.ctrlKey || e.metaKey || e.altKey) return;
+            const k = e.key;
+            if (/^[0-9]$/.test(k)) { scAppendNum(k); e.preventDefault(); }
+            else if (k === '.') { scAppendNum('.'); e.preventDefault(); }
+            else if (k === '+') { scAppendOp('+'); e.preventDefault(); }
+            else if (k === '-' || k === '−') { scAppendOp('−'); e.preventDefault(); }
+            else if (k === '*') { scAppendOp('×'); e.preventDefault(); }
+            else if (k === '/') { scAppendOp('÷'); e.preventDefault(); }
+            else if (k === '^') { scAppendOp('^'); e.preventDefault(); }
+            else if (k === '(') { scAppendOp('('); e.preventDefault(); }
+            else if (k === ')') { scAppendOp(')'); e.preventDefault(); }
+            else if (k === '%') { scAppendOp('%'); e.preventDefault(); }
+            else if (k === '!') { scAppendOp('!'); e.preventDefault(); }
+            else if (k === 'Enter') { scEquals(); e.preventDefault(); }
+            else if (k === 'Backspace') { scBackspace(); e.preventDefault(); }
+            else if (k === 'Escape') { scClear(); e.preventDefault(); }
+        });
+
+        // 初始化
+        scSetMode('deg');
+        scHistoryRender();
         // ==================== 用户管理（仅 admin）====================
         async function loadUsers() {
             const res = await api('/api/users');
