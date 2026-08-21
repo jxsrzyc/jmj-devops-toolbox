@@ -411,8 +411,9 @@ def ping_detect(host, count=4, timeout=5):
     time_re = re.compile(r'time[=<]\s*(\d+\.?\d*)\s*ms', re.I)
     result["samples"] = [float(m) for m in time_re.findall(text)]
 
-    # 统计行: "round-trip min/avg/max/stddev = 95.810/150.745/203.742/39.611 ms"
-    stat_re = re.search(r'(?:round-trip|最短|平均|最长)[^=]*=\s*([\d.]+)/([\d.]+)/([\d.]+)', text, re.I)
+    # 统计行：Linux iputils 输出 "rtt min/avg/max/mdev = ..."；
+    # macOS / BSD / busybox 输出 "round-trip min/avg/max/stddev = ..."；需兼容多端
+    stat_re = re.search(r'(?:rtt|round-trip|最短|平均|最长)[^=]*=\s*([\d.]+)/([\d.]+)/([\d.]+)', text, re.I)
     if stat_re:
         result["min"] = float(stat_re.group(1))
         result["avg"] = float(stat_re.group(2))
@@ -571,19 +572,29 @@ def mtr_trace(host, count=10, timeout=5):
         return {"code": 1, "message": "当前系统未安装 mtr（macOS: brew install mtr；Linux: yum/apt install mtr）"}
     try:
         data = json.loads(stdout)
-        # mtr --json 字段名首字母大写（Loss%/Sent/Last/Avg/Best/Wrst/StDev），
-        # 归一化为前端约定的小写字段名（避免破坏前端渲染）
+        # mtr 字段名兼容：
+        # - 老版 mtr（0.86-）：首字母大写（Loss%/Sent/Last/Avg/Best/Wrst/StDev）
+        # - 新版 mtr（0.95+ / Debian 包）：小写（loss%/sent/last/avg/best/wrst/stdev）
+        # 按顺序查找第一个非 None 的字段名
         hubs_raw = (data.get('report') or data).get('hubs') or []
+
+        def _m(h, *keys):
+            for k in keys:
+                v = h.get(k)
+                if v is not None:
+                    return v
+            return None
+
         hubs = [{
-            'count': h.get('count', i + 1),
-            'host': h.get('host', '*'),
-            'loss': h.get('Loss%'),
-            'snt': h.get('Sent'),
-            'last': h.get('Last'),
-            'avg': h.get('Avg'),
-            'best': h.get('Best'),
-            'wrst': h.get('Wrst'),
-            'stdev': h.get('StDev'),
+            'count': _m(h, 'count', 'Count') or (i + 1),
+            'host': _m(h, 'host', 'Host', 'hub', 'Hub') or '*',
+            'loss': _m(h, 'loss%', 'Loss%', 'loss', 'Loss'),
+            'snt': _m(h, 'sent', 'Sent', 'packets', 'Packets'),
+            'last': _m(h, 'last', 'Last'),
+            'avg': _m(h, 'avg', 'Avg'),
+            'best': _m(h, 'best', 'Best'),
+            'wrst': _m(h, 'wrst', 'Wrst', 'worst', 'Worst'),
+            'stdev': _m(h, 'stdev', 'StDev'),
         } for i, h in enumerate(hubs_raw)]
         return {"code": 0, "data": {"host": host, "mode": "mtr",
                                     "report": {"hubs": hubs}}}
