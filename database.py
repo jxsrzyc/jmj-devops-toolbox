@@ -711,7 +711,7 @@ class Database:
         """新增凭证"""
         allowed = ["business_purpose", "env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
                    "username", "password", "ssh_key", "api_token", "internal_url", "internal_port",
-                   "external_url", "external_port", "db_name", "owner", "expires_at", "status", "notes"]
+                   "external_url", "external_port", "db_name", "owner", "expires_at", "status"]
         cols = ["env", "service_name"]
         vals = [fields.get("env", ""), fields.get("service_name", "")]
         for f in allowed:
@@ -733,7 +733,7 @@ class Database:
         """更新凭证"""
         allowed = ["business_purpose", "env", "service_name", "service_provider", "app_type", "version", "credential_type", "access_url",
                    "username", "password", "ssh_key", "api_token", "internal_url", "internal_port",
-                   "external_url", "external_port", "db_name", "owner", "expires_at", "status", "notes"]
+                   "external_url", "external_port", "db_name", "owner", "expires_at", "status"]
         updates = {k: v for k, v in fields.items() if k in allowed}
         if not updates:
             return False
