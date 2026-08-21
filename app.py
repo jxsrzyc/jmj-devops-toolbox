@@ -1035,7 +1035,7 @@ def nettools_ping():
     count = int(data.get("count", 4))
     timeout = int(data.get("timeout", 5))
     count = max(1, min(count, 10))
-    timeout = max(1, min(timeout, 10))
+    timeout = max(1, min(timeout, 3))  # 上限 3s（避免 ICMP 受阻时触发 nginx 504）
     return jsonify(nettools.ping_detect(host, count=count, timeout=timeout))
 
 

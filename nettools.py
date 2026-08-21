@@ -386,18 +386,26 @@ def myip_lookup(ip):
 # ==================== 2. PING 检测 ====================
 
 def ping_detect(host, count=4, timeout=5):
-    """ICMP 连通性检测（跨平台命令，兼容 macOS/Linux/Windows 输出格式）"""
+    """ICMP 连通性检测（跨平台命令，兼容 macOS/Linux/Windows 输出格式）
+
+    K8s 容器场景：单包超时 -W 默认 2s，subprocess 超时 = 单包×包数+5s，
+    典型 4 包 ≈ 13s 完成（避免触发 nginx ingress 30s 超时 → 504）。
+    """
     if SYSTEM == "Windows":
         cmd = ["ping", "-n", str(count), "-w", str(timeout * 1000), host]
     else:
         cmd = ["ping", "-c", str(count), "-W", str(timeout), host]
     t0 = time.time()
-    ok, stdout, stderr = _run_cmd(cmd, timeout=(timeout * count) + 15)
+    ok, stdout, stderr = _run_cmd(cmd, timeout=(timeout * count) + 5)
     cost = round(time.time() - t0, 2)
     if not ok and "命令不存在" in stderr:
         return {"code": 1, "message": stderr}
     text = stdout or stderr or ""
-    result = {"host": host, "output": text, "cost": cost, "samples": []}
+    result = {
+        "host": host, "output": text, "cost": cost, "samples": [],
+        # 初始化可选字段（ping 完全失败时也保证字段存在，前端不报 undefined）
+        "min": None, "avg": None, "max": None, "loss": None, "ttl": None, "success": False,
+    }
 
     # 逐行延迟: "time=95.8 ms" / "time<1ms" / "时间=95ms"(Windows中文) / "95.8 ms"
     time_re = re.compile(r'time[=<]\s*(\d+\.?\d*)\s*ms', re.I)
@@ -429,7 +437,8 @@ def ping_detect(host, count=4, timeout=5):
 
     # 可达性：有统计行且丢包<100 视为可达
     result["success"] = bool(stat_re) and loss < 100
-    if result["avg"] is None and result["samples"]:
+    # 退路：如果没统计行但有逐行延迟样本，按样本统计
+    if result.get("avg") is None and result["samples"]:
         result["min"] = min(result["samples"])
         result["max"] = max(result["samples"])
         result["avg"] = round(sum(result["samples"]) / len(result["samples"]), 2)
@@ -562,7 +571,8 @@ def mtr_trace(host, count=10, timeout=5):
         return {"code": 1, "message": "当前系统未安装 mtr（macOS: brew install mtr；Linux: yum/apt install mtr）"}
     try:
         data = json.loads(stdout)
-        return {"code": 0, "data": {"host": host, "mode": "mtr", "report": data}}
+        # mtr --json 实际输出 {"report":{"mtr":{...},"hubs":[...]},"report":{...}} 顶层带 report 嵌套键
+        return {"code": 0, "data": {"host": host, "mode": "mtr", "report": data.get("report", data)}}
     except Exception:
         return {"code": 0, "data": {"host": host, "mode": "mtr (raw)",
                                     "output": stdout or stderr}}
