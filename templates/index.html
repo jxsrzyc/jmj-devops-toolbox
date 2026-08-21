@@ -162,6 +162,11 @@
                     id="credSub-超融合南沙生产环境" data-cred-env="超融合南沙生产环境">
                     超融合南沙生产环境
                 </a>
+                <a href="#" onclick="switchCredEnv('私有云环境', event); return false;"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    id="credSub-私有云环境" data-cred-env="私有云环境">
+                    私有云环境
+                </a>
                 <a href="#" onclick="switchCredEnv('预生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-预生产环境" data-cred-env="预生产环境">
@@ -706,11 +711,14 @@
                 </div>
             </div>
 
-            <!-- 筛选栏：业务名称(datalist 下拉搜索) + 关键词 -->
+            <!-- 筛选栏：业务名称(自定义下拉 + 管理) + 关键词 -->
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
                 <div class="flex flex-col sm:flex-row gap-3">
                     <div class="flex-1 min-w-0 relative">
-                        <label class="block text-xs font-medium text-gray-500 mb-1">业务名称</label>
+                        <div class="flex items-center justify-between mb-1">
+                            <label class="block text-xs font-medium text-gray-500">业务名称</label>
+                            <button type="button" onclick="openSvcNameModal()" class="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1.5 py-0.5" title="管理业务名称（增删）">管理</button>
+                        </div>
                         <!-- 触发按钮 -->
                         <button type="button" id="credNameTrigger"
                             class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
@@ -744,7 +752,7 @@
                         <div class="flex items-center justify-between mb-1">
                             <label class="block text-xs font-medium text-gray-500">业务用途</label>
                             {% if permissions == '*' %}
-                            <button onclick="openBizColorModal()" class="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1.5 py-0.5" title="调整业务用途颜色">🎨 颜色</button>
+                            <button onclick="openBizColorModal()" class="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1.5 py-0.5" title="管理业务用途">管理</button>
                             {% endif %}
                         </div>
                         <select id="credPurposeFilter" onchange="credSearch()"
@@ -2122,16 +2130,18 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">业务用途</label>
-                        <select id="credFormPurpose" onchange="credFormPurposeChange()"
-                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                            <option value="点餐业务">🍚 点餐业务</option>
-                            <option value="会员业务">👥 会员业务</option>
-                            <option value="外卖业务">🛵 外卖业务</option>
-                            <option value="供应链">📦 供应链</option>
-                            <option value="通用服务">⚙️ 通用服务</option>
-                            <option value="__custom__">✏️ 自定义...</option>
-                        </select>
+                        <div class="relative">
+                            <button type="button" id="credFormPurposeTrigger" onclick="toggleCredPurposePanel()"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <span id="credFormPurposeTriggerLabel" class="text-gray-400 truncate">请选择...</span>
+                                <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="credFormPurposeArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="credFormPurposePanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 flex flex-col">
+                                <ul id="credFormPurposeListUl" class="overflow-y-auto flex-1 py-1"></ul>
+                            </div>
+                        </div>
                         <input id="credFormPurposeCustom" type="text" placeholder="输入新的业务用途..." class="hidden mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <p class="text-[11px] text-gray-400 mt-1">通用服务为默认；其他用途在顶部「管理」入口新增</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">环境 <span class="text-red-500">*</span></label>
@@ -2262,20 +2272,54 @@
         </div>
     </div>
 
-    <!-- 业务用途颜色配置弹窗 -->
+    <!-- 业务用途管理弹窗（增删 + 配置颜色） -->
     <div id="bizColorModal" class="fixed inset-0 z-50 hidden items-center justify-center">
         <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeBizColorModal()"></div>
         <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 modal-content">
             <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-900">业务用途颜色</h3>
+                <h3 class="text-lg font-bold text-gray-900">业务用途管理</h3>
                 <button onclick="closeBizColorModal()" class="p-1 rounded-lg hover:bg-gray-100">
                     <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
                 </button>
             </div>
-            <p class="text-xs text-gray-400 mb-4">点击色块选择新颜色，保存后表格徽章即时生效</p>
-            <div id="bizColorList" class="space-y-2 max-h-[60vh] overflow-y-auto"></div>
-            <div class="flex justify-end gap-3 mt-5">
+            <p class="text-xs text-gray-400 mb-3">「通用服务」不可删；其他用途删除后，凭证中该用途会自动合并到「通用服务」</p>
+            <div id="bizColorList" class="space-y-2 max-h-[40vh] overflow-y-auto"></div>
+            <!-- 新增业务用途 -->
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="flex items-center gap-2">
+                    <input id="bizNewPurposeInput" type="text" placeholder="新业务用途名称..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <input id="bizNewColorInput" type="color" value="#3b82f6" class="w-10 h-9 rounded cursor-pointer border border-gray-200 bg-white p-0.5" title="默认颜色">
+                    <button type="button" onclick="addBizPurpose()" class="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm whitespace-nowrap">新增</button>
+                </div>
+            </div>
+            <div class="flex justify-end mt-5">
                 <button onclick="closeBizColorModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">关闭</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 业务名称管理弹窗（增删） -->
+    <div id="svcNameModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeSvcNameModal()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md mx-4 p-6 modal-content">
+            <div class="flex items-center justify-between mb-4">
+                <h3 class="text-lg font-bold text-gray-900">业务名称管理</h3>
+                <button onclick="closeSvcNameModal()" class="p-1 rounded-lg hover:bg-gray-100">
+                    <svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                </button>
+            </div>
+            <p class="text-xs text-gray-400 mb-3">删除业务名称后，凭证中该名称会自动合并到「__archived__」占位（默认隐藏），不可撤销</p>
+            <div id="svcNameList" class="space-y-2 max-h-[40vh] overflow-y-auto"></div>
+            <!-- 新增业务名称 -->
+            <div class="mt-4 pt-4 border-t border-gray-100">
+                <div class="flex items-center gap-2">
+                    <input id="svcNewNameInput" type="text" placeholder="新业务名称..." class="flex-1 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    <button type="button" onclick="addSvcName()" class="px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm whitespace-nowrap">新增</button>
+                </div>
+                <p class="text-[11px] text-gray-400 mt-2">提示：业务名称也可在「新增凭证」弹窗里通过搜索/自定义输入添加</p>
+            </div>
+            <div class="flex justify-end mt-5">
+                <button onclick="closeSvcNameModal()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">关闭</button>
             </div>
         </div>
     </div>
@@ -3622,7 +3666,7 @@
         }
 
         // ==================== 服务凭证管理（6 环境） ====================
-        const CRED_ENVS = ['超融合电信开发环境', '超融合南沙生产环境', '预生产环境', '国内生产环境', '新加坡生产环境', '北美生产环境'];
+        const CRED_ENVS = ['超融合电信开发环境', '超融合南沙生产环境', '私有云环境', '预生产环境', '国内生产环境', '新加坡生产环境', '北美生产环境'];
         let credPage = 1;
         let credPageSize = 20;
         let credName = '';
@@ -3662,9 +3706,31 @@
                         window._credBizPurposes.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
                     pf.value = cur;
                 }
+                refreshCredFormPurpose();
             } catch (err) {
                 console.error('加载凭证下拉数据失败:', err);
             }
+        }
+
+        // 弹窗「业务用途」下拉：保留硬编码预设 + 动态追加用户已用过的业务用途（如 SRM）
+        function refreshCredFormPurpose() {
+            const sel = $('#credFormPurpose');
+            if (!sel) return;
+            const presets = new Set(['点餐业务', '会员业务', '外卖业务', '供应链', '通用服务', '__custom__']);
+            // 清掉之前动态追加的（保留预设）
+            Array.from(sel.options).forEach(o => {
+                if (!presets.has(o.value)) sel.removeChild(o);
+            });
+            // 在「自定义...」前插入用户已用过的业务用途
+            const customOpt = sel.querySelector('[value="__custom__"]');
+            (window._credBizPurposes || []).forEach(p => {
+                if (!p || presets.has(p)) return;
+                if (![...sel.options].some(o => o.value === p)) {
+                    const opt = document.createElement('option');
+                    opt.value = p; opt.textContent = p;
+                    sel.insertBefore(opt, customOpt);
+                }
+            });
         }
 
         // ===== 业务名称下拉面板 =====
@@ -3749,10 +3815,10 @@
             const onSelect = prefix === 'credFormService' ? selectCredFormService : selectCredFormProvider;
 
             const closeAllFormPanels = () => {
-                ['#credFormServicePanel', '#credFormProviderPanel'].forEach(sel => {
+                ['#credFormServicePanel', '#credFormProviderPanel', '#credFormPurposePanel'].forEach(sel => {
                     const p = document.querySelector(sel); if (p) p.classList.add('hidden');
                 });
-                ['#credFormServiceArrow', '#credFormProviderArrow'].forEach(sel => {
+                ['#credFormServiceArrow', '#credFormProviderArrow', '#credFormPurposeArrow'].forEach(sel => {
                     const a = document.querySelector(sel); if (a) a.classList.remove('rotate-180');
                 });
             };
@@ -3976,17 +4042,79 @@
             }
         });
 
-        // 业务用途：选择自定义时显示输入框
+        // 业务用途：trigger + 自定义 dropdown（避免原生 select 弹出层挡表单其他字段）
         function credFormPurposeChange() {
-            const sel = $('#credFormPurpose');
-            const custom = $('#credFormPurposeCustom');
-            if (sel.value === '__custom__') { custom.classList.remove('hidden'); custom.focus(); }
-            else { custom.classList.add('hidden'); custom.value = ''; }
+            // 占位（已被自定义 dropdown 取代，旧 select 节点已移除）
+        }
+        function setCredPurposeValue(value) {
+            const label = $('#credFormPurposeTriggerLabel');
+            const customInput = $('#credFormPurposeCustom');
+            if (value === '__custom__') {
+                label.textContent = '自定义...';
+                label.dataset.value = '__custom__';
+                label.className = 'text-gray-900 truncate';
+                customInput.classList.remove('hidden');
+                setTimeout(() => customInput.focus(), 50);
+            } else if (value) {
+                label.textContent = value;
+                label.dataset.value = value;
+                label.className = 'text-gray-900 truncate';
+                customInput.classList.add('hidden');
+                customInput.value = '';
+            } else {
+                label.textContent = '请选择...';
+                label.dataset.value = '';
+                label.className = 'text-gray-400 truncate';
+                customInput.classList.add('hidden');
+                customInput.value = '';
+            }
+        }
+        function toggleCredPurposePanel() {
+            const panel = $('#credFormPurposePanel');
+            const arrow = $('#credFormPurposeArrow');
+            if (!panel) return;
+            const willOpen = panel.classList.contains('hidden');
+            // 关其他三个面板（内联逻辑：全局 closeAllFormPanels 是 bindCredFormPanel 内的局部变量）
+            ['credFormServicePanel', 'credFormProviderPanel', 'credFormPurposePanel'].forEach(id => {
+                const p = document.getElementById(id); if (p) p.classList.add('hidden');
+            });
+            ['credFormServiceArrow', 'credFormProviderArrow', 'credFormPurposeArrow'].forEach(id => {
+                const a = document.getElementById(id); if (a) a.classList.remove('rotate-180');
+            });
+            if (willOpen) {
+                renderCredPurposeList();
+                panel.classList.remove('hidden');
+                arrow.classList.add('rotate-180');
+            } else {
+                panel.classList.add('hidden');
+                arrow.classList.remove('rotate-180');
+            }
+        }
+        function renderCredPurposeList() {
+            const ul = $('#credFormPurposeListUl');
+            const cur = $('#credFormPurposeTriggerLabel').dataset.value || '';
+            // 预设只保留「通用服务」（唯一内置）；其他用途由用户在顶部「管理」入口自助新增
+            const presets = ['通用服务'];
+            const presetsSet = new Set(presets);
+            const customs = (window._credBizPurposes || []).filter(p => !presetsSet.has(p));
+            const items = [...new Set([...presets, ...customs])];
+            const html = items.map(p => `<li><button type="button" onclick="selectCredPurpose('${esc(p).replace(/'/g, "\\'")}')" class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 ${cur === p ? 'text-blue-600 font-medium' : 'text-gray-900'}">${esc(p)}</button></li>`).join('') +
+                `<li><button type="button" onclick="selectCredPurpose('__custom__')" class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 border-t border-gray-100 ${cur === '__custom__' ? 'text-blue-600 font-medium' : 'text-gray-700'}">自定义...</button></li>`;
+            ul.innerHTML = html;
+        }
+        function selectCredPurpose(value) {
+            if (value === '__custom__') {
+                setCredPurposeValue('__custom__');
+            } else {
+                setCredPurposeValue(value);
+            }
+            $('#credFormPurposePanel').classList.add('hidden');
+            $('#credFormPurposeArrow').classList.remove('rotate-180');
         }
         function credFormReadPurpose() {
-            let p = $('#credFormPurpose').value;
-            if (p === '__custom__') p = $('#credFormPurposeCustom').value.trim();
-            return p || '通用服务';
+            const v = $('#credFormPurposeTriggerLabel').dataset.value;
+            if (v === '__custom__') return $('#credFormPurposeCustom').value.trim() || '通用服务';
+            return v || '通用服务';
         }
 
         // 凭证弹窗
@@ -3997,9 +4125,7 @@
             // 重置所有表单字段（包括下拉触发按钮的 label 和 dataset）
             $('#credForm').reset();
             $('#credFormEnv').value = credEnv || CRED_ENVS[0];
-            $('#credFormPurpose').value = '通用服务';
-            $('#credFormPurposeCustom').value = '';
-            $('#credFormPurposeCustom').classList.add('hidden');
+            setCredPurposeValue('通用服务');
             $('#credFormServiceTriggerLabel').textContent = '请选择或输入...';
             $('#credFormServiceTriggerLabel').className = 'text-gray-400 truncate';
             delete $('#credFormServiceTriggerLabel').dataset.value;
@@ -4020,18 +4146,9 @@
                     $('#credFormId').value = d.id;
                     $('#credModalTitle').textContent = '编辑凭证';
                     $('#credFormEnv').value = d.env || credEnv || '';
-                    // 业务用途：预设内直接选，预设外走自定义输入
-                    const PRE = ['点餐业务', '会员业务', '外卖业务', '供应链', '通用服务'];
+                    // 业务用途：通过 setCredPurposeValue 统一处理（预设内直接选，预设外走自定义输入）
                     const curPurpose = d.business_purpose || '通用服务';
-                    $('#credFormPurposeCustom').value = '';
-                    $('#credFormPurposeCustom').classList.add('hidden');
-                    if (PRE.includes(curPurpose)) {
-                        $('#credFormPurpose').value = curPurpose;
-                    } else {
-                        $('#credFormPurpose').value = '__custom__';
-                        $('#credFormPurposeCustom').classList.remove('hidden');
-                        $('#credFormPurposeCustom').value = curPurpose;
-                    }
+                    setCredPurposeValue(curPurpose);
                     // 业务名称触发按钮
                     if (d.service_name) {
                         $('#credFormServiceTriggerLabel').textContent = d.service_name;
@@ -4100,14 +4217,19 @@
                 const res = await api('/api/credentials/business-purposes');
                 const purpData = (res && res.data) || {};
                 const colors = Object.assign({}, purpData.colors || {});
-                const purposes = purpData.purposes && purpData.purposes.length ? purpData.purposes : ['点餐业务', '会员业务', '外卖业务', '供应链', '通用服务'];
+                // 业务用途列表 = 用户在 cred_business_colors 表里配过的所有 purpose；不存在时回退通用服务
+                const purposes = purpData.purposes && purpData.purposes.length ? purpData.purposes : ['通用服务'];
                 window._credBizColors = colors;
                 $('#bizColorList').innerHTML = purposes.map(p => {
                     const c = colors[p] || '#9ca3af';
+                    const isDefault = p === '通用服务';
+                    const safeP = esc(p).replace(/'/g, "\\'");
                     return `<div class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50">
-                        <span class="flex-1 text-sm text-gray-800">${esc(p)}</span>
-                        <input type="color" value="${c}" onchange="saveBizColor('${esc(p)}', this.value)" class="w-8 h-8 rounded cursor-pointer border border-gray-200 bg-white p-0.5" title="点击选择颜色">
-                        <span class="text-[10px] text-gray-400 font-mono w-16 truncate">${c}</span>
+                        <span class="flex-1 text-sm ${isDefault ? 'text-blue-600 font-medium' : 'text-gray-800'}">${esc(p)}${isDefault ? ' <span class="text-[10px] text-gray-400">(内置)</span>' : ''}</span>
+                        <input type="color" value="${c}" onchange="saveBizColor('${safeP}', this.value)" class="w-8 h-8 rounded cursor-pointer border border-gray-200 bg-white p-0.5" title="点击选择颜色">
+                        <button type="button" onclick="removeBizPurpose('${safeP}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1" title="删除该业务用途（凭证数据会合并到「通用服务」）" ${isDefault ? 'disabled class="text-gray-300 cursor-not-allowed p-1"' : ''}>
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5.7 7m5 8a1 1 0 01-1 1H9m3 1h1m-7-9h12"/></svg>
+                        </button>
                     </div>`;
                 }).join('');
                 $('#bizColorModal').classList.remove('hidden');
@@ -4117,6 +4239,94 @@
             }
         }
         function closeBizColorModal() { $('#bizColorModal').classList.add('hidden'); $('#bizColorModal').classList.remove('flex'); }
+
+        async function addBizPurpose() {
+            const nameInput = $('#bizNewPurposeInput');
+            const colorInput = $('#bizNewColorInput');
+            const name = nameInput.value.trim();
+            const color = colorInput.value;
+            if (!name) { showToast('请输入业务用途名称', 'error'); return; }
+            if (name === '通用服务') { showToast('「通用服务」已内置，无需新增', 'error'); return; }
+            // 重名检查（前端）
+            if ((window._credBizPurposes || []).includes(name)) { showToast('「' + name + '」已存在', 'error'); return; }
+            try {
+                const res = await api('/api/credentials/business-purposes', { method: 'POST', body: JSON.stringify({ purpose: name, color }) });
+                if (res.code === 0) {
+                    showToast(res.message || '新增成功');
+                    nameInput.value = '';
+                    // 刷新全局缓存 + 弹窗列表
+                    await loadCredDatalists();
+                    await openBizColorModal();
+                } else showToast(res.message || '新增失败', 'error');
+            } catch (err) { showToast('新增失败: ' + err.message, 'error'); }
+        }
+
+        async function removeBizPurpose(purpose) {
+            if (purpose === '通用服务') { showToast('「通用服务」不可删除', 'error'); return; }
+            if (!confirm(`确定删除业务用途「${purpose}」？\n所有该用途的凭证将自动合并到「通用服务」，且此操作不可撤销。`)) return;
+            try {
+                const res = await api('/api/credentials/business-purposes/' + encodeURIComponent(purpose), { method: 'DELETE' });
+                if (res.code === 0) {
+                    showToast(res.message || '删除成功');
+                    await loadCredDatalists();
+                    await openBizColorModal();
+                    renderCredTable(window._credLastItems || []);  // 刷新表格徽章
+                } else showToast(res.message || '删除失败', 'error');
+            } catch (err) { showToast('删除失败: ' + err.message, 'error'); }
+        }
+
+        // ===== 业务名称管理（增删） =====
+        async function openSvcNameModal() {
+            closeAllModals();
+            try {
+                const res = await api('/api/credential-service-names');
+                const names = (res && res.data) || [];
+                $('#svcNameList').innerHTML = names.length === 0
+                    ? '<div class="text-center text-xs text-gray-400 py-6">暂无业务名称（去凭证弹窗录入）</div>'
+                    : names.map(n => {
+                        const safe = esc(n).replace(/'/g, "\\'");
+                        return `<div class="flex items-center gap-3 p-2.5 rounded-lg border border-gray-100 hover:bg-gray-50">
+                            <span class="flex-1 text-sm text-gray-800 font-mono truncate">${esc(n)}</span>
+                            <button type="button" onclick="removeSvcName('${safe}')" class="text-red-500 hover:text-red-700 hover:bg-red-50 rounded p-1" title="删除该业务名称（凭证数据会合并到 __archived__ 占位符）">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5.7 7m5 8a1 1 0 01-1 1H9m3 1h1m-7-9h12"/></svg>
+                            </button>
+                        </div>`;
+                    }).join('');
+                $('#svcNameModal').classList.remove('hidden');
+                $('#svcNameModal').classList.add('flex');
+            } catch (err) {
+                showToast('加载业务名称失败: ' + err.message, 'error');
+            }
+        }
+        function closeSvcNameModal() { $('#svcNameModal').classList.add('hidden'); $('#svcNameModal').classList.remove('flex'); }
+
+        async function addSvcName() {
+            const input = $('#svcNewNameInput');
+            const name = input.value.trim();
+            if (!name) { showToast('请输入业务名称', 'error'); return; }
+            try {
+                const res = await api('/api/credential-service-names', { method: 'POST', body: JSON.stringify({ name }) });
+                if (res.code === 0) {
+                    showToast(res.message || '已记录');
+                    input.value = '';
+                    await loadCredDatalists();
+                    await openSvcNameModal();
+                } else showToast(res.message || '新增失败', 'error');
+            } catch (err) { showToast('新增失败: ' + err.message, 'error'); }
+        }
+
+        async function removeSvcName(name) {
+            if (!confirm(`确定删除业务名称「${name}」？\n所有该名称的凭证将自动合并到「__archived__」占位符（默认隐藏），此操作不可撤销。`)) return;
+            try {
+                const res = await api('/api/credential-service-names/' + encodeURIComponent(name), { method: 'DELETE' });
+                if (res.code === 0) {
+                    showToast(res.message || '删除成功');
+                    await loadCredDatalists();
+                    await openSvcNameModal();
+                    renderCredTable(window._credLastItems || []);  // 刷新表格徽章
+                } else showToast(res.message || '删除失败', 'error');
+            } catch (err) { showToast('删除失败: ' + err.message, 'error'); }
+        }
         async function saveBizColor(purpose, color) {
             try {
                 const res = await api('/api/credentials/business-purposes/colors', {

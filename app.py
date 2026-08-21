@@ -303,6 +303,40 @@ def set_credential_business_color():
     return jsonify({"code": 0 if ok else 1, "message": f"「{purpose}」颜色已更新" if ok else "更新失败"})
 
 
+@app.route("/api/credentials/business-purposes", methods=["POST"])
+@require_perm("admin")
+def add_business_purpose():
+    """新增业务用途（管理员）。写入 cred_business_colors + 校验唯一"""
+    body = request.get_json(silent=True) or {}
+    purpose = str(body.get("purpose", "")).strip()
+    color = str(body.get("color", "#3b82f6")).strip()
+    if not purpose:
+        return jsonify({"code": 1, "message": "业务用途名称必填"})
+    if purpose == '通用服务':
+        return jsonify({"code": 1, "message": "「通用服务」已内置，无需新增"})
+    if not (len(color) == 7 and color.startswith("#")):
+        return jsonify({"code": 1, "message": "颜色格式需为 #RRGGBB"})
+    if db.get_business_colors().get(purpose):
+        return jsonify({"code": 1, "message": f"「{purpose}」已存在"})
+    ok = db.set_business_color(purpose, color)
+    return jsonify({"code": 0 if ok else 1, "message": f"「{purpose}」已新增" if ok else "新增失败"})
+
+
+@app.route("/api/credentials/business-purposes/<path:purpose>", methods=["DELETE"])
+@require_perm("admin")
+def remove_business_purpose(purpose):
+    """删除业务用途（管理员）：删除 cred_business_colors 行 + 把 service_credentials 中该值合并到「通用服务」"""
+    purpose = (purpose or "").strip()
+    if not purpose:
+        return jsonify({"code": 1, "message": "业务用途必填"})
+    if purpose == '通用服务':
+        return jsonify({"code": 1, "message": "「通用服务」不可删除"})
+    if purpose not in db.get_business_colors():
+        return jsonify({"code": 1, "message": f"「{purpose}」不存在"})
+    affected = db.merge_business_purpose(purpose, "通用服务")
+    return jsonify({"code": 0, "message": f"「{purpose}」已删除，{affected} 条凭证合并到「通用服务」"})
+
+
 @app.route("/api/credentials/<int:cid>", methods=["GET"])
 def get_credential(cid):
     """获取单条凭证（密码脱敏返回）"""
@@ -383,6 +417,37 @@ def get_credential_service_names():
     """获取凭证业务名称列表（datalist 下拉搜索）"""
     names = db.get_credential_service_names()
     return jsonify({"code": 0, "data": names})
+
+
+@app.route("/api/credential-service-names", methods=["POST"])
+@login_required
+def add_credential_service_name():
+    """校验业务名称合法性（业务名称由凭证录入时实际持久化，这里只做格式/重名校验）"""
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()
+    if not name:
+        return jsonify({"code": 1, "message": "业务名称必填"})
+    if len(name) > 100:
+        return jsonify({"code": 1, "message": "业务名称过长（≤100 字）"})
+    existing = db.get_credential_service_names()
+    # 不区分大小写比较（数据库已用 LOWER/TRIM 去重）
+    if any(n.lower() == name.lower() for n in existing):
+        return jsonify({"code": 1, "message": f"「{name}」已存在（实际在凭证录入时会自动持久化）"})
+    # 业务名称无需 placeholder：第一次录入凭证时输入即生效
+    return jsonify({"code": 0, "message": f"「{name}」已记录，下次录入凭证时输入即可"})
+
+
+@app.route("/api/credential-service-names/<path:name>", methods=["DELETE"])
+@login_required
+def remove_credential_service_name(name):
+    """删除业务名称：将 service_credentials 中匹配项合并到「__archived__」占位符（默认隐藏）"""
+    name = (name or "").strip()
+    if not name:
+        return jsonify({"code": 1, "message": "业务名称必填"})
+    affected = db.merge_service_name(name, '__archived__')
+    if affected == 0:
+        return jsonify({"code": 1, "message": f"「{name}」不存在或无关联凭证"})
+    return jsonify({"code": 0, "message": f"「{name}」已删除，{affected} 条凭证合并到「__archived__」"})
 
 
 @app.route("/api/credential-providers", methods=["GET"])

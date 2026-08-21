@@ -788,6 +788,17 @@ class Database:
             conn.commit()
             return True
 
+    def merge_business_purpose(self, from_purpose, to_purpose):
+        """删除业务用途：service_credentials 中等于 from_purpose 的合并到 to_purpose，返回受影响的行数；同时删除 cred_business_colors 中 from_purpose 行"""
+        with get_conn() as conn:
+            cursor = conn.execute(
+                "UPDATE service_credentials SET business_purpose=?, updated_at=CURRENT_TIMESTAMP WHERE business_purpose=?",
+                (to_purpose, from_purpose)
+            )
+            conn.execute("DELETE FROM cred_business_colors WHERE purpose=?", (from_purpose,))
+            conn.commit()
+            return cursor.rowcount
+
     def get_credential_envs(self):
         """获取凭证环境列表（去重）"""
         with get_conn() as conn:
@@ -804,6 +815,18 @@ class Database:
                 "ORDER BY name"
             ).fetchall()
             return [r["name"] for r in rows]
+
+    def merge_service_name(self, from_name, to_name='__archived__'):
+        """删除业务名称：service_credentials 中等于 from_name 的合并到 to_name（默认 '__archived__' 占位符），返回受影响的行数"""
+        if from_name == to_name:
+            return 0
+        with get_conn() as conn:
+            cursor = conn.execute(
+                "UPDATE service_credentials SET service_name=?, updated_at=CURRENT_TIMESTAMP WHERE service_name=?",
+                (to_name, from_name)
+            )
+            conn.commit()
+            return cursor.rowcount
 
     def get_credential_providers(self):
         """获取所有已录入的服务供应商（去重，用于 datalist）"""
