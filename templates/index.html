@@ -314,6 +314,7 @@
                     <div id="utg-batch" class="hidden">
                         <a href="#" onclick="switchUtilsTab('cert'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="cert" id="utilsSub-cert">证书批量到期检测</a>
                         <a href="#" onclick="switchUtilsTab('batch'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="batch" id="utilsSub-batch">批量端口连通性检测</a>
+                        <a href="#" onclick="switchUtilsTab('pingping'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="pingping" id="utilsSub-pingping">批量PING检测</a>
                     </div>
                 </div>
                 <div data-utils-group="utg-text">
@@ -1492,6 +1493,32 @@
                 </div>
             </div>
             <div id="utBatchResult" class="flex-1"></div>
+        </div>
+
+        <!-- 运维小工具：批量PING检测 -->
+        <div id="page-utpingping" class="p-6 flex-1 flex flex-col min-h-0 hidden">
+            <div class="flex items-center justify-between mb-6">
+                <div><h2 class="text-xl font-bold text-gray-900">批量PING检测</h2><p class="text-sm text-gray-500">批量 PING 多个 IP/域名（每行一个，最多 50 条，并发检测）</p></div>
+            </div>
+            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div class="md:col-span-2">
+                        <label class="block text-xs font-medium text-gray-500 mb-1">IP / 域名（每行一个，最多 50 条）</label>
+                        <textarea id="utPingInput" rows="6" placeholder="8.8.8.8&#10;114.114.114.114&#10;www.baidu.com&#10;www.qq.com" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm font-mono focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-500 mb-1">发包次数</label>
+                        <input id="utPingCount" type="number" value="4" min="1" max="10" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        <label class="block text-xs font-medium text-gray-500 mb-1 mt-3">单包超时（秒）</label>
+                        <input id="utPingTimeout" type="number" value="2" min="1" max="3" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                    </div>
+                    <div class="flex flex-col gap-2">
+                        <button onclick="utPingBatchRun()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">批量检测</button>
+                        <button onclick="document.getElementById('utPingInput').value=''; document.getElementById('utPingResult').innerHTML='';" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">清空</button>
+                    </div>
+                </div>
+            </div>
+            <div id="utPingResult" class="flex-1"></div>
         </div>
 
         <!-- 运维小工具：HTTP 健康检查 -->
@@ -5017,7 +5044,7 @@
             document.getElementById('utilsSubmenu').classList.remove('hidden');
             document.getElementById('utilsMenuArrow').classList.add('rotate-180');
             // 自动展开当前工具所在分组
-            const UTILS_GROUP_MAP = { json: 'utg-encode', encode: 'utg-encode', yaml: 'utg-encode', health: 'utg-http', curl: 'utg-http', webhook: 'utg-http', cert: 'utg-batch', batch: 'utg-batch', diff: 'utg-text', dedup: 'utg-text', generator: 'utg-gen', cidr: 'utg-calc', timestamp: 'utg-calc', scicalc: 'utg-calc' };
+            const UTILS_GROUP_MAP = { json: 'utg-encode', encode: 'utg-encode', yaml: 'utg-encode', health: 'utg-http', curl: 'utg-http', webhook: 'utg-http', cert: 'utg-batch', batch: 'utg-batch', pingping: 'utg-batch', diff: 'utg-text', dedup: 'utg-text', generator: 'utg-gen', cidr: 'utg-calc', timestamp: 'utg-calc', scicalc: 'utg-calc' };
             if (UTILS_GROUP_MAP[tab]) toolGroupOpen(UTILS_GROUP_MAP[tab]);
             // 生成器相关：进入时更新历史计数徽章 + 默认生成一次
             if (tab === 'generator') { genHistoryUpdateBadge(); genSwitchTab(genActiveTab); }
@@ -5124,6 +5151,38 @@
                 <td class="px-3 py-2 text-sm text-gray-600">${r.connect_ms != null ? r.connect_ms + ' ms' : '-'}</td>
                 <td class="px-3 py-2 text-xs text-gray-500 break-all">${esc(r.error || r.message || '')}</td></tr>`).join('');
             $('#utBatchResult').innerHTML = utResultBox(`<table class="w-full text-sm"><thead class="bg-gray-50"><tr>${['#','主机:端口','结果','耗时','说明'].map(h => `<th class="px-3 py-2 text-left text-xs font-medium text-gray-500">${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`);
+        }
+
+        // --- 批量PING检测 ---
+        async function utPingBatchRun() {
+            const text = $('#utPingInput').value.trim();
+            if (!text) return showToast('请输入 IP/域名（每行一个）', 'error');
+            const items = text.split('\n').map(l => l.trim()).filter(Boolean).slice(0, 50);
+            if (!items.length) return showToast('请输入 IP/域名（每行一个）', 'error');
+            const count = parseInt($('#utPingCount').value) || 4;
+            const timeout = parseInt($('#utPingTimeout').value) || 2;
+            $('#utPingResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/utils/batch-ping', { method: 'POST', body: JSON.stringify({ items, count, timeout }) });
+                if (res.code !== 0) { $('#utPingResult').innerHTML = netErrorBox(res.message); return; }
+                const rows = res.data.map((r, i) => `<tr class="border-b border-gray-100">
+                    <td class="px-3 py-2 text-gray-400 text-xs">${i + 1}</td>
+                    <td class="px-3 py-2 text-sm text-gray-800 font-mono break-all">${esc(r.host)}</td>
+                    <td class="px-3 py-2 text-sm whitespace-nowrap">${r.success ? '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">✓ 可达</span>' : '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">✗ 不可达</span>'}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${r.loss != null ? r.loss + '%' : '-'}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${r.avg != null ? r.avg + ' ms' : '-'}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${r.min != null ? r.min + ' ms' : '-'}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${r.max != null ? r.max + ' ms' : '-'}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${r.ttl ?? '-'}</td>
+                    <td class="px-3 py-2 text-sm text-gray-600">${r.cost != null ? r.cost + ' s' : '-'}</td>
+                    <td class="px-3 py-2 text-xs text-gray-500 break-all">${esc(r.error || '')}</td></tr>`).join('');
+                const okCount = res.data.filter(r => r.success).length;
+                $('#utPingResult').innerHTML = `<div class="flex items-center gap-3 mb-3">
+                    <span class="text-sm font-medium text-gray-700">共检测 ${res.data.length} 条 · 可达 ${okCount} · 不可达 ${res.data.length - okCount}</span></div>` +
+                    utResultBox(`<table class="w-full text-sm"><thead class="bg-gray-50"><tr>${['#','目标','状态','丢包率','平均','最小','最大','TTL','耗时','错误'].map(h => `<th class="px-3 py-2 text-left text-xs font-medium text-gray-500">${h}</th>`).join('')}</tr></thead><tbody>${rows}</tbody></table>`);
+            } catch (e) {
+                $('#utPingResult').innerHTML = netErrorBox(e.message);
+            }
         }
 
         // --- HTTP 健康检查 ---

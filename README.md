@@ -159,6 +159,7 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 | 编解码/哈希 | Base64/URL 编解码 + MD5/SHA1/256/512 | Python base64/hashlib |
 | Webhook 测试 | 向任意 URL 发送测试请求看响应 | urllib + 防 SSRF 校验 |
 | 批量端口连通检查 | 表格批量 TCPing（最多 50 条） | 复用 nettools.tcping |
+| 批量PING检测 | 批量 PING 多个 IP/域名（最多 50 条，10 线程并发） | 复用 nettools.ping_detect + ThreadPoolExecutor |
 | HTTP 健康检查 | URL 状态码/耗时/响应头/返回体 | urllib |
 | 证书批量到期监控 | 批量 SSL 证书剩余天数（最多 100 条） | 复用 nettools.ssl_inspect |
 | K8s Yaml 检测 | YAML 语法 + 资源必填字段/规范检查（多文档） | pyyaml |
@@ -301,6 +302,9 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 - ✨ UI 优化：星期/技术线改为下拉选择（周一~周日、前端/后端）；表格关键列不换行
 - 📦 已从文档导入 47 条生产数据（46 条含工单链接，1 条修正脏值）
 - 🐛 修复 K8s 部署下 PING/路由查询/MTR路由 报「command not found」：`Dockerfile` 新增 `iputils-ping` / `traceroute` / `mtr` 包；`k8s/deployment.yaml` 容器 `securityContext.capabilities` 增加 `NET_RAW` + `NET_ADMIN`（ICMP raw socket 需要）
+- 🐛 修复 PING 检测 500 / 不可达：`result` 字段初始化 + 正则兼容 `rtt`/`round-trip` 双格式
+- 🐛 修复 MTR 报告字段兼容：mtr 0.86~0.95+ 字段名（`Loss%`/`Sent`/`Snt`/小写变体）统一归一化
+- ✨ 运维小工具「批量检测」分组新增 **批量PING检测**（`POST /api/utils/batch-ping`，多行输入/10 线程并发/上限 50/防 SSRF）
 
 ### v2.5 (2026-08-19)
 - 🚀 运维小工具「计算换算」分组新增 **科学计算器**（纯前端手写表达式解析器，零后端改动）

@@ -393,8 +393,13 @@ def ping_detect(host, count=4, timeout=5):
     """
     if SYSTEM == "Windows":
         cmd = ["ping", "-n", str(count), "-w", str(timeout * 1000), host]
-    else:
+    elif SYSTEM == "Linux":
+        # Linux iputils：必须传 -W 限单包超时，否则默认 10s × N 包触发网关 30s 超时
         cmd = ["ping", "-c", str(count), "-W", str(timeout), host]
+    else:
+        # macOS / BSD：传 -W 会导致逐行 ttl/time 回显丢失（macOS ping 自身 bug），
+        # 不传 -W 时默认等 10s/包（本地开发可接受，K8s 用 Linux 分支不受影响）
+        cmd = ["ping", "-c", str(count), host]
     t0 = time.time()
     ok, stdout, stderr = _run_cmd(cmd, timeout=(timeout * count) + 5)
     cost = round(time.time() - t0, 2)

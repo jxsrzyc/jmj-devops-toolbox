@@ -238,6 +238,61 @@ def http_health(url, timeout=10):
     return {"code": 0, "data": _http_request(url, method="GET", timeout=timeout)}
 
 
+# ==================== 7.1 批量 PING 检测 ====================
+
+def batch_ping(items, count=4, timeout=2):
+    """批量 PING 检测。items: ["8.8.8.8", "www.baidu.com", ...] 或 [{"host": "..."}, ...]，上限 50 条
+
+    并发执行（ThreadPoolExecutor max_workers=10）避免串行触发网关超时；
+    复用 nettools.ping_detect + validate_host（防 SSRF：拒绝内网/回环/私有/多播地址）。
+    """
+    from nettools import ping_detect, validate_host
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+    hosts = []
+    for it in (items or [])[:50]:
+        if isinstance(it, str):
+            host = it.strip()
+        elif isinstance(it, dict):
+            host = (it.get("host") or "").strip()
+        else:
+            host = ""
+        if host:
+            hosts.append(host)
+
+    def _one(host):
+        # 输入校验（防 SSRF）
+        ok, msg, norm = validate_host(host)
+        if not ok:
+            return {"host": host, "success": False, "error": msg}
+        r = ping_detect(norm, count=count, timeout=timeout)
+        if r["code"] == 0:
+            d = r["data"]
+            return {
+                "host": norm,
+                "success": d.get("success"),
+                "loss": d.get("loss"),
+                "avg": d.get("avg"),
+                "min": d.get("min"),
+                "max": d.get("max"),
+                "ttl": d.get("ttl"),
+                "cost": d.get("cost"),
+            }
+        return {"host": norm, "success": False, "error": r["message"]}
+
+    results = []
+    with ThreadPoolExecutor(max_workers=10) as ex:
+        futs = {ex.submit(_one, h): h for h in hosts}
+        for fut in as_completed(futs):
+            try:
+                results.append(fut.result())
+            except Exception as e:
+                results.append({"host": futs[fut], "success": False, "error": str(e)[:120]})
+    # 保持输入顺序
+    order = {h: i for i, h in enumerate(hosts)}
+    results.sort(key=lambda r: order.get(r["host"], 999))
+    return {"code": 0, "data": results}
+
+
 # ==================== 8. 证书批量到期监控 ====================
 
 def cert_monitor(domains):

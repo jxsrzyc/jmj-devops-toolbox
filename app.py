@@ -1178,6 +1178,22 @@ def utils_batch_tcping():
     return jsonify(opsutils.batch_tcping(data.get("items", [])))
 
 
+@app.route("/api/utils/batch-ping", methods=["POST"])
+@login_required
+def utils_batch_ping():
+    """批量 PING 检测（最多 50 条，并发执行）"""
+    data = request.get_json(silent=True) or {}
+    items = data.get("items", data.get("hosts", []))
+    if isinstance(items, str):
+        items = [d.strip() for d in items.splitlines() if d.strip()]
+    try:
+        count = max(1, min(int(data.get("count", 4)), 10))
+        timeout = max(1, min(int(data.get("timeout", 2)), 3))
+    except (TypeError, ValueError):
+        count, timeout = 4, 2
+    return jsonify(opsutils.batch_ping(items, count=count, timeout=timeout))
+
+
 @app.route("/api/utils/http-health", methods=["POST"])
 @login_required
 def utils_http_health():
