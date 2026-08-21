@@ -572,11 +572,14 @@ def mtr_trace(host, count=10, timeout=5):
         return {"code": 1, "message": "当前系统未安装 mtr（macOS: brew install mtr；Linux: yum/apt install mtr）"}
     try:
         data = json.loads(stdout)
-        # mtr 字段名兼容：
-        # - 老版 mtr（0.86-）：首字母大写（Loss%/Sent/Last/Avg/Best/Wrst/StDev）
-        # - 新版 mtr（0.95+ / Debian 包）：小写（loss%/sent/last/avg/best/wrst/stdev）
-        # 按顺序查找第一个非 None 的字段名
         hubs_raw = (data.get('report') or data).get('hubs') or []
+        # 调试日志：让 K8s pod logs 能看到 mtr --json 实际字段名，下次字段不匹配不用猜
+        if hubs_raw:
+            print(f'[mtr_trace] hub 字段名: {list(hubs_raw[0].keys())}', flush=True)
+        # mtr 字段名兼容（覆盖 mtr 0.86 → 0.95+ / Debian apt 包多种版本）：
+        # - JSON 字段：Loss%/Sent（老）| loss%/sent（部分新版）| loss_pct/Snt（mtr 0.95+ 部分编译）
+        # - 文本输出列名：Snt（是 Sent 的缩写）
+        # 按顺序查找第一个非 None 的字段名
 
         def _m(h, *keys):
             for k in keys:
@@ -586,15 +589,15 @@ def mtr_trace(host, count=10, timeout=5):
             return None
 
         hubs = [{
-            'count': _m(h, 'count', 'Count') or (i + 1),
+            'count': _m(h, 'count', 'Count', 'hop', 'Hop') or (i + 1),
             'host': _m(h, 'host', 'Host', 'hub', 'Hub') or '*',
-            'loss': _m(h, 'loss%', 'Loss%', 'loss', 'Loss'),
-            'snt': _m(h, 'sent', 'Sent', 'packets', 'Packets'),
+            'loss': _m(h, 'loss_pct', 'Loss%', 'loss%', 'loss', 'Loss'),
+            'snt': _m(h, 'sent', 'Sent', 'Snt', 'snt', 'packets', 'Packets'),
             'last': _m(h, 'last', 'Last'),
-            'avg': _m(h, 'avg', 'Avg'),
-            'best': _m(h, 'best', 'Best'),
-            'wrst': _m(h, 'wrst', 'Wrst', 'worst', 'Worst'),
-            'stdev': _m(h, 'stdev', 'StDev'),
+            'avg': _m(h, 'avg', 'Avg', 'mean'),
+            'best': _m(h, 'best', 'Best', 'min'),
+            'wrst': _m(h, 'wrst', 'Wrst', 'worst', 'Worst', 'max'),
+            'stdev': _m(h, 'stdev', 'StDev', 'stddev', 'mdev'),
         } for i, h in enumerate(hubs_raw)]
         return {"code": 0, "data": {"host": host, "mode": "mtr",
                                     "report": {"hubs": hubs}}}
