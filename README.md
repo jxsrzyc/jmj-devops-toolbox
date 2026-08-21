@@ -300,6 +300,7 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 - ✨ 表格**按发布时间升序**排列（最早在前）；序号按显示位置自动生成（连续 1,2,3...，删除/筛选后自动重排）；新增时库内 `seq_no` 自动取 max+1
 - ✨ UI 优化：星期/技术线改为下拉选择（周一~周日、前端/后端）；表格关键列不换行
 - 📦 已从文档导入 47 条生产数据（46 条含工单链接，1 条修正脏值）
+- 🐛 修复 K8s 部署下 PING/路由查询/MTR路由 报「command not found」：`Dockerfile` 新增 `iputils-ping` / `traceroute` / `mtr` 包；`k8s/deployment.yaml` 容器 `securityContext.capabilities` 增加 `NET_RAW` + `NET_ADMIN`（ICMP raw socket 需要）
 
 ### v2.5 (2026-08-19)
 - 🚀 运维小工具「计算换算」分组新增 **科学计算器**（纯前端手写表达式解析器，零后端改动）

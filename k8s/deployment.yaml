@@ -32,6 +32,12 @@ spec:
           # ⚠️ 部署前替换为你的镜像仓库地址 + 版本 tag（勿用 latest 上生产）
           image: lanqi-svc-params:v1.0
           imagePullPolicy: IfNotPresent
+          # ⚠️ ping/traceroute/mtr 需要 ICMP（raw socket），必须授予 NET_RAW；traceroute/mtr 还需要 NET_ADMIN（设置 TTL）
+          securityContext:
+            capabilities:
+              add:
+                - NET_RAW
+                - NET_ADMIN
           ports:
             - containerPort: 5001
               protocol: TCP

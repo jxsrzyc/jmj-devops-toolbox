@@ -117,6 +117,33 @@ SQLite 是文件数据库，不能同时被多个 Pod 写入。当前 deployment
 
 ---
 
+## 三点五、网络工具依赖说明
+
+**网络工具**（PING检测 / 路由查询 / MTR路由）由服务端执行系统命令：
+
+|工具|命令|所需包（Linux 容器）|
+|------|------|------------------|
+|PING 检测|`ping -c N -W T host`|`iputils-ping`（提供 `ping`）|
+|路由查询|`traceroute -m N -q 1 -w T host`|`traceroute`|
+|MTR 路由|`mtr --report -c N -j host`|`mtr`|
+
+> **代码三端兼容**：`nettools.py` 顶部 `SYSTEM = platform.system()` 自动判断 Windows / Darwin / Linux，分别用 `ping -n` / `tracert -d` / `pathping` 兼容。**K8s 容器永远是 Linux，所以服务端永远走 Linux 分支**；客户端三端兼容对本地单机部署/开发有用。
+
+**K8s 容器额外要求**（ICMP raw socket）：
+
+```yaml
+# k8s/deployment.yaml 容器 securityContext
+securityContext:
+  capabilities:
+    add:
+      - NET_RAW   # ping / traceroute / mtr 都用 ICMP
+      - NET_ADMIN  # traceroute / mtr 设置 TTL 需要
+```
+
+Dockerfile 已 `apt-get install` 这 3 个包；如本地构建需镜像包含这些包，请确认 `Dockerfile` 第 14 行附近包含 `iputils-ping` / `traceroute` / `mtr`。
+
+---
+
 ## 四、环境变量
 
 | 变量 | 默认值 | 说明 |

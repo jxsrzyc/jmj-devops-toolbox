@@ -13,6 +13,11 @@ FROM python:3.13-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
     tini \
     curl \
+    # 网络工具：服务端执行 ping/traceroute/mtr 需要 ICMP（cap_net_raw）
+    # ICMP raw socket 由 deployment.yaml securityContext.capabilities 授予
+    iputils-ping \
+    traceroute \
+    mtr \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
