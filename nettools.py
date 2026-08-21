@@ -571,8 +571,22 @@ def mtr_trace(host, count=10, timeout=5):
         return {"code": 1, "message": "当前系统未安装 mtr（macOS: brew install mtr；Linux: yum/apt install mtr）"}
     try:
         data = json.loads(stdout)
-        # mtr --json 实际输出 {"report":{"mtr":{...},"hubs":[...]},"report":{...}} 顶层带 report 嵌套键
-        return {"code": 0, "data": {"host": host, "mode": "mtr", "report": data.get("report", data)}}
+        # mtr --json 字段名首字母大写（Loss%/Sent/Last/Avg/Best/Wrst/StDev），
+        # 归一化为前端约定的小写字段名（避免破坏前端渲染）
+        hubs_raw = (data.get('report') or data).get('hubs') or []
+        hubs = [{
+            'count': h.get('count', i + 1),
+            'host': h.get('host', '*'),
+            'loss': h.get('Loss%'),
+            'snt': h.get('Sent'),
+            'last': h.get('Last'),
+            'avg': h.get('Avg'),
+            'best': h.get('Best'),
+            'wrst': h.get('Wrst'),
+            'stdev': h.get('StDev'),
+        } for i, h in enumerate(hubs_raw)]
+        return {"code": 0, "data": {"host": host, "mode": "mtr",
+                                    "report": {"hubs": hubs}}}
     except Exception:
         return {"code": 0, "data": {"host": host, "mode": "mtr (raw)",
                                     "output": stdout or stderr}}
