@@ -748,17 +748,39 @@
                             </div>
                         </div>
                     </div>
-                    <div class="flex-1 min-w-0">
+                    <div class="flex-1 min-w-0 relative">
                         <div class="flex items-center justify-between mb-1">
                             <label class="block text-xs font-medium text-gray-500">业务用途</label>
                             {% if permissions == '*' %}
                             <button onclick="openBizColorModal()" class="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1.5 py-0.5" title="管理业务用途">管理</button>
                             {% endif %}
                         </div>
-                        <select id="credPurposeFilter" onchange="credSearch()"
-                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                            <option value="">全部业务</option>
-                        </select>
+                        <button type="button" id="credPurposeFilterTrigger"
+                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span id="credPurposeFilterTriggerLabel" class="text-gray-400 truncate">全部</span>
+                            <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="credPurposeFilterArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </button>
+                        <div id="credPurposeFilterPanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-80 flex flex-col" style="min-width: 16rem;">
+                            <div class="p-2 border-b border-gray-100">
+                                <div class="relative">
+                                    <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <input id="credPurposeFilterSearch" type="text" placeholder="搜索业务用途..."
+                                        class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                </div>
+                            </div>
+                            <ul id="credPurposeFilterListUl" class="overflow-y-auto flex-1 py-1"></ul>
+                            <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs">
+                                <span id="credPurposeFilterPageInfo" class="text-gray-400"></span>
+                                <div class="flex gap-1">
+                                    <button id="credPurposeFilterPrev" onclick="credPurposeFilterGoPage(-1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                                    <button id="credPurposeFilterNext" onclick="credPurposeFilterGoPage(1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex-1 min-w-0">
                         <label class="block text-xs font-medium text-gray-500 mb-1">关键词</label>
@@ -2127,18 +2149,33 @@
                 <input type="hidden" id="credFormId">
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">业务用途</label>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">业务用途 <span class="text-red-500">*</span></label>
                         <div class="relative">
-                            <button type="button" id="credFormPurposeTrigger" onclick="toggleCredPurposePanel()"
+                            <button type="button" id="credFormPurposeTrigger"
                                 class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                                 <span id="credFormPurposeTriggerLabel" class="text-gray-400 truncate">请选择...</span>
                                 <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="credFormPurposeArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
                             </button>
-                            <div id="credFormPurposePanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-60 flex flex-col">
+                            <div id="credFormPurposePanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col">
+                                <div class="p-2 border-b border-gray-100">
+                                    <div class="relative">
+                                        <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                        </svg>
+                                        <input id="credFormPurposeSearch" type="text" placeholder="搜索业务用途..."
+                                            class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                    </div>
+                                </div>
                                 <ul id="credFormPurposeListUl" class="overflow-y-auto flex-1 py-1"></ul>
+                                <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs">
+                                    <span id="credFormPurposePageInfo" class="text-gray-400"></span>
+                                    <div class="flex gap-1">
+                                        <button type="button" id="credFormPurposePrev" onclick="credFormPurposeGoPage(-1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                                        <button type="button" id="credFormPurposeNext" onclick="credFormPurposeGoPage(1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
-                        <input id="credFormPurposeCustom" type="text" placeholder="输入新的业务用途..." class="hidden mt-2 w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         <p class="text-[11px] text-gray-400 mt-1">通用服务为默认；其他用途在顶部「管理」入口新增</p>
                     </div>
                     <div>
@@ -2721,6 +2758,8 @@
             // 绑定弹窗内的下拉面板事件（仅一次）
             bindCredFormPanel('credFormService');
             bindCredFormPanel('credFormProvider');
+            bindCredFormPanel('credFormPurpose');
+            bindCredFormPanel('credPurposeFilter');
             await loadEnvs();
             await loadModules();
             await loadServices();
@@ -3668,6 +3707,7 @@
         let credName = '';
         let credKeyword = '';
         let credEnv = '';   // 当前环境子标签（空=业务环境汇总）
+        let credPurposeFilter = '';  // 顶部业务用途筛选（与 credName 同维度的筛选值）
 
         // 业务名称下拉面板状态
         let credNameAll = [];     // 去重后的业务名称全量
@@ -3691,42 +3731,17 @@
                 credFormProviderList = [...DEFAULT_PROVIDERS, ...userProviders].filter((v, i, a) => a.indexOf(v) === i);
                 // 顶部业务名称下拉面板
                 if ($('#credNameUl')) renderCredNameUl();
-                // 业务用途：下拉 + 颜色映射
+                // 业务用途：下拉列表 + 颜色映射（顶部筛选 / 弹窗内都共用同一份）
                 const purpData = (purpRes && purpRes.data) || {};
                 window._credBizPurposes = purpData.purposes || [];
                 window._credBizColors = Object.assign({}, purpData.colors || {});
-                const pf = $('#credPurposeFilter');
-                if (pf) {
-                    const cur = pf.value;
-                    pf.innerHTML = '<option value="">全部业务</option>' +
-                        window._credBizPurposes.map(p => `<option value="${esc(p)}">${esc(p)}</option>`).join('');
-                    pf.value = cur;
-                }
-                refreshCredFormPurpose();
+                credPurposeFilterList = window._credBizPurposes.slice();
+                credFormPurposeList = window._credBizPurposes.slice();
+                if (typeof renderCredPurposeFilterUl === 'function') renderCredPurposeFilterUl();
+                if (typeof renderCredFormPurposeUl === 'function') renderCredFormPurposeUl();
             } catch (err) {
                 console.error('加载凭证下拉数据失败:', err);
             }
-        }
-
-        // 弹窗「业务用途」下拉：保留硬编码预设 + 动态追加用户已用过的业务用途（如 SRM）
-        function refreshCredFormPurpose() {
-            const sel = $('#credFormPurpose');
-            if (!sel) return;
-            const presets = new Set(['点餐业务', '会员业务', '外卖业务', '供应链', '通用服务', '__custom__']);
-            // 清掉之前动态追加的（保留预设）
-            Array.from(sel.options).forEach(o => {
-                if (!presets.has(o.value)) sel.removeChild(o);
-            });
-            // 在「自定义...」前插入用户已用过的业务用途
-            const customOpt = sel.querySelector('[value="__custom__"]');
-            (window._credBizPurposes || []).forEach(p => {
-                if (!p || presets.has(p)) return;
-                if (![...sel.options].some(o => o.value === p)) {
-                    const opt = document.createElement('option');
-                    opt.value = p; opt.textContent = p;
-                    sel.insertBefore(opt, customOpt);
-                }
-            });
         }
 
         // ===== 业务名称下拉面板 =====
@@ -3790,11 +3805,16 @@
         let credFormProviderList = [];
         let credFormServicePage = 1, credFormProviderPage = 1;
         let credFormServiceKw = '', credFormProviderKw = '';
+        // 业务用途（弹窗内 + 顶部筛选，独立翻页/搜索）
+        let credFormPurposeList = [];
+        let credPurposeFilterList = [];
+        let credFormPurposePage = 1, credPurposeFilterPage = 1;
+        let credFormPurposeKw = '', credPurposeFilterKw = '';
         const CRED_FORM_PAGE_SIZE = 6;
 
-        // 绑定弹窗内 业务名称 / 服务供应商 下拉面板事件（全局一次即可）
+        // 绑定业务名称 / 服务供应商 / 业务用途（弹窗内 / 顶部筛选） 下拉面板事件（全局一次即可）
         function bindCredFormPanel(prefix) {
-            // prefix: 'credFormService' 或 'credFormProvider'
+            // prefix: 'credFormService' | 'credFormProvider' | 'credFormPurpose' | 'credPurposeFilter'
             const triggerEl = $('#' + prefix + 'Trigger');
             const panelEl = $('#' + prefix + 'Panel');
             const arrowEl = $('#' + prefix + 'Arrow');
@@ -3803,18 +3823,35 @@
             const pageInfoEl = $('#' + prefix + 'PageInfo');
             const prevBtnEl = $('#' + prefix + 'Prev');
             const nextBtnEl = $('#' + prefix + 'Next');
-            const renderUl = prefix === 'credFormService' ? renderCredFormServiceUl : renderCredFormProviderUl;
-            const getPage = () => (prefix === 'credFormService' ? credFormServicePage : credFormProviderPage);
-            const setPage = (p) => { if (prefix === 'credFormService') credFormServicePage = p; else credFormProviderPage = p; };
-            const getKw = () => (prefix === 'credFormService' ? credFormServiceKw : credFormProviderKw);
-            const setKw = (k) => { if (prefix === 'credFormService') credFormServiceKw = k; else credFormProviderKw = k; };
-            const onSelect = prefix === 'credFormService' ? selectCredFormService : selectCredFormProvider;
+            let renderUl, onSelect, getPage, setPage, getKw, setKw;
+            if (prefix === 'credFormService') {
+                renderUl = renderCredFormServiceUl; onSelect = selectCredFormService;
+                getPage = () => credFormServicePage; setPage = (p) => { credFormServicePage = p; };
+                getKw = () => credFormServiceKw; setKw = (k) => { credFormServiceKw = k; };
+            } else if (prefix === 'credFormProvider') {
+                renderUl = renderCredFormProviderUl; onSelect = selectCredFormProvider;
+                getPage = () => credFormProviderPage; setPage = (p) => { credFormProviderPage = p; };
+                getKw = () => credFormProviderKw; setKw = (k) => { credFormProviderKw = k; };
+            } else if (prefix === 'credFormPurpose') {
+                renderUl = renderCredFormPurposeUl; onSelect = selectCredFormPurpose;
+                getPage = () => credFormPurposePage; setPage = (p) => { credFormPurposePage = p; };
+                getKw = () => credFormPurposeKw; setKw = (k) => { credFormPurposeKw = k; };
+            } else if (prefix === 'credPurposeFilter') {
+                renderUl = renderCredPurposeFilterUl; onSelect = selectCredPurposeFilter;
+                getPage = () => credPurposeFilterPage; setPage = (p) => { credPurposeFilterPage = p; };
+                getKw = () => credPurposeFilterKw; setKw = (k) => { credPurposeFilterKw = k; };
+            } else {
+                return;
+            }
 
+            // 关闭所有 4 个面板（含顶部和弹窗内）
             const closeAllFormPanels = () => {
-                ['#credFormServicePanel', '#credFormProviderPanel', '#credFormPurposePanel'].forEach(sel => {
+                ['#credFormServicePanel', '#credFormProviderPanel', '#credFormPurposePanel', '#credPurposeFilterPanel',
+                 '#credNamePanel'].forEach(sel => {
                     const p = document.querySelector(sel); if (p) p.classList.add('hidden');
                 });
-                ['#credFormServiceArrow', '#credFormProviderArrow', '#credFormPurposeArrow'].forEach(sel => {
+                ['#credFormServiceArrow', '#credFormProviderArrow', '#credFormPurposeArrow', '#credPurposeFilterArrow',
+                 '#credNameArrow'].forEach(sel => {
                     const a = document.querySelector(sel); if (a) a.classList.remove('rotate-180');
                 });
             };
@@ -3834,9 +3871,12 @@
             searchEl.addEventListener('keydown', (e) => {
                 if (e.key === 'Enter') {
                     e.preventDefault();
-                    const kw = e.target.value.trim().toLowerCase();
-                    const data = prefix === 'credFormService' ? credFormServiceList : credFormProviderList;
-                    const hit = data.find(v => v.toLowerCase() === kw);
+                    const kw = e.target.value.trim();
+                    if (!kw) return;
+                    const dataArr = prefix === 'credFormService' ? credFormServiceList :
+                                    prefix === 'credFormProvider' ? credFormProviderList :
+                                    prefix === 'credFormPurpose' ? credFormPurposeList : credPurposeFilterList;
+                    const hit = dataArr.find(v => v.toLowerCase() === kw.toLowerCase());
                     if (hit) onSelect(hit);
                 }
                 if (e.key === 'Escape') {
@@ -3898,6 +3938,68 @@
             $('#credFormProviderArrow').classList.remove('rotate-180');
         }
 
+        // ===== 弹窗内 业务用途 下拉面板（含分页 + 搜索） =====
+        function renderCredFormPurposeUl() {
+            const kw = credFormPurposeKw.trim().toLowerCase();
+            let list = credFormPurposeList;
+            if (kw) list = list.filter(v => v.toLowerCase().includes(kw));
+            const totalPages = Math.max(1, Math.ceil(list.length / CRED_FORM_PAGE_SIZE));
+            if (credFormPurposePage > totalPages) credFormPurposePage = totalPages;
+            const start = (credFormPurposePage - 1) * CRED_FORM_PAGE_SIZE;
+            const pageItems = list.slice(start, start + CRED_FORM_PAGE_SIZE);
+            const current = $('#credFormPurposeTriggerLabel').dataset.value || '';
+            const emptyRow = `<li><span class="block px-3 py-2 text-xs text-gray-400">无匹配</span></li>`;
+            const listHtml = pageItems.map(v => `<li><button type="button" onclick="selectCredFormPurpose('${esc(v)}')"
+                class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 ${current === v ? 'text-blue-600 font-medium' : 'text-gray-700'}">${esc(v)}</button></li>`).join('');
+            $('#credFormPurposeListUl').innerHTML = list.length === 0 ? emptyRow : listHtml;
+            $('#credFormPurposePageInfo').textContent = list.length === 0 ? '无匹配' : `${start + 1}-${Math.min(start + CRED_FORM_PAGE_SIZE, list.length)} / 共 ${list.length} 条`;
+            $('#credFormPurposePrev').disabled = credFormPurposePage <= 1;
+            $('#credFormPurposeNext').disabled = credFormPurposePage >= totalPages;
+        }
+        function credFormPurposeGoPage(delta) { credFormPurposePage += delta; renderCredFormPurposeUl(); }
+        function selectCredFormPurpose(value) {
+            const label = $('#credFormPurposeTriggerLabel');
+            label.textContent = value;
+            label.dataset.value = value;
+            label.className = 'text-gray-900 truncate';
+            $('#credFormPurposePanel').classList.add('hidden');
+            $('#credFormPurposeArrow').classList.remove('rotate-180');
+        }
+
+        // ===== 顶部 业务用途 筛选下拉面板（含「全部」按钮 + 分页 + 搜索） =====
+        function renderCredPurposeFilterUl() {
+            const kw = credPurposeFilterKw.trim().toLowerCase();
+            let list = credPurposeFilterList;
+            if (kw) list = list.filter(v => v.toLowerCase().includes(kw));
+            const totalPages = Math.max(1, Math.ceil(list.length / CRED_FORM_PAGE_SIZE));
+            if (credPurposeFilterPage > totalPages) credPurposeFilterPage = totalPages;
+            const start = (credPurposeFilterPage - 1) * CRED_FORM_PAGE_SIZE;
+            const pageItems = list.slice(start, start + CRED_FORM_PAGE_SIZE);
+            const current = $('#credPurposeFilterTriggerLabel').dataset.value || '';
+            const allBtn = `<li><button type="button" onclick="selectCredPurposeFilter('')"
+                class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 border-b border-gray-100 ${!current ? 'text-blue-600 font-medium' : 'text-gray-900'}">全部业务</button></li>`;
+            const emptyRow = `<li><span class="block px-3 py-2 text-xs text-gray-400">无匹配</span></li>`;
+            const listHtml = pageItems.map(v => `<li><button type="button" onclick="selectCredPurposeFilter('${esc(v)}')"
+                class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 ${current === v ? 'text-blue-600 font-medium' : 'text-gray-700'}">${esc(v)}</button></li>`).join('');
+            $('#credPurposeFilterListUl').innerHTML = list.length === 0 ? allBtn + emptyRow : allBtn + listHtml;
+            $('#credPurposeFilterPageInfo').textContent = list.length === 0 ? '无匹配' : `${start + 1}-${Math.min(start + CRED_FORM_PAGE_SIZE, list.length)} / 共 ${list.length} 条`;
+            $('#credPurposeFilterPrev').disabled = credPurposeFilterPage <= 1;
+            $('#credPurposeFilterNext').disabled = credPurposeFilterPage >= totalPages;
+        }
+        function credPurposeFilterGoPage(delta) { credPurposeFilterPage += delta; renderCredPurposeFilterUl(); }
+        function selectCredPurposeFilter(value) {
+            credPurposeFilter = value || '';
+            credPage = 1;
+            const label = $('#credPurposeFilterTriggerLabel');
+            label.textContent = value || '全部业务';
+            label.dataset.value = value || '';
+            label.className = value ? 'text-gray-900 truncate' : 'text-gray-400 truncate';
+            $('#credPurposeFilterPanel').classList.add('hidden');
+            $('#credPurposeFilterArrow').classList.remove('rotate-180');
+            loadCredentials();
+        }
+
+
         // 点击页面其它位置关闭所有弹窗内下拉面板
         document.addEventListener('click', (e) => {
             [['#credFormServiceTrigger', '#credFormServicePanel'], ['#credFormProviderTrigger', '#credFormProviderPanel']].forEach(([trSel, pSel]) => {
@@ -3925,9 +4027,8 @@
             const params = new URLSearchParams();
             if (credEnv) params.set('env', credEnv);
             if (credName) params.set('name', credName);
+            if (credPurposeFilter) params.set('purpose', credPurposeFilter);
             if (credKeyword) params.set('keyword', credKeyword);
-            const pf = $('#credPurposeFilter');
-            if (pf && pf.value) params.set('purpose', pf.value);
             params.set('page', credPage);
             params.set('page_size', credPageSize);
 
@@ -4015,10 +4116,11 @@
         }
         function credReset() {
             $('#credFilterKeyword').value = '';
-            const pf = $('#credPurposeFilter'); if (pf) pf.value = '';
-            credName = ''; credKeyword = ''; credPage = 1;
+            credName = ''; credKeyword = ''; credPurposeFilter = ''; credPage = 1;
             $('#credNameTriggerLabel').textContent = '全部';
             $('#credNameTriggerLabel').className = 'text-gray-400 truncate';
+            const pl = $('#credPurposeFilterTriggerLabel');
+            if (pl) { pl.textContent = '全部业务'; pl.className = 'text-gray-400 truncate'; pl.dataset.value = ''; }
             loadCredentials();
         }
         $('#credFilterKeyword').addEventListener('keydown', (e) => { if (e.key === 'Enter') credSearch(); });
@@ -4037,79 +4139,21 @@
             }
         });
 
-        // 业务用途：trigger + 自定义 dropdown（避免原生 select 弹出层挡表单其他字段）
-        function credFormPurposeChange() {
-            // 占位（已被自定义 dropdown 取代，旧 select 节点已移除）
-        }
+        // 业务用途：trigger + 分页搜索 dropdown（bindCredFormPanel('credFormPurpose') 已接管点击）
         function setCredPurposeValue(value) {
             const label = $('#credFormPurposeTriggerLabel');
-            const customInput = $('#credFormPurposeCustom');
-            if (value === '__custom__') {
-                label.textContent = '自定义...';
-                label.dataset.value = '__custom__';
-                label.className = 'text-gray-900 truncate';
-                customInput.classList.remove('hidden');
-                setTimeout(() => customInput.focus(), 50);
-            } else if (value) {
+            if (value) {
                 label.textContent = value;
                 label.dataset.value = value;
                 label.className = 'text-gray-900 truncate';
-                customInput.classList.add('hidden');
-                customInput.value = '';
             } else {
                 label.textContent = '请选择...';
                 label.dataset.value = '';
                 label.className = 'text-gray-400 truncate';
-                customInput.classList.add('hidden');
-                customInput.value = '';
             }
-        }
-        function toggleCredPurposePanel() {
-            const panel = $('#credFormPurposePanel');
-            const arrow = $('#credFormPurposeArrow');
-            if (!panel) return;
-            const willOpen = panel.classList.contains('hidden');
-            // 关其他三个面板（内联逻辑：全局 closeAllFormPanels 是 bindCredFormPanel 内的局部变量）
-            ['credFormServicePanel', 'credFormProviderPanel', 'credFormPurposePanel'].forEach(id => {
-                const p = document.getElementById(id); if (p) p.classList.add('hidden');
-            });
-            ['credFormServiceArrow', 'credFormProviderArrow', 'credFormPurposeArrow'].forEach(id => {
-                const a = document.getElementById(id); if (a) a.classList.remove('rotate-180');
-            });
-            if (willOpen) {
-                renderCredPurposeList();
-                panel.classList.remove('hidden');
-                arrow.classList.add('rotate-180');
-            } else {
-                panel.classList.add('hidden');
-                arrow.classList.remove('rotate-180');
-            }
-        }
-        function renderCredPurposeList() {
-            const ul = $('#credFormPurposeListUl');
-            const cur = $('#credFormPurposeTriggerLabel').dataset.value || '';
-            // 预设只保留「通用服务」（唯一内置）；其他用途由用户在顶部「管理」入口自助新增
-            const presets = ['通用服务'];
-            const presetsSet = new Set(presets);
-            const customs = (window._credBizPurposes || []).filter(p => !presetsSet.has(p));
-            const items = [...new Set([...presets, ...customs])];
-            const html = items.map(p => `<li><button type="button" onclick="selectCredPurpose('${esc(p).replace(/'/g, "\\'")}')" class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 ${cur === p ? 'text-blue-600 font-medium' : 'text-gray-900'}">${esc(p)}</button></li>`).join('') +
-                `<li><button type="button" onclick="selectCredPurpose('__custom__')" class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 border-t border-gray-100 ${cur === '__custom__' ? 'text-blue-600 font-medium' : 'text-gray-700'}">自定义...</button></li>`;
-            ul.innerHTML = html;
-        }
-        function selectCredPurpose(value) {
-            if (value === '__custom__') {
-                setCredPurposeValue('__custom__');
-            } else {
-                setCredPurposeValue(value);
-            }
-            $('#credFormPurposePanel').classList.add('hidden');
-            $('#credFormPurposeArrow').classList.remove('rotate-180');
         }
         function credFormReadPurpose() {
-            const v = $('#credFormPurposeTriggerLabel').dataset.value;
-            if (v === '__custom__') return $('#credFormPurposeCustom').value.trim() || '通用服务';
-            return v || '通用服务';
+            return $('#credFormPurposeTriggerLabel').dataset.value || '';
         }
 
         // 凭证弹窗
@@ -4338,6 +4382,13 @@
         async function saveCredential(e) {
             e.preventDefault();
             const id = $('#credFormId').value;
+            // 业务用途必须选择（必填项）
+            const purpose = credFormReadPurpose();
+            if (!purpose) {
+                showToast('请选择业务用途', 'error');
+                $('#credFormPurposeTrigger').focus();
+                return;
+            }
             // 业务名称必须选择（不能为空）
             const svcName = $('#credFormServiceTriggerLabel').dataset.value || '';
             if (!svcName) {
@@ -4346,7 +4397,7 @@
                 return;
             }
             const body = {
-                business_purpose: credFormReadPurpose(),
+                business_purpose: purpose,
                 env: $('#credFormEnv').value,
                 service_name: svcName,
                 service_provider: $('#credFormProviderTriggerLabel').dataset.value || '',

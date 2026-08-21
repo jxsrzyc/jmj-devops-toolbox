@@ -341,6 +341,13 @@ def _init_db_sqlite():
                 updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
+        # 业务名称登记表（预登记，让下拉/搜索能显示无需用户录入凭证）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cred_service_names (
+                name TEXT PRIMARY KEY,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         # 兼容旧库：business_links 补充 color 列（自定义图标颜色）
         link_cols = [r["name"] for r in conn.execute("PRAGMA table_info(business_links)").fetchall()]
         if "color" not in link_cols:
@@ -437,6 +444,13 @@ def _init_db_mysql():
                 purpose VARCHAR(50) NOT NULL UNIQUE,
                 color VARCHAR(7) DEFAULT '#9ca3af',
                 updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        """)
+        # 业务名称登记表（预登记，让下拉/搜索能显示无需用户录入凭证）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS cred_service_names (
+                name VARCHAR(100) PRIMARY KEY,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             )
         """)
         conn.execute("""
@@ -757,14 +771,21 @@ class Database:
 
     # ---------- 业务用途（business_purpose）+ 颜色配置 ----------
     def get_credential_purposes(self):
-        """获取业务用途列表（去重，按使用次数降序）"""
+        """获取业务用途列表（去重 + 合并 cred_business_colors 表，按使用次数降序）。
+        返回的列表包含『凭证表中出现过的』+『用户在 cred_business_colors 显式登记的』"""
         with get_conn() as conn:
             rows = conn.execute(
                 "SELECT business_purpose AS p, COUNT(*) AS cnt FROM service_credentials "
                 "WHERE business_purpose IS NOT NULL AND business_purpose != '' "
-                "GROUP BY business_purpose ORDER BY cnt DESC, business_purpose ASC"
+                "GROUP BY business_purpose"
             ).fetchall()
-            return [r["p"] for r in rows]
+            counts = {r["p"]: r["cnt"] for r in rows}
+            # 显式登记的业务用途（cred_business_colors）即使凭证表没用到也要返回
+            registered = [r["purpose"] for r in conn.execute("SELECT purpose FROM cred_business_colors ORDER BY purpose").fetchall()]
+            for p in registered:
+                counts.setdefault(p, 0)
+            # 按 (使用次数 desc, 名称 asc) 排序
+            return sorted(counts.keys(), key=lambda p: (-counts[p], p))
 
     def get_business_colors(self):
         """获取业务用途颜色映射 {purpose: color}（缺省灰色）"""
@@ -806,18 +827,21 @@ class Database:
             return [r["env"] for r in rows]
 
     def get_credential_service_names(self):
-        """获取所有已录入的业务名称（去重：忽略大小写/首尾空格，合并拼写大小写差异）"""
+        """获取业务名称列表（合并 service_credentials.service_name DISTINCT 与 cred_service_names 显式登记表）"""
         with get_conn() as conn:
             rows = conn.execute(
                 "SELECT MIN(service_name) AS name FROM service_credentials "
                 "WHERE service_name != '' "
-                "GROUP BY LOWER(TRIM(service_name)) "
-                "ORDER BY name"
+                "GROUP BY LOWER(TRIM(service_name))"
             ).fetchall()
-            return [r["name"] for r in rows]
+            counts = {r["name"]: 1 for r in rows}  # 占位（不记排序权重）
+            registered = [r["name"] for r in conn.execute("SELECT name FROM cred_service_names ORDER BY name").fetchall()]
+            for n in registered:
+                counts.setdefault(n, 0)
+            return sorted(counts.keys(), key=lambda n: n.lower())
 
     def merge_service_name(self, from_name, to_name='__archived__'):
-        """删除业务名称：service_credentials 中等于 from_name 的合并到 to_name（默认 '__archived__' 占位符），返回受影响的行数"""
+        """删除业务名称：service_credentials 中等于 from_name 的合并到 to_name（默认 '__archived__' 占位符），返回受影响的行数；同时从 cred_service_names 移除"""
         if from_name == to_name:
             return 0
         with get_conn() as conn:
@@ -825,8 +849,22 @@ class Database:
                 "UPDATE service_credentials SET service_name=?, updated_at=CURRENT_TIMESTAMP WHERE service_name=?",
                 (to_name, from_name)
             )
+            conn.execute("DELETE FROM cred_service_names WHERE name=?", (from_name,))
             conn.commit()
             return cursor.rowcount
+
+    def add_service_name(self, name):
+        """登记业务名称到 cred_service_names（持久化，让下拉/搜索立刻可见）。返回 True 表示新增成功，False 表示已存在"""
+        if not name:
+            return False
+        with get_conn() as conn:
+            try:
+                conn.execute("INSERT INTO cred_service_names (name) VALUES (?)", (name,))
+                conn.commit()
+                return True
+            except Exception:
+                # UNIQUE 约束冲突（SQLite/MySQL）
+                return False
 
     def get_credential_providers(self):
         """获取所有已录入的服务供应商（去重，用于 datalist）"""

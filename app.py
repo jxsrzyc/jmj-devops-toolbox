@@ -422,7 +422,8 @@ def get_credential_service_names():
 @app.route("/api/credential-service-names", methods=["POST"])
 @login_required
 def add_credential_service_name():
-    """校验业务名称合法性（业务名称由凭证录入时实际持久化，这里只做格式/重名校验）"""
+    """登记业务名称：写入 cred_service_names 表（不依赖凭证表，让下拉/搜索立刻可见）。
+    重名校验：合并 service_credentials 已用的 + cred_service_names 已登记的（忽略大小写）"""
     body = request.get_json(silent=True) or {}
     name = str(body.get("name", "")).strip()
     if not name:
@@ -430,11 +431,12 @@ def add_credential_service_name():
     if len(name) > 100:
         return jsonify({"code": 1, "message": "业务名称过长（≤100 字）"})
     existing = db.get_credential_service_names()
-    # 不区分大小写比较（数据库已用 LOWER/TRIM 去重）
     if any(n.lower() == name.lower() for n in existing):
-        return jsonify({"code": 1, "message": f"「{name}」已存在（实际在凭证录入时会自动持久化）"})
-    # 业务名称无需 placeholder：第一次录入凭证时输入即生效
-    return jsonify({"code": 0, "message": f"「{name}」已记录，下次录入凭证时输入即可"})
+        return jsonify({"code": 1, "message": f"「{name}」已存在"})
+    ok = db.add_service_name(name)
+    if not ok:
+        return jsonify({"code": 1, "message": f"「{name}」已存在"})
+    return jsonify({"code": 0, "message": f"「{name}」已登记，下次录入凭证时输入即可"})
 
 
 @app.route("/api/credential-service-names/<path:name>", methods=["DELETE"])
