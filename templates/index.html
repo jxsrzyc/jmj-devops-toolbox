@@ -610,10 +610,30 @@
                     </div>
                     <div class="w-36 min-w-0">
                         <label class="block text-xs font-medium text-gray-500 mb-1">环境</label>
-                        <select id="filterEnv"
-                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                            <option value="">全部</option>
-                        </select>
+                        <div class="relative">
+                            <button type="button" id="filterEnvTrigger"
+                                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <span id="filterEnvTriggerLabel" class="text-gray-400 truncate">全部</span>
+                                <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="filterEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="filterEnvPanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col">
+                                <div class="p-2 border-b border-gray-100">
+                                    <div class="relative">
+                                        <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        <input id="filterEnvSearch" type="text" placeholder="搜索环境..."
+                                            class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                    </div>
+                                </div>
+                                <ul id="filterEnvListUl" class="overflow-y-auto flex-1 py-1"></ul>
+                                <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs">
+                                    <span id="filterEnvPageInfo" class="text-gray-400"></span>
+                                    <div class="flex gap-1">
+                                        <button type="button" id="filterEnvPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                                        <button type="button" id="filterEnvNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="flex-1 min-w-0">
                         <label class="block text-xs font-medium text-gray-500 mb-1">搜索</label>
@@ -871,7 +891,7 @@
                 <div class="flex-1"><label class="block text-xs font-medium text-gray-500 mb-1">搜索</label><div class="relative">
                     <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input id="cioKeyword" type="text" placeholder="搜索服务名..." class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div>
-                <div class="w-36"><label class="block text-xs font-medium text-gray-500 mb-1">环境</label><select id="cioEnv" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                <div class="w-36"><label class="block text-xs font-medium text-gray-500 mb-1">环境</label><div class="relative"><button type="button" id="cioEnvTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="cioEnvTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="cioEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="cioEnvPanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><div class="p-2 border-b border-gray-100"><div class="relative"><svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="cioEnvSearch" type="text" placeholder="搜索环境..." class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div><ul id="cioEnvListUl" class="overflow-y-auto flex-1 py-1"></ul><div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs"><span id="cioEnvPageInfo" class="text-gray-400"></span><div class="flex gap-1"><button type="button" id="cioEnvPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button><button type="button" id="cioEnvNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button></div></div></div></div></div>
                 <div class="flex items-end gap-2"><button onclick="cioSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button><button onclick="cioReset()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button></div>
             </div></div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
@@ -908,9 +928,9 @@
                     <div class="flex-1"><label class="block text-xs font-medium text-gray-500 mb-1">搜索</label><div class="relative">
                         <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                         <input id="fixKeyword" type="text" placeholder="搜索工单/服务/修复原因..." class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div>
-                    <div class="w-32"><label class="block text-xs font-medium text-gray-500 mb-1">技术线</label><select id="fixTechLine" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
-                    <div class="w-32"><label class="block text-xs font-medium text-gray-500 mb-1">发版类型</label><select id="fixType" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
-                    <div class="w-28"><label class="block text-xs font-medium text-gray-500 mb-1">星期</label><select id="fixWeekday" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                    <div class="w-32"><label class="block text-xs font-medium text-gray-500 mb-1">技术线</label><div class="relative"><button type="button" id="fixTechLineTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="fixTechLineTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="fixTechLineArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="fixTechLinePanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="fixTechLineListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
+                    <div class="w-32"><label class="block text-xs font-medium text-gray-500 mb-1">发版类型</label><div class="relative"><button type="button" id="fixTypeTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="fixTypeTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="fixTypeArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="fixTypePanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="fixTypeListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
+                    <div class="w-28"><label class="block text-xs font-medium text-gray-500 mb-1">星期</label><div class="relative"><button type="button" id="fixWeekdayTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="fixWeekdayTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="fixWeekdayArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="fixWeekdayPanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="fixWeekdayListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
                     <div class="w-40"><label class="block text-xs font-medium text-gray-500 mb-1">日期起</label><input id="fixDateFrom" type="date" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
                     <div class="w-40"><label class="block text-xs font-medium text-gray-500 mb-1">日期止</label><input id="fixDateTo" type="date" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
                     <div class="flex items-end gap-2"><button onclick="fixSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button><button onclick="fixReset()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button></div>
@@ -952,7 +972,7 @@
                 <div class="flex-1"><label class="block text-xs font-medium text-gray-500 mb-1">搜索</label><div class="relative">
                     <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                     <input id="cidKeyword" type="text" placeholder="搜索服务名..." class="w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div>
-                <div class="w-36"><label class="block text-xs font-medium text-gray-500 mb-1">环境</label><select id="cidEnv" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">全部</option></select></div>
+                <div class="w-36"><label class="block text-xs font-medium text-gray-500 mb-1">环境</label><div class="relative"><button type="button" id="cidEnvTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="cidEnvTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="cidEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="cidEnvPanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><div class="p-2 border-b border-gray-100"><div class="relative"><svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="cidEnvSearch" type="text" placeholder="搜索环境..." class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div><ul id="cidEnvListUl" class="overflow-y-auto flex-1 py-1"></ul><div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs"><span id="cidEnvPageInfo" class="text-gray-400"></span><div class="flex gap-1"><button type="button" id="cidEnvPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button><button type="button" id="cidEnvNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button></div></div></div></div></div>
                 <div class="flex items-end gap-2"><button onclick="cidSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button><button onclick="cidReset()" class="px-4 py-2.5 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200 border border-gray-300">重置</button></div>
             </div></div>
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
@@ -1026,21 +1046,15 @@
                     </div>
                     <div class="w-32">
                         <label class="block text-xs font-medium text-gray-500 mb-1">大区</label>
-                        <select id="domFilterRegion" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                            <option value="">全部</option>
-                        </select>
+                        <div class="relative"><button type="button" id="domFilterRegionTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="domFilterRegionTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="domFilterRegionArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="domFilterRegionPanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><div class="p-2 border-b border-gray-100"><div class="relative"><svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="domFilterRegionSearch" type="text" placeholder="搜索大区..." class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div><ul id="domFilterRegionListUl" class="overflow-y-auto flex-1 py-1"></ul><div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs"><span id="domFilterRegionPageInfo" class="text-gray-400"></span><div class="flex gap-1"><button type="button" id="domFilterRegionPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button><button type="button" id="domFilterRegionNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button></div></div></div></div>
                     </div>
                     <div class="w-32">
                         <label class="block text-xs font-medium text-gray-500 mb-1">域名类型</label>
-                        <select id="domFilterType" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                            <option value="">全部</option>
-                        </select>
+                        <div class="relative"><button type="button" id="domFilterTypeTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="domFilterTypeTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="domFilterTypeArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="domFilterTypePanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><div class="p-2 border-b border-gray-100"><div class="relative"><svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="domFilterTypeSearch" type="text" placeholder="搜索类型..." class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div><ul id="domFilterTypeListUl" class="overflow-y-auto flex-1 py-1"></ul><div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs"><span id="domFilterTypePageInfo" class="text-gray-400"></span><div class="flex gap-1"><button type="button" id="domFilterTypePrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button><button type="button" id="domFilterTypeNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button></div></div></div></div>
                     </div>
                     <div class="w-36">
                         <label class="block text-xs font-medium text-gray-500 mb-1">环境</label>
-                        <select id="domFilterEnv" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                            <option value="">全部</option>
-                        </select>
+                        <div class="relative"><button type="button" id="domFilterEnvTrigger" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="domFilterEnvTriggerLabel" class="text-gray-400 truncate">全部</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="domFilterEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="domFilterEnvPanel" class="hidden absolute z-30 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><div class="p-2 border-b border-gray-100"><div class="relative"><svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="domFilterEnvSearch" type="text" placeholder="搜索环境..." class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div><ul id="domFilterEnvListUl" class="overflow-y-auto flex-1 py-1"></ul><div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs"><span id="domFilterEnvPageInfo" class="text-gray-400"></span><div class="flex gap-1"><button type="button" id="domFilterEnvPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button><button type="button" id="domFilterEnvNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button></div></div></div></div>
                     </div>
                     <div class="flex items-end gap-2">
                         <button onclick="domSearch()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">查询</button>
@@ -1941,9 +1955,30 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">服务环境</label>
-                        <select id="formEnv"
-                            class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                        </select>
+                        <div class="relative">
+                            <button type="button" id="formEnvTrigger"
+                                class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <span id="formEnvTriggerLabel" class="text-gray-400 truncate">请选择...</span>
+                                <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="formEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="formEnvPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col">
+                                <div class="p-2 border-b border-gray-100">
+                                    <div class="relative">
+                                        <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        <input id="formEnvSearch" type="text" placeholder="搜索环境..."
+                                            class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                    </div>
+                                </div>
+                                <ul id="formEnvListUl" class="overflow-y-auto flex-1 py-1"></ul>
+                                <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs">
+                                    <span id="formEnvPageInfo" class="text-gray-400"></span>
+                                    <div class="flex gap-1">
+                                        <button type="button" id="formEnvPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                                        <button type="button" id="formEnvNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
@@ -2046,7 +2081,30 @@
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">应用交付服务 <span class="text-red-500">*</span></label><input id="ciFormService" type="text" required autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">环境</label>
-                        <select id="ciFormEnv" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"></select>
+                        <div class="relative">
+                            <button type="button" id="ciFormEnvTrigger"
+                                class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                <span id="ciFormEnvTriggerLabel" class="text-gray-400 truncate">请选择...</span>
+                                <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="ciFormEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                            </button>
+                            <div id="ciFormEnvPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col">
+                                <div class="p-2 border-b border-gray-100">
+                                    <div class="relative">
+                                        <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                                        <input id="ciFormEnvSearch" type="text" placeholder="搜索环境..."
+                                            class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                    </div>
+                                </div>
+                                <ul id="ciFormEnvListUl" class="overflow-y-auto flex-1 py-1"></ul>
+                                <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs">
+                                    <span id="ciFormEnvPageInfo" class="text-gray-400"></span>
+                                    <div class="flex gap-1">
+                                        <button type="button" id="ciFormEnvPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                                        <button type="button" id="ciFormEnvNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <!-- 创建变更单字段 -->
                     <div id="ciFormOrdersFields">
@@ -2076,10 +2134,10 @@
                 <input type="hidden" id="fixFormId">
                 <div class="grid grid-cols-2 gap-x-4 gap-y-3">
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">发布时间</label><input id="fixFormDate" type="date" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">星期</label><select id="fixFormWeekday" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">- 请选择 -</option><option value="周一">周一</option><option value="周二">周二</option><option value="周三">周三</option><option value="周四">周四</option><option value="周五">周五</option><option value="周六">周六</option><option value="周日">周日</option></select></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">迭代日重复发版</label><select id="fixFormIterDup" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="否">否</option><option value="是">是</option></select></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">重复发布类型</label><select id="fixFormType" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">- 请选择 -</option><option value="修复发版">修复发版</option><option value="Bug修复">Bug修复</option><option value="重复发版">优化发版</option><option value="紧急修复">紧急修复</option><option value="回滚重发">回滚重发</option></select></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">技术线</label><select id="fixFormTech" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"><option value="">- 请选择 -</option><option value="前端">前端</option><option value="后端">后端</option></select></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">星期</label><div class="relative"><button type="button" id="fixFormWeekdayTrigger" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="fixFormWeekdayTriggerLabel" class="text-gray-400 truncate">- 请选择 -</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="fixFormWeekdayArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="fixFormWeekdayPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="fixFormWeekdayListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">迭代日重复发版</label><div class="relative"><button type="button" id="fixFormIterDupTrigger" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="fixFormIterDupTriggerLabel" class="text-gray-900 truncate">否</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="fixFormIterDupArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="fixFormIterDupPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="fixFormIterDupListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">重复发布类型</label><div class="relative"><button type="button" id="fixFormTypeTrigger" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="fixFormTypeTriggerLabel" class="text-gray-400 truncate">- 请选择 -</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="fixFormTypeArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="fixFormTypePanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="fixFormTypeListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">技术线</label><div class="relative"><button type="button" id="fixFormTechTrigger" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="fixFormTechTriggerLabel" class="text-gray-400 truncate">- 请选择 -</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="fixFormTechArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="fixFormTechPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="fixFormTechListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
                     <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">重复发布工单（标题）</label><input id="fixFormWorkOrder" type="text" placeholder="如：《【发版】xxx》" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
                     <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">工单链接</label><input id="fixFormUrl" type="url" placeholder="如：https://devops.aliyun.com/projex/task/xxx" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
                     <div class="col-span-2"><label class="block text-sm font-medium text-gray-700 mb-1">重复发布服务 <span class="text-xs text-gray-400">（每行一个服务，如：big-data（大数据））</span></label><textarea id="fixFormService" rows="2" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></textarea></div>
@@ -2113,12 +2171,11 @@
                             <input id="domFormService" type="text" placeholder="如: gateway" autocomplete="off" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
                         </div>
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">域名类型</label>
-                            <select id="domFormType" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"></select></div>
+                            <div class="relative"><button type="button" id="domFormTypeTrigger" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="domFormTypeTriggerLabel" class="text-gray-400 truncate">请选择...</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="domFormTypeArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="domFormTypePanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><div class="p-2 border-b border-gray-100"><div class="relative"><svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="domFormTypeSearch" type="text" placeholder="搜索类型..." class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div><ul id="domFormTypeListUl" class="overflow-y-auto flex-1 py-1"></ul><div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs"><span id="domFormTypePageInfo" class="text-gray-400"></span><div class="flex gap-1"><button type="button" id="domFormTypePrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button><button type="button" id="domFormTypeNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button></div></div></div></div></div>
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">环境</label>
-                            <select id="domFormEnv" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white"></select></div>
+                            <div class="relative"><button type="button" id="domFormEnvTrigger" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="domFormEnvTriggerLabel" class="text-gray-400 truncate">请选择...</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="domFormEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="domFormEnvPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><div class="p-2 border-b border-gray-100"><div class="relative"><svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg><input id="domFormEnvSearch" type="text" placeholder="搜索环境..." class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none"></div></div><ul id="domFormEnvListUl" class="overflow-y-auto flex-1 py-1"></ul><div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs"><span id="domFormEnvPageInfo" class="text-gray-400"></span><div class="flex gap-1"><button type="button" id="domFormEnvPrev" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button><button type="button" id="domFormEnvNext" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button></div></div></div></div></div>
                         <div><label class="block text-sm font-medium text-gray-700 mb-1">证书进度</label>
-                            <select id="domFormProgress" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                                <option value="已完成">已完成</option><option value="进行中">进行中</option><option value="未开始">未开始</option></select></div>
+                            <div class="relative"><button type="button" id="domFormProgressTrigger" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"><span id="domFormProgressTriggerLabel" class="text-gray-400 truncate">请选择...</span><svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="domFormProgressArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg></button><div id="domFormProgressPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col"><ul id="domFormProgressListUl" class="overflow-y-auto flex-1 py-1"></ul></div></div></div>
                     </div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">证书到期时间</label>
                         <input id="domFormExpiry" type="datetime-local" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
@@ -2178,16 +2235,32 @@
                         </div>
                         <p class="text-[11px] text-gray-400 mt-1">通用服务为默认；其他用途在顶部「管理」入口新增</p>
                     </div>
-                    <div>
+                    <div class="relative">
                         <label class="block text-sm font-medium text-gray-700 mb-1">环境 <span class="text-red-500">*</span></label>
-                        <select id="credFormEnv" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                            <option value="超融合电信开发环境">超融合电信开发环境</option>
-                            <option value="超融合南沙生产环境">超融合南沙生产环境</option>
-                            <option value="预生产环境">预生产环境</option>
-                            <option value="国内生产环境">国内生产环境</option>
-                            <option value="新加坡生产环境">新加坡生产环境</option>
-                            <option value="北美生产环境">北美生产环境</option>
-                        </select>
+                        <button type="button" id="credFormEnvTrigger"
+                            class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm bg-white text-left flex items-center justify-between focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                            <span id="credFormEnvTriggerLabel" class="text-gray-400 truncate">请选择...</span>
+                            <svg class="w-4 h-4 text-gray-400 transition-transform flex-shrink-0" id="credFormEnvArrow" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+                        </button>
+                        <div id="credFormEnvPanel" class="hidden absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-xl max-h-72 flex flex-col">
+                            <div class="p-2 border-b border-gray-100">
+                                <div class="relative">
+                                    <svg class="absolute left-2.5 top-2 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                    <input id="credFormEnvSearch" type="text" placeholder="搜索环境..."
+                                        class="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:ring-1 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                                </div>
+                            </div>
+                            <ul id="credFormEnvListUl" class="overflow-y-auto flex-1 py-1"></ul>
+                            <div class="flex items-center justify-between px-3 py-2 border-t border-gray-100 text-xs">
+                                <span id="credFormEnvPageInfo" class="text-gray-400"></span>
+                                <div class="flex gap-1">
+                                    <button type="button" id="credFormEnvPrev" onclick="credFormEnvGoPage(-1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">上一页</button>
+                                    <button type="button" id="credFormEnvNext" onclick="credFormEnvGoPage(1)" class="px-2 py-0.5 rounded border border-gray-200 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed">下一页</button>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="relative">
                         <label class="block text-sm font-medium text-gray-700 mb-1">业务名称 <span class="text-red-500">*</span></label>
@@ -2425,6 +2498,8 @@
     </script>
 
     <script>
+        // 泛化下拉组件状态（必须在 bindDdlPanel 调用之前声明，避免 const TDZ 报错）
+        var DDL_STATE = {};  // { prefix: { list, page, kw, cfg } }
         const $ = (sel) => document.querySelector(sel);
         function showToast(msg, type = 'success') {
             const t = $('#toast'), c = $('#toastContent');
@@ -2759,6 +2834,7 @@
             bindCredFormPanel('credFormService');
             bindCredFormPanel('credFormProvider');
             bindCredFormPanel('credFormPurpose');
+            bindCredFormPanel('credFormEnv');
             bindCredFormPanel('credPurposeFilter');
             await loadEnvs();
             await loadModules();
@@ -2769,14 +2845,9 @@
         async function loadEnvs() {
             const res = await api('/api/envs');
             if (res.code === 0) {
-                const filterEnv = $('#filterEnv');
-                const formEnv = $('#formEnv');
-                filterEnv.innerHTML = '<option value="">全部</option>';
-                formEnv.innerHTML = '';
-                res.data.forEach(e => {
-                    filterEnv.innerHTML += `<option value="${e}">${e}</option>`;
-                    formEnv.innerHTML += `<option value="${e}">${e}</option>`;
-                });
+                window._envList = res.data;
+                refreshDdlList('filterEnv', res.data);
+                refreshDdlList('formEnv', res.data);
                 $('#statEnvs').textContent = res.data.length;
             }
         }
@@ -3104,32 +3175,40 @@
         // ==================== 筛选 ====================
         function searchServices() {
             // currentModule 由 selectModule() 直接维护
-            currentEnv = $('#filterEnv').value;
+            currentEnv = ddlVal('filterEnv');
             currentKeyword = $('#filterKeyword').value.trim();
             currentPage = 1;
             loadServices();
         }
         function resetFilter() {
             selectModule('');
-            $('#filterEnv').value = '';
+            ddlReset('filterEnv');
             $('#filterKeyword').value = '';
             currentEnv = ''; currentKeyword = ''; currentPage = 1;
             loadServices();
         }
         $('#filterKeyword').addEventListener('keydown', (e) => { if (e.key === 'Enter') searchServices(); });
-        $('#filterEnv').addEventListener('change', () => searchServices());
+        bindDdlPanel('filterEnv', {
+            searchable: true, paginate: true, allLabel: '全部',
+            options: () => (window._envList || []),
+            onSelect: () => searchServices()
+        });
 
         // ==================== 新增/编辑 ====================
+        bindDdlPanel('formEnv', {
+            searchable: true, paginate: true, allLabel: null,
+            options: () => (window._envList || []),
+            onSelect: null
+        });
         function openAddModal() {
             closeAllModals();
             $('#formId').value = '';
             $('#modalTitle').textContent = '新增服务';
             $('#serviceForm').reset();
-            if ($('#formEnv').options.length > 0) $('#formEnv').value = '中国';
+            setDdlValue('formEnv', '中国');
             $('#formModal').classList.remove('hidden'); $('#formModal').classList.add('flex');
         }
         async function openEditModal(id) {
-            closeAllModals();
             closeAllModals();
             const res = await api(`/api/services/${id}`);
             if (res.code === 0) {
@@ -3139,7 +3218,7 @@
                 $('#formServiceName').value = d.service_name;
                 $('#formCreateParams').value = d.create_change_params || '';
                 $('#formDevflowParams').value = d.run_devflow_params || '';
-                $('#formEnv').value = d.env || '中国';
+                setDdlValue('formEnv', d.env || '中国');
                 $('#formModal').classList.remove('hidden'); $('#formModal').classList.add('flex');
             }
         }
@@ -3152,7 +3231,7 @@
                 service_name: $('#formServiceName').value.trim(),
                 create_change_params: $('#formCreateParams').value.trim(),
                 run_devflow_params: $('#formDevflowParams').value.trim(),
-                env: $('#formEnv').value,
+                env: ddlVal('formEnv'),
             };
             const res = id
                 ? await api(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(body) })
@@ -3329,11 +3408,8 @@
             // 类似 loadFilterOptions：只加载一次筛选下拉，避免 bug
             const envs = await api('/api/ci-orders/envs');
             if (envs.code === 0) {
-                const s = $('#cioEnv');
-                const cur = s.value;
-                s.innerHTML = '<option value="">全部</option>';
-                envs.data.forEach(v => s.innerHTML += `<option value="${v}">${v}</option>`);
-                if (cur && [...s.options].some(o => o.value === cur)) s.value = cur;
+                window._cioEnvs = envs.data;
+                refreshDdlList('cioEnv', envs.data);
             }
             cioFiltersLoaded = true;
         }
@@ -3362,16 +3438,22 @@
                 }
             }
         }
-        function cioSearch() { cioKeyword = $('#cioKeyword').value.trim(); cioEnv = $('#cioEnv').value; cioPage = 1; loadCiOrders(); }
-        function cioReset() { $('#cioKeyword').value = ''; $('#cioEnv').value = ''; cioKeyword = ''; cioEnv = ''; cioPage = 1; loadCiOrders(); }
+        function cioSearch() { cioKeyword = $('#cioKeyword').value.trim(); cioEnv = ddlVal('cioEnv'); cioPage = 1; loadCiOrders(); }
+        function cioReset() { $('#cioKeyword').value = ''; ddlReset('cioEnv'); cioKeyword = ''; cioEnv = ''; cioPage = 1; loadCiOrders(); }
         $('#cioKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') cioSearch(); });
-        $('#cioEnv').addEventListener('change', cioSearch);
+        bindDdlPanel('cioEnv', {
+            searchable: true, paginate: true, allLabel: '全部',
+            options: () => (window._cioEnvs || []),
+            onSelect: () => cioSearch()
+        });
 
+        bindDdlPanel('ciFormEnv', {
+            searchable: true, paginate: true, allLabel: null,
+            options: () => ['中国', '新加坡', '北美'],
+            onSelect: null
+        });
         function cioPopulateFormEnvs() {
-            const sel = $('#ciFormEnv'); const cur = sel.value;
-            sel.innerHTML = '<option value="">- 请选择 -</option>';
-            ['中国', '新加坡', '北美'].forEach(v => { sel.innerHTML += `<option value="${v}">${v}</option>`; });
-            if (cur) sel.value = cur;
+            refreshDdlList('ciFormEnv', ['中国', '新加坡', '北美']);
         }
 
         async function openCiOrderAdd() {
@@ -3394,7 +3476,7 @@
                 $('#ciFormRepo').value = d.repo_sn || '';
                 $('#ciFormOrdersFields').style.display = '';
                 $('#ciFormDevflowFields').style.display = 'none';
-                cioPopulateFormEnvs(); $('#ciFormEnv').value = d.env || '';
+                cioPopulateFormEnvs(); setDdlValue('ciFormEnv', d.env || '');
                 $('#ciFormModal').classList.remove('hidden'); $('#ciFormModal').classList.add('flex');
             }
         }
@@ -3405,11 +3487,8 @@
         async function loadCiDevflowsFilters() {
             const envs = await api('/api/ci-devflow/envs');
             if (envs.code === 0) {
-                const s = $('#cidEnv');
-                const cur = s.value;
-                s.innerHTML = '<option value="">全部</option>';
-                envs.data.forEach(v => s.innerHTML += `<option value="${v}">${v}</option>`);
-                if (cur && [...s.options].some(o => o.value === cur)) s.value = cur;
+                window._cidEnvs = envs.data;
+                refreshDdlList('cidEnv', envs.data);
             }
             cidFiltersLoaded = true;
         }
@@ -3437,10 +3516,14 @@
                 }
             }
         }
-        function cidSearch() { cidKeyword = $('#cidKeyword').value.trim(); cidEnv = $('#cidEnv').value; cidPage = 1; loadCiDevflows(); }
-        function cidReset() { $('#cidKeyword').value = ''; $('#cidEnv').value = ''; cidKeyword = ''; cidEnv = ''; cidPage = 1; loadCiDevflows(); }
+        function cidSearch() { cidKeyword = $('#cidKeyword').value.trim(); cidEnv = ddlVal('cidEnv'); cidPage = 1; loadCiDevflows(); }
+        function cidReset() { $('#cidKeyword').value = ''; ddlReset('cidEnv'); cidKeyword = ''; cidEnv = ''; cidPage = 1; loadCiDevflows(); }
         $('#cidKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') cidSearch(); });
-        $('#cidEnv').addEventListener('change', cidSearch);
+        bindDdlPanel('cidEnv', {
+            searchable: true, paginate: true, allLabel: '全部',
+            options: () => (window._cidEnvs || []),
+            onSelect: () => cidSearch()
+        });
 
         async function openCiDevflowAdd() {
             closeAllModals();
@@ -3462,7 +3545,7 @@
                 $('#ciFormStage').value = d.stage_sn || '';
                 $('#ciFormOrdersFields').style.display = 'none';
                 $('#ciFormDevflowFields').style.display = '';
-                cioPopulateFormEnvs(); $('#ciFormEnv').value = d.env || '';
+                cioPopulateFormEnvs(); setDdlValue('ciFormEnv', d.env || '');
                 $('#ciFormModal').classList.remove('hidden'); $('#ciFormModal').classList.add('flex');
             }
         }
@@ -3473,7 +3556,7 @@
             e.preventDefault();
             const mode = $('#ciFormMode').value;
             const endpoint = mode === 'orders' ? '/api/ci-orders' : '/api/ci-devflow';
-            const body = { delivery_service: $('#ciFormService').value.trim(), env: $('#ciFormEnv').value };
+            const body = { delivery_service: $('#ciFormService').value.trim(), env: ddlVal('ciFormEnv') };
             if (mode === 'orders') { body.branch = $('#ciFormBranch').value; body.repo_sn = $('#ciFormRepo').value; }
             else { body.wf_sn = $('#ciFormWf').value; body.stage_sn = $('#ciFormStage').value; }
             const id = $('#ciFormId').value;
@@ -3528,15 +3611,12 @@
                 const res = await api('/api/fix-records/filters');
                 if (res.code !== 0 || !res.data) return;
                 const d = res.data;
-                const optionsHtml = (vals) => ['<option value="">全部</option>'].concat(
-                    (vals || []).map(v => `<option value="${esc(v)}">${esc(fixTypeLabel(v))}</option>`)
-                ).join('');
-                const techSel = document.getElementById('fixTechLine');
-                const typeSel = document.getElementById('fixType');
-                const wkSel = document.getElementById('fixWeekday');
-                if (techSel) techSel.innerHTML = optionsHtml(d.tech_lines || []);
-                if (typeSel) typeSel.innerHTML = optionsHtml(d.release_types || []);
-                if (wkSel) wkSel.innerHTML = optionsHtml(d.weekdays || []);
+                window._fixTechLines = d.tech_lines || [];
+                window._fixReleaseTypes = (d.release_types || []).map(fixTypeLabel);
+                window._fixWeekdays = d.weekdays || [];
+                refreshDdlList('fixTechLine', window._fixTechLines);
+                refreshDdlList('fixType', window._fixReleaseTypes);
+                refreshDdlList('fixWeekday', window._fixWeekdays);
             } catch (e) {
                 console.error('[fix] loadFixFilters error:', e.message);
             }
@@ -3606,35 +3686,42 @@
             }
         }
         function fixSearch() {
-            fixKeyword = $('#fixKeyword').value.trim(); fixTechLine = $('#fixTechLine').value; fixType = $('#fixType').value;
-            fixWeekday = $('#fixWeekday').value; fixDateFrom = $('#fixDateFrom').value; fixDateTo = $('#fixDateTo').value;
+            fixKeyword = $('#fixKeyword').value.trim(); fixTechLine = ddlVal('fixTechLine'); fixType = ddlVal('fixType');
+            fixWeekday = ddlVal('fixWeekday'); fixDateFrom = $('#fixDateFrom').value; fixDateTo = $('#fixDateTo').value;
             fixPage = 1; loadFixRecords();
         }
         function fixReset() {
-            ['fixKeyword', 'fixTechLine', 'fixType', 'fixWeekday', 'fixDateFrom', 'fixDateTo'].forEach(id => { const e = document.getElementById(id); if (e) e.value = ''; });
+            $('#fixKeyword').value = ''; $('#fixDateFrom').value = ''; $('#fixDateTo').value = '';
+            ddlReset('fixTechLine'); ddlReset('fixType'); ddlReset('fixWeekday');
             fixKeyword = ''; fixTechLine = ''; fixType = ''; fixWeekday = ''; fixDateFrom = ''; fixDateTo = ''; fixPage = 1; loadFixRecords();
         }
         $('#fixKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') fixSearch(); });
-        $('#fixTechLine').addEventListener('change', fixSearch);
-        $('#fixType').addEventListener('change', fixSearch);
-        $('#fixWeekday').addEventListener('change', fixSearch);
+        bindDdlPanel('fixTechLine', { searchable: false, paginate: false, allLabel: '全部', options: () => (window._fixTechLines || []), onSelect: fixSearch });
+        bindDdlPanel('fixType', { searchable: false, paginate: false, allLabel: '全部', options: () => (window._fixReleaseTypes || []), onSelect: fixSearch });
+        bindDdlPanel('fixWeekday', { searchable: false, paginate: false, allLabel: '全部', options: () => (window._fixWeekdays || []), onSelect: fixSearch });
         $('#fixDateFrom').addEventListener('change', fixSearch);
         $('#fixDateTo').addEventListener('change', fixSearch);
 
         // 日期 → 星期自动带出
         $('#fixFormDate').addEventListener('change', function () {
             const v = this.value;
-            if (!v) { $('#fixFormWeekday').value = ''; return; }
+            if (!v) { setDdlValue('fixFormWeekday', ''); return; }
             const parts = v.split('-');
             const d = new Date(+parts[0], +parts[1] - 1, +parts[2]);
-            $('#fixFormWeekday').value = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()];
+            setDdlValue('fixFormWeekday', ['周日', '周一', '周二', '周三', '周四', '周五', '周六'][d.getDay()]);
         });
+
+        // 弹窗固定枚举下拉（星期/迭代日/类型/技术线）
+        bindDdlPanel('fixFormWeekday', { searchable: false, paginate: false, allLabel: null, options: () => ['周一', '周二', '周三', '周四', '周五', '周六', '周日'], onSelect: null });
+        bindDdlPanel('fixFormIterDup', { searchable: false, paginate: false, allLabel: null, options: () => ['否', '是'], onSelect: null });
+        bindDdlPanel('fixFormType', { searchable: false, paginate: false, allLabel: null, options: () => ['修复发版', 'Bug修复', '优化发版', '紧急修复', '回滚重发'], onSelect: null });
+        bindDdlPanel('fixFormTech', { searchable: false, paginate: false, allLabel: null, options: () => ['前端', '后端'], onSelect: null });
 
         async function openFixAdd() {
             closeAllModals();
             $('#fixFormId').value = ''; $('#fixModalTitle').textContent = '新增修复记录';
             $('#fixForm').reset();
-            $('#fixFormIterDup').value = '否'; $('#fixFormType').value = '修复发版';
+            setDdlValue('fixFormIterDup', '否'); setDdlValue('fixFormType', '修复发版');
             $('#fixFormModal').classList.remove('hidden'); $('#fixFormModal').classList.add('flex');
         }
         async function openFixEdit(id) {
@@ -3645,13 +3732,13 @@
                 const setVal = (id, v) => { const e = document.getElementById(id); if (e) e.value = v; };
                 setVal('fixFormId', d.id); document.getElementById('fixModalTitle').textContent = '编辑修复记录';
                 setVal('fixFormDate', d.release_date || '');
-                setVal('fixFormWeekday', d.weekday || '');
-                setVal('fixFormIterDup', d.iter_day_dup === '是' ? '是' : '否');
-                setVal('fixFormTech', d.tech_line || '');
+                setDdlValue('fixFormWeekday', d.weekday || '');
+                setDdlValue('fixFormIterDup', d.iter_day_dup === '是' ? '是' : '否');
+                setDdlValue('fixFormTech', d.tech_line || '');
                 setVal('fixFormWorkOrder', d.work_order || '');
                 setVal('fixFormUrl', d.work_order_url || '');
                 setVal('fixFormService', d.service_name || '');
-                setVal('fixFormType', d.release_type || '修复发版');
+                setDdlValue('fixFormType', d.release_type || '修复发版');
                 setVal('fixFormReason', d.fix_reason || '');
                 document.getElementById('fixFormModal').classList.remove('hidden');
                 document.getElementById('fixFormModal').classList.add('flex');
@@ -3665,13 +3752,13 @@
             const v = (id) => { const el = $(id); return el ? el.value : ''; };
             const body = {
                 release_date: v('fixFormDate'),
-                weekday: v('fixFormWeekday').trim(),
-                iter_day_dup: v('fixFormIterDup') || '否',
-                tech_line: v('fixFormTech').trim(),
+                weekday: ddlVal('fixFormWeekday').trim(),
+                iter_day_dup: ddlVal('fixFormIterDup') || '否',
+                tech_line: ddlVal('fixFormTech').trim(),
                 work_order: v('fixFormWorkOrder').trim(),
                 work_order_url: v('fixFormUrl').trim(),
                 service_name: v('fixFormService').trim(),
-                release_type: v('fixFormType').trim() || '修复发版',
+                release_type: ddlVal('fixFormType').trim() || '修复发版',
                 fix_reason: v('fixFormReason').trim(),
             };
             const id = v('fixFormId');
@@ -3737,8 +3824,10 @@
                 window._credBizColors = Object.assign({}, purpData.colors || {});
                 credPurposeFilterList = window._credBizPurposes.slice();
                 credFormPurposeList = window._credBizPurposes.slice();
+                credFormEnvList = CRED_ENVS.slice();
                 if (typeof renderCredPurposeFilterUl === 'function') renderCredPurposeFilterUl();
                 if (typeof renderCredFormPurposeUl === 'function') renderCredFormPurposeUl();
+                if (typeof renderCredFormEnvUl === 'function') renderCredFormEnvUl();
             } catch (err) {
                 console.error('加载凭证下拉数据失败:', err);
             }
@@ -3810,6 +3899,9 @@
         let credPurposeFilterList = [];
         let credFormPurposePage = 1, credPurposeFilterPage = 1;
         let credFormPurposeKw = '', credPurposeFilterKw = '';
+        // 环境（弹窗内）
+        let credFormEnvList = [];
+        let credFormEnvPage = 1, credFormEnvKw = '';
         const CRED_FORM_PAGE_SIZE = 6;
 
         // 绑定业务名称 / 服务供应商 / 业务用途（弹窗内 / 顶部筛选） 下拉面板事件（全局一次即可）
@@ -3836,6 +3928,10 @@
                 renderUl = renderCredFormPurposeUl; onSelect = selectCredFormPurpose;
                 getPage = () => credFormPurposePage; setPage = (p) => { credFormPurposePage = p; };
                 getKw = () => credFormPurposeKw; setKw = (k) => { credFormPurposeKw = k; };
+            } else if (prefix === 'credFormEnv') {
+                renderUl = renderCredFormEnvUl; onSelect = selectCredFormEnv;
+                getPage = () => credFormEnvPage; setPage = (p) => { credFormEnvPage = p; };
+                getKw = () => credFormEnvKw; setKw = (k) => { credFormEnvKw = k; };
             } else if (prefix === 'credPurposeFilter') {
                 renderUl = renderCredPurposeFilterUl; onSelect = selectCredPurposeFilter;
                 getPage = () => credPurposeFilterPage; setPage = (p) => { credPurposeFilterPage = p; };
@@ -3844,14 +3940,14 @@
                 return;
             }
 
-            // 关闭所有 4 个面板（含顶部和弹窗内）
+            // 关闭所有 5 个面板（含顶部和弹窗内）
             const closeAllFormPanels = () => {
-                ['#credFormServicePanel', '#credFormProviderPanel', '#credFormPurposePanel', '#credPurposeFilterPanel',
-                 '#credNamePanel'].forEach(sel => {
+                ['#credFormServicePanel', '#credFormProviderPanel', '#credFormPurposePanel', '#credFormEnvPanel',
+                 '#credPurposeFilterPanel', '#credNamePanel'].forEach(sel => {
                     const p = document.querySelector(sel); if (p) p.classList.add('hidden');
                 });
-                ['#credFormServiceArrow', '#credFormProviderArrow', '#credFormPurposeArrow', '#credPurposeFilterArrow',
-                 '#credNameArrow'].forEach(sel => {
+                ['#credFormServiceArrow', '#credFormProviderArrow', '#credFormPurposeArrow', '#credFormEnvArrow',
+                 '#credPurposeFilterArrow', '#credNameArrow'].forEach(sel => {
                     const a = document.querySelector(sel); if (a) a.classList.remove('rotate-180');
                 });
             };
@@ -3936,6 +4032,141 @@
             $('#credFormProviderTriggerLabel').className = 'text-gray-900 truncate';
             $('#credFormProviderPanel').classList.add('hidden');
             $('#credFormProviderArrow').classList.remove('rotate-180');
+        }
+
+        // ==================== 泛化下拉组件（DdlPanel）====================
+        // 统一模式：trigger button + panel（可选搜索框/分页/「全部」置顶）
+        // 用法：bindDdlPanel('filterEnv', { searchable: true, paginate: true, allLabel: '全部', onSelect: (v)=>{...}, options: () => [...] })
+        // DDL_STATE 已在文件顶部声明（var DDL_STATE = {}）
+        function bindDdlPanel(prefix, cfg) {
+            const state = DDL_STATE[prefix] = { list: cfg.options ? cfg.options() : [], page: 1, kw: '', cfg: cfg || {} };
+            const triggerEl = $('#' + prefix + 'Trigger');
+            const panelEl = $('#' + prefix + 'Panel');
+            const searchEl = $('#' + prefix + 'Search');
+            const prevEl = $('#' + prefix + 'Prev');
+            const nextEl = $('#' + prefix + 'Next');
+            if (triggerEl) {
+                triggerEl.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    const hidden = panelEl.classList.contains('hidden');
+                    // 关闭所有 ddl 面板
+                    Object.keys(DDL_STATE).forEach(p => {
+                        const pp = $('#' + p + 'Panel'), pa = $('#' + p + 'Arrow');
+                        if (pp) pp.classList.add('hidden');
+                        if (pa) pa.classList.remove('rotate-180');
+                    });
+                    if (hidden) {
+                        renderDdl(prefix);
+                        panelEl.classList.remove('hidden');
+                        $('#' + prefix + 'Arrow').classList.add('rotate-180');
+                        if (searchEl) setTimeout(() => searchEl.focus(), 30);
+                    }
+                });
+            }
+            if (searchEl) searchEl.addEventListener('input', (e) => { state.kw = e.target.value; state.page = 1; renderDdl(prefix); });
+            if (prevEl) prevEl.addEventListener('click', (e) => { e.stopPropagation(); state.page = Math.max(1, state.page - 1); renderDdl(prefix); });
+            if (nextEl) nextEl.addEventListener('click', (e) => { e.stopPropagation(); const total = Math.max(1, Math.ceil(state.list.length / (cfg.pageSize || 6))); state.page = Math.min(total, state.page + 1); renderDdl(prefix); });
+            renderDdl(prefix);
+        }
+        function refreshDdlList(prefix, list) {
+            const st = DDL_STATE[prefix];
+            if (!st) return;
+            st.list = list || [];
+            st.page = 1;
+            renderDdl(prefix);
+        }
+        function renderDdl(prefix) {
+            const st = DDL_STATE[prefix];
+            if (!st) return;
+            const cfg = st.cfg || {};
+            const kw = (st.kw || '').trim().toLowerCase();
+            let list = st.list;
+            if (kw) list = list.filter(v => String(v).toLowerCase().includes(kw));
+            // paginate=false 时一屏展示全部（枚举类），否则按 pageSize 分页
+            const pageSize = cfg.paginate === false ? Math.max(1, list.length) : (cfg.pageSize || 6);
+            const totalPages = Math.max(1, Math.ceil(list.length / pageSize));
+            if (st.page > totalPages) st.page = totalPages;
+            const start = (st.page - 1) * pageSize;
+            const pageItems = list.slice(start, start + pageSize);
+            const labelEl = $('#' + prefix + 'TriggerLabel');
+            const current = labelEl ? (labelEl.dataset.value || '') : '';
+            let html = '';
+            // 「全部」置顶
+            if (cfg.allLabel) {
+                html += `<li><button type="button" onclick="selectDdl('${prefix}', '')" class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 border-b border-gray-100 ${!current ? 'text-blue-600 font-medium' : 'text-gray-900'}">${esc(cfg.allLabel)}</button></li>`;
+            }
+            if (list.length === 0) {
+                html += `<li><span class="block px-3 py-2 text-xs text-gray-400">无匹配</span></li>`;
+            } else {
+                html += pageItems.map(v => `<li><button type="button" onclick="selectDdl('${prefix}', '${esc(String(v)).replace(/'/g, "\\'")}')" class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 ${current === String(v) ? 'text-blue-600 font-medium' : 'text-gray-700'}">${esc(String(v))}</button></li>`).join('');
+            }
+            const ulEl = $('#' + prefix + 'ListUl');
+            if (ulEl) ulEl.innerHTML = html;
+            const infoEl = $('#' + prefix + 'PageInfo');
+            if (infoEl) infoEl.textContent = list.length === 0 ? '无匹配' : `${start + 1}-${Math.min(start + pageSize, list.length)} / 共 ${list.length} 条`;
+            const prevEl = $('#' + prefix + 'Prev'), nextEl = $('#' + prefix + 'Next');
+            if (prevEl) prevEl.disabled = st.page <= 1;
+            if (nextEl) nextEl.disabled = st.page >= totalPages;
+        }
+        function selectDdl(prefix, value) {
+            const st = DDL_STATE[prefix];
+            const labelEl = $('#' + prefix + 'TriggerLabel');
+            if (labelEl) {
+                labelEl.textContent = value || (st && st.cfg && st.cfg.allLabel) || '请选择...';
+                labelEl.dataset.value = value || '';
+                labelEl.className = value ? 'text-gray-900 truncate' : 'text-gray-400 truncate';
+            }
+            const panelEl = $('#' + prefix + 'Panel');
+            if (panelEl) panelEl.classList.add('hidden');
+            const arrowEl = $('#' + prefix + 'Arrow');
+            if (arrowEl) arrowEl.classList.remove('rotate-180');
+            if (st && st.cfg && st.cfg.onSelect) st.cfg.onSelect(value);
+        }
+        function ddlVal(prefix) { const l = $('#' + prefix + 'TriggerLabel'); return l ? (l.dataset.value || '') : ''; }
+        function setDdlValue(prefix, value) {
+            const st = DDL_STATE[prefix];
+            const labelEl = $('#' + prefix + 'TriggerLabel');
+            if (labelEl) {
+                labelEl.textContent = value || (st && st.cfg && st.cfg.allLabel) || '请选择...';
+                labelEl.dataset.value = value || '';
+                labelEl.className = value ? 'text-gray-900 truncate' : 'text-gray-400 truncate';
+            }
+            renderDdl(prefix);
+        }
+        function ddlReset(prefix) {
+            const st = DDL_STATE[prefix];
+            const labelEl = $('#' + prefix + 'TriggerLabel');
+            if (labelEl) { labelEl.textContent = (st && st.cfg && st.cfg.allLabel) || '请选择...'; labelEl.dataset.value = ''; labelEl.className = 'text-gray-400 truncate'; }
+            if (st) { st.page = 1; st.kw = ''; const s = $('#' + prefix + 'Search'); if (s) s.value = ''; }
+            if (typeof renderDdl === 'function') renderDdl(prefix);
+        }
+
+        // ===== 弹窗内 环境 下拉面板（含分页 + 搜索） =====
+        function renderCredFormEnvUl() {
+            const kw = credFormEnvKw.trim().toLowerCase();
+            let list = credFormEnvList;
+            if (kw) list = list.filter(v => v.toLowerCase().includes(kw));
+            const totalPages = Math.max(1, Math.ceil(list.length / CRED_FORM_PAGE_SIZE));
+            if (credFormEnvPage > totalPages) credFormEnvPage = totalPages;
+            const start = (credFormEnvPage - 1) * CRED_FORM_PAGE_SIZE;
+            const pageItems = list.slice(start, start + CRED_FORM_PAGE_SIZE);
+            const current = $('#credFormEnvTriggerLabel').dataset.value || '';
+            const emptyRow = `<li><span class="block px-3 py-2 text-xs text-gray-400">无匹配</span></li>`;
+            const listHtml = pageItems.map(v => `<li><button type="button" onclick="selectCredFormEnv('${esc(v)}')"
+                class="w-full px-3 py-1.5 text-sm text-left hover:bg-blue-50 ${current === v ? 'text-blue-600 font-medium' : 'text-gray-700'}">${esc(v)}</button></li>`).join('');
+            $('#credFormEnvListUl').innerHTML = list.length === 0 ? emptyRow : listHtml;
+            $('#credFormEnvPageInfo').textContent = list.length === 0 ? '无匹配' : `${start + 1}-${Math.min(start + CRED_FORM_PAGE_SIZE, list.length)} / 共 ${list.length} 条`;
+            $('#credFormEnvPrev').disabled = credFormEnvPage <= 1;
+            $('#credFormEnvNext').disabled = credFormEnvPage >= totalPages;
+        }
+        function credFormEnvGoPage(delta) { credFormEnvPage += delta; renderCredFormEnvUl(); }
+        function selectCredFormEnv(value) {
+            const label = $('#credFormEnvTriggerLabel');
+            label.textContent = value;
+            label.dataset.value = value;
+            label.className = 'text-gray-900 truncate';
+            $('#credFormEnvPanel').classList.add('hidden');
+            $('#credFormEnvArrow').classList.remove('rotate-180');
         }
 
         // ===== 弹窗内 业务用途 下拉面板（含分页 + 搜索） =====
@@ -4155,6 +4386,19 @@
         function credFormReadPurpose() {
             return $('#credFormPurposeTriggerLabel').dataset.value || '';
         }
+        // 环境：trigger + 分页搜索 dropdown（bindCredFormPanel('credFormEnv') 已接管点击）
+        function setCredEnvValue(value) {
+            const label = $('#credFormEnvTriggerLabel');
+            if (value) {
+                label.textContent = value;
+                label.dataset.value = value;
+                label.className = 'text-gray-900 truncate';
+            } else {
+                label.textContent = '请选择...';
+                label.dataset.value = '';
+                label.className = 'text-gray-400 truncate';
+            }
+        }
 
         // 凭证弹窗
         async function openCredAddModal() {
@@ -4163,7 +4407,7 @@
             $('#credModalTitle').textContent = '新增凭证';
             // 重置所有表单字段（包括下拉触发按钮的 label 和 dataset）
             $('#credForm').reset();
-            $('#credFormEnv').value = credEnv || CRED_ENVS[0];
+            setCredEnvValue(credEnv || CRED_ENVS[0]);
             setCredPurposeValue('通用服务');
             $('#credFormServiceTriggerLabel').textContent = '请选择或输入...';
             $('#credFormServiceTriggerLabel').className = 'text-gray-400 truncate';
@@ -4184,7 +4428,7 @@
                     const d = res.data;
                     $('#credFormId').value = d.id;
                     $('#credModalTitle').textContent = '编辑凭证';
-                    $('#credFormEnv').value = d.env || credEnv || '';
+                    setCredEnvValue(d.env || credEnv || CRED_ENVS[0]);
                     // 业务用途：通过 setCredPurposeValue 统一处理（预设内直接选，预设外走自定义输入）
                     const curPurpose = d.business_purpose || '通用服务';
                     setCredPurposeValue(curPurpose);
@@ -4382,6 +4626,13 @@
         async function saveCredential(e) {
             e.preventDefault();
             const id = $('#credFormId').value;
+            // 环境必须选择（必填项）
+            const env = $('#credFormEnvTriggerLabel').dataset.value || '';
+            if (!env) {
+                showToast('请选择环境', 'error');
+                $('#credFormEnvTrigger').focus();
+                return;
+            }
             // 业务用途必须选择（必填项）
             const purpose = credFormReadPurpose();
             if (!purpose) {
@@ -4398,7 +4649,7 @@
             }
             const body = {
                 business_purpose: purpose,
-                env: $('#credFormEnv').value,
+                env: $('#credFormEnvTriggerLabel').dataset.value || '',
                 service_name: svcName,
                 service_provider: $('#credFormProviderTriggerLabel').dataset.value || '',
                 app_type: $('#credFormAppType').value.trim(),
@@ -4436,9 +4687,7 @@
         async function switchDomainRoot(root) {
             domRoot = root; domPage = 1; domKeyword = ''; domType = ''; domEnv = ''; domRegion = '';
             $('#domFilterKeyword').value = '';
-            $('#domFilterRegion').value = '';
-            $('#domFilterType').value = '';
-            $('#domFilterEnv').value = '';
+            ddlReset('domFilterRegion'); ddlReset('domFilterType'); ddlReset('domFilterEnv');
             $('#domainRootLabel').textContent = root;
             // ⚠️ 同样先清掉所有 .sidebar-link 的 active，再给当前子标签加 active
             switchPage('domains');
@@ -4472,18 +4721,9 @@
                 api(`/api/domain-types?root=${domRoot}`),
                 api(`/api/domain-envs?root=${domRoot}`),
             ]);
-            const fillSelect = (sel, items) => {
-                const current = sel.value;
-                sel.innerHTML = '<option value="">全部</option>';
-                items.forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
-                // 恢复当前选择
-                if (current && [...sel.options].some(o => o.value === current)) {
-                    sel.value = current;
-                }
-            };
-            if (regions.code === 0) fillSelect($('#domFilterRegion'), regions.data);
-            if (types.code === 0) fillSelect($('#domFilterType'), types.data);
-            if (envs.code === 0) fillSelect($('#domFilterEnv'), envs.data);
+            if (regions.code === 0) { window._domRegions = regions.data; refreshDdlList('domFilterRegion', regions.data); }
+            if (types.code === 0) { window._domTypes = types.data; refreshDdlList('domFilterType', types.data); refreshDdlList('domFormType', types.data); }
+            if (envs.code === 0) { window._domEnvs = envs.data; refreshDdlList('domFilterEnv', envs.data); refreshDdlList('domFormEnv', envs.data); refreshDdlList('domFormProgress', ['已完成', '进行中', '未开始']); }
             filterOptionsLoaded = true;
         }
 
@@ -4570,25 +4810,26 @@
 
         function domSearch() {
             domKeyword = $('#domFilterKeyword').value.trim();
-            domRegion = $('#domFilterRegion').value;
-            domType = $('#domFilterType').value;
-            domEnv = $('#domFilterEnv').value;
+            domRegion = ddlVal('domFilterRegion');
+            domType = ddlVal('domFilterType');
+            domEnv = ddlVal('domFilterEnv');
             domPage = 1;
             loadDomains();
         }
         function domReset() {
             $('#domFilterKeyword').value = '';
-            $('#domFilterRegion').value = '';
-            $('#domFilterType').value = '';
-            $('#domFilterEnv').value = '';
+            ddlReset('domFilterRegion'); ddlReset('domFilterType'); ddlReset('domFilterEnv');
             domKeyword = ''; domRegion = ''; domType = ''; domEnv = ''; domPage = 1;
             loadDomains();
         }
         $('#domFilterKeyword').addEventListener('keydown', e => { if (e.key === 'Enter') domSearch(); });
-        // 修复 bug：change 事件只更新变量，触发搜索但不重建下拉
-        $('#domFilterRegion').addEventListener('change', domSearch);
-        $('#domFilterType').addEventListener('change', domSearch);
-        $('#domFilterEnv').addEventListener('change', domSearch);
+        bindDdlPanel('domFilterRegion', { searchable: true, paginate: true, allLabel: '全部', options: () => (window._domRegions || []), onSelect: domSearch });
+        bindDdlPanel('domFilterType', { searchable: true, paginate: true, allLabel: '全部', options: () => (window._domTypes || []), onSelect: domSearch });
+        bindDdlPanel('domFilterEnv', { searchable: true, paginate: true, allLabel: '全部', options: () => (window._domEnvs || []), onSelect: domSearch });
+        // 域名弹窗下拉
+        bindDdlPanel('domFormType', { searchable: true, paginate: true, allLabel: null, options: () => (window._domTypes || []), onSelect: null });
+        bindDdlPanel('domFormEnv', { searchable: true, paginate: true, allLabel: null, options: () => (window._domEnvs || []), onSelect: null });
+        bindDdlPanel('domFormProgress', { searchable: false, paginate: false, allLabel: null, options: () => ['已完成', '进行中', '未开始'], onSelect: null });
 
         async function openDomainAddModal() {
             closeAllModals();
@@ -4602,20 +4843,15 @@
                 api('/api/domain-envs'),
                 api('/api/regions'),
             ]);
-            const fill = (sel, items, allowEmpty = true) => {
-                sel.innerHTML = allowEmpty ? '<option value="">- 请选择 -</option>' : '';
-                items.forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
-            };
-            fill($('#domFormType'), types.code === 0 ? types.data : []);
-            fill($('#domFormEnv'), envs.code === 0 ? envs.data : []);
-            fill($('#domFormProgress'), ['已完成', '进行中', '未开始'], false);
-            $('#domFormType').value = 'apisix';
-            $('#domFormEnv').value = '';
-            $('#domFormProgress').value = '已完成';
+            refreshDdlList('domFormType', types.code === 0 ? types.data : []);
+            refreshDdlList('domFormEnv', envs.code === 0 ? envs.data : []);
+            refreshDdlList('domFormProgress', ['已完成', '进行中', '未开始']);
+            setDdlValue('domFormType', 'apisix');
+            setDdlValue('domFormEnv', '');
+            setDdlValue('domFormProgress', '已完成');
             $('#domFormModal').classList.remove('hidden'); $('#domFormModal').classList.add('flex');
         }
         async function openDomEditModal(id) {
-            closeAllModals();
             closeAllModals();
             const res = await api(`/api/domains/${id}`);
             if (res.code === 0) {
@@ -4629,18 +4865,17 @@
                     api('/api/domain-types'),
                     api('/api/domain-envs'),
                 ]);
-                const fill = (sel, items, currentVal, allowEmpty = true) => {
-                    sel.innerHTML = allowEmpty ? '<option value="">- 请选择 -</option>' : '';
-                    items.forEach(v => sel.innerHTML += `<option value="${v}">${v}</option>`);
-                    // 如果当前值不在列表里，临时添加进去（保证能正确显示）
-                    if (currentVal && !items.includes(currentVal)) {
-                        sel.innerHTML += `<option value="${currentVal}">${currentVal}</option>`;
-                    }
-                    sel.value = currentVal || '';
-                };
-                fill($('#domFormType'), types.code === 0 ? types.data : [], d.domain_type);
-                fill($('#domFormEnv'), envs.code === 0 ? envs.data : [], d.env);
-                fill($('#domFormProgress'), ['已完成', '进行中', '未开始'], d.cert_progress || '已完成', false);
+                // 当前值若不在列表里，临时补进去保证显示
+                const typeList = types.code === 0 ? types.data : [];
+                if (d.domain_type && !typeList.includes(d.domain_type)) typeList.push(d.domain_type);
+                const envList = envs.code === 0 ? envs.data : [];
+                if (d.env && !envList.includes(d.env)) envList.push(d.env);
+                refreshDdlList('domFormType', typeList);
+                refreshDdlList('domFormEnv', envList);
+                refreshDdlList('domFormProgress', ['已完成', '进行中', '未开始']);
+                setDdlValue('domFormType', d.domain_type || '');
+                setDdlValue('domFormEnv', d.env || '');
+                setDdlValue('domFormProgress', d.cert_progress || '已完成');
                 $('#domFormExpiry').value = d.cert_expiry ? d.cert_expiry.replace(' ', 'T').slice(0, 16) : '';
                 $('#domFormNotes').value = d.notes || '';
                 $('#domFormModal').classList.remove('hidden'); $('#domFormModal').classList.add('flex');
@@ -4654,9 +4889,9 @@
                 root_domain: $('#domFormRoot').value,
                 service_name: $('#domFormService').value.trim(),
                 domain_name: $('#domFormDomain').value.trim(),
-                domain_type: $('#domFormType').value,
-                env: $('#domFormEnv').value,
-                cert_progress: $('#domFormProgress').value,
+                domain_type: ddlVal('domFormType'),
+                env: ddlVal('domFormEnv'),
+                cert_progress: ddlVal('domFormProgress'),
                 cert_expiry: $('#domFormExpiry').value ? $('#domFormExpiry').value.replace('T', ' ') + ':00' : null,
                 notes: $('#domFormNotes').value,
             };
