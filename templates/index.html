@@ -5110,8 +5110,9 @@
         }
         function netIpLoadMyip() {
             const $txt = $('#netIpMyipText');
-            // 如果后端已经预渲染了 IP（不依赖 JS 的兜底），不再重复请求
-            if ($txt.textContent.includes('您的IP地址是')) return;
+            // 如果后端已经预渲染了完整 IP（不含 _quick/_error 的真实数据），不再重复请求
+            // 若是快速 fallback（"未知"）则允许重试
+            if ($txt.textContent.includes('您的IP地址是') && !$txt.dataset.quick) return;
             const $retry = $('#netIpMyipRetry');
             $retry.classList.add('hidden');
             $txt.textContent = '正在加载您的 IP...';
@@ -5128,8 +5129,17 @@
                             if (res.code === 0) {
                                 const d = res.data;
                                 const loc = [d.country, d.region, d.city, d.isp].filter(x => x && x !== '-').join(' ');
-                                $txt.innerHTML =
-                                    `您的IP地址是：<a href="javascript:void(0)" onclick="copyText('${esc(d.ip)}')" class="text-blue-600 hover:underline font-medium">${esc(d.ip)}</a> 🔗 来自：${esc(loc || '未知')}`;
+                                // 标记是否快速 fallback（_quick/_error）——允许刷新重试
+                                if (d._quick || d._error) $txt.dataset.quick = '1';
+                                else delete $txt.dataset.quick;
+                                if (!loc) {
+                                    // 归属查询失败：显示 IP + 明确提示（不再用模糊的"未知"）
+                                    $txt.innerHTML =
+                                        `您的IP地址是：<a href="javascript:void(0)" onclick="copyText('${esc(d.ip)}')" class="text-blue-600 hover:underline font-medium">${esc(d.ip)}</a> 🔗 <span class="text-orange-600">归属查询失败，点击右侧"刷新"重试</span>`;
+                                } else {
+                                    $txt.innerHTML =
+                                        `您的IP地址是：<a href="javascript:void(0)" onclick="copyText('${esc(d.ip)}')" class="text-blue-600 hover:underline font-medium">${esc(d.ip)}</a> 🔗 来自：${esc(loc)}`;
+                                }
                             } else {
                                 $txt.textContent = '本机 IP 加载失败：' + (res.message || '未知错误');
                                 $retry.classList.remove('hidden');
