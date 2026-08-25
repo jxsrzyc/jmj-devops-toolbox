@@ -4314,8 +4314,8 @@
                 return `
                 <tr class="table-row-hover border-b border-gray-100">
                   <td class="px-3 py-3 text-gray-400 text-xs">${(credPage - 1) * credPageSize + i + 1}</td>
-                  <td class="px-3 py-3 whitespace-nowrap"><span class="inline-block px-2 py-0.5 rounded-md text-xs font-medium" style="background:${color}1a;color:${color};border:1px solid ${color}40">${esc(purpose)}</span></td>
-                  <td class="px-3 py-3 font-medium text-gray-900 whitespace-nowrap">${esc(d.service_name) || '-'}</td>
+                  <td class="px-3 py-3 whitespace-nowrap align-middle"><span class="inline-block max-w-full align-middle px-2 py-0.5 rounded-md text-xs font-medium truncate" style="background:${color}1a;color:${color};border:1px solid ${color}40" title="${esc(purpose)}">${esc(purpose)}</span></td>
+                  <td class="px-3 py-3 font-medium text-gray-900 whitespace-nowrap align-middle">${esc(d.service_name) || '-'}</td>
                   <td class="px-3 py-3 text-gray-700">${esc(d.service_provider) || '-'}</td>
                   <td class="px-3 py-3 text-gray-700">${esc(d.app_type) || '-'}</td>
                   <td class="px-3 py-3 text-gray-700">${esc(d.version) || '-'}</td>
@@ -7275,7 +7275,7 @@
 
     // 强制版本同步：每次更新 JS 后改 VERSION，旧版本 localStorage 自动 reload
     (function() {
-        const VERSION = '2026-08-25-v8';
+        const VERSION = '2026-08-25-v9';
         try {
             if (localStorage.getItem('__code_version') !== VERSION) {
                 localStorage.setItem('__code_version', VERSION);
