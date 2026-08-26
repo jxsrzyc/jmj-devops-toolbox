@@ -162,10 +162,15 @@
                     id="credSub-超融合南沙生产环境" data-cred-env="超融合南沙生产环境">
                     超融合南沙生产环境
                 </a>
-                <a href="#" onclick="switchCredEnv('私有云环境', event); return false;"
+                <a href="#" onclick="switchCredEnv('私有云测试环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
-                    id="credSub-私有云环境" data-cred-env="私有云环境">
-                    私有云环境
+                    id="credSub-私有云测试环境" data-cred-env="私有云测试环境">
+                    私有云测试环境
+                </a>
+                <a href="#" onclick="switchCredEnv('私有云生产环境', event); return false;"
+                    class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
+                    id="credSub-私有云生产环境" data-cred-env="私有云生产环境">
+                    私有云生产环境
                 </a>
                 <a href="#" onclick="switchCredEnv('预生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
@@ -735,7 +740,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
                 <div class="flex flex-col sm:flex-row gap-3">
                     <div class="flex-1 min-w-0 relative">
-                        <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center justify-between mb-1 min-h-[1.25rem]">
                             <label class="block text-xs font-medium text-gray-500">业务名称</label>
                             <button type="button" onclick="openSvcNameModal()" class="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1.5 py-0.5" title="管理业务名称（增删）">管理</button>
                         </div>
@@ -769,7 +774,7 @@
                         </div>
                     </div>
                     <div class="flex-1 min-w-0 relative">
-                        <div class="flex items-center justify-between mb-1">
+                        <div class="flex items-center justify-between mb-1 min-h-[1.25rem]">
                             <label class="block text-xs font-medium text-gray-500">业务用途</label>
                             {% if permissions == '*' %}
                             <button onclick="openBizColorModal()" class="text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 rounded px-1.5 py-0.5" title="管理业务用途">管理</button>
@@ -803,7 +808,7 @@
                         </div>
                     </div>
                     <div class="flex-1 min-w-0">
-                        <label class="block text-xs font-medium text-gray-500 mb-1">关键词</label>
+                        <label class="flex items-center text-xs font-medium text-gray-500 mb-1 min-h-[1.25rem]">关键词</label>
                         <div class="relative">
                             <svg class="absolute left-3 top-2.5 w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
@@ -825,7 +830,7 @@
             <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
                 <div class="overflow-y-auto flex-1 min-h-0">
                     <table class="w-full text-sm text-left table-fixed">
-                        <colgroup>
+                        <colgroup id="credColgroup">
                             <col style="width:3rem"><!-- # -->
                             <col style="width:7rem"><!-- 业务用途 -->
                             <col style="width:10rem"><!-- 业务名称 -->
@@ -841,7 +846,7 @@
                             <col style="width:9rem"><!-- 操作（编辑/复制/删除 三按钮） -->
                         </colgroup>
                         <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
-                            <tr>
+                            <tr id="credHeadRow">
                                 <th class="px-3 py-3 font-medium text-gray-600">#</th>
                                 <th class="px-3 py-3 font-medium text-gray-600">业务用途</th>
                                 <th class="px-3 py-3 font-medium text-gray-600">业务名称</th>
@@ -3787,8 +3792,19 @@
             } else { showToast(res.message, 'error'); }
         }
 
-        // ==================== 服务凭证管理（6 环境） ====================
-        const CRED_ENVS = ['超融合电信开发环境', '超融合南沙生产环境', '私有云环境', '预生产环境', '国内生产环境', '新加坡生产环境', '北美生产环境'];
+        // ==================== 服务凭证管理（8 环境） ====================
+        const CRED_ENVS = ['超融合电信开发环境', '超融合南沙生产环境', '私有云测试环境', '私有云生产环境', '预生产环境', '国内生产环境', '新加坡生产环境', '北美生产环境'];
+        // 环境列显示简写（悬停 title 仍显示完整名）
+        const ENV_SHORT = {
+            '超融合电信开发环境': '电信开发',
+            '超融合南沙生产环境': '南沙生产',
+            '私有云测试环境': '私有云测试',
+            '私有云生产环境': '私有云生产',
+            '预生产环境': '预生产',
+            '国内生产环境': '国内生产',
+            '新加坡生产环境': '新加坡生产',
+            '北美生产环境': '北美生产',
+        };
         let credPage = 1;
         let credPageSize = 20;
         let credName = '';
@@ -4303,18 +4319,45 @@
         function renderCredTable(items) {
             window._credLastItems = items;
             const tbody = $('#credTableBody');
+            // 仅「业务环境汇总」（credEnv 为空）显示「环境」列（第 3 列），其余环境子标签不显示
+            const showEnvCol = !credEnv;
+            const COLS = [
+                { w: '3rem', label: '#' },
+                { w: '7rem', label: '业务用途' },
+                ...(showEnvCol ? [{ w: '8rem', label: '环境' }] : []),
+                { w: '10rem', label: '业务名称' },
+                { w: '7rem', label: '服务供应商' },
+                { w: '6rem', label: '应用类型' },
+                { w: '6rem', label: '版本' },
+                { w: '18rem', label: '内网地址' },
+                { w: '5rem', label: '内网端口' },
+                { w: '18rem', label: '公网地址' },
+                { w: '5rem', label: '公网端口' },
+                { w: '12rem', label: '账号' },
+                { w: '7rem', label: '密码' },
+                { w: '9rem', label: '操作' },
+            ];
+            // 动态重建 colgroup + 表头（随「环境」列显隐变化）
+            $('#credColgroup').innerHTML = COLS.map(c => `<col style="width:${c.w}">`).join('');
+            $('#credHeadRow').innerHTML = COLS.map(c => `<th class="px-3 py-3 font-medium text-gray-600">${c.label}</th>`).join('');
             if (items.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="14" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="${COLS.length}" class="px-4 py-12 text-center text-gray-400">暂无数据</td></tr>`;
                 return;
             }
             const bizColors = window._credBizColors || {};
             tbody.innerHTML = items.map((d, i) => {
                 const purpose = d.business_purpose || '通用服务';
                 const color = bizColors[purpose] || '#9ca3af';
+                // 环境列（仅业务环境汇总视图，显示简写，悬停 title 显示完整名）
+                const envFull = d.env || '';
+                const envShort = ENV_SHORT[envFull] || envFull || '-';
+                const envTd = showEnvCol
+                    ? `<td class="px-3 py-3 whitespace-nowrap align-middle text-gray-700" title="${esc(envFull)}">${esc(envShort)}</td>` : '';
                 return `
                 <tr class="table-row-hover border-b border-gray-100">
                   <td class="px-3 py-3 text-gray-400 text-xs">${(credPage - 1) * credPageSize + i + 1}</td>
                   <td class="px-3 py-3 whitespace-nowrap align-middle"><span class="inline-block max-w-full align-middle px-2 py-0.5 rounded-md text-xs font-medium truncate" style="background:${color}1a;color:${color};border:1px solid ${color}40" title="${esc(purpose)}">${esc(purpose)}</span></td>
+                  ${envTd}
                   <td class="px-3 py-3 font-medium text-gray-900 whitespace-nowrap align-middle">${esc(d.service_name) || '-'}</td>
                   <td class="px-3 py-3 text-gray-700">${esc(d.service_provider) || '-'}</td>
                   <td class="px-3 py-3 text-gray-700">${esc(d.app_type) || '-'}</td>
@@ -7275,7 +7318,7 @@
 
     // 强制版本同步：每次更新 JS 后改 VERSION，旧版本 localStorage 自动 reload
     (function() {
-        const VERSION = '2026-08-25-v9';
+        const VERSION = '2026-08-26-v11';
         try {
             if (localStorage.getItem('__code_version') !== VERSION) {
                 localStorage.setItem('__code_version', VERSION);
