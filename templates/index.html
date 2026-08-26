@@ -5504,46 +5504,67 @@
                 const res = await api('/api/nettools/whois', { method: 'POST', body: JSON.stringify({ host }) });
                 if (res.code !== 0) { $('#netWhoisResult').innerHTML = netErrorBox(res.message); return; }
                 const d = res.data;
-                const rd = d.rdap || {};
-                // 事件：注册/到期/更新
-                const events = {};
-                (rd.events || []).forEach(e => { events[e.eventAction] = e.eventDate; });
-                // 注册商（entities 第一个 vcardArray）
-                let registrar = '-', nameServers = [];
-                const entities = rd.entities || [];
-                for (const ent of entities) {
-                    const vcard = ent.vcardArray && ent.vcardArray[1];
-                    if (vcard) {
-                        for (const item of vcard) {
-                            if (item[0] === 'fn') registrar = item[3] || '-';
+                // 子域名提示：RDAP/WHOIS 协议只查注册域（eTLD+1），输入子域名自动转换
+                const subdomainHint = (d.queried_domain && d.registered_domain && d.queried_domain !== d.registered_domain)
+                    ? `<div class="px-4 py-2.5 bg-amber-50 border-b border-amber-200 text-xs text-amber-800">⚠ RDAP/WHOIS 协议只查询注册域（eTLD+1），输入的子域名 <b>${esc(d.queried_domain)}</b> 已自动转为注册域 <b>${esc(d.registered_domain)}</b></div>` : '';
+                // 来源徽章
+                const isCnn = d.source === 'CNNIC WHOIS (43 端口)';
+                const sourceBadge = `<span class="px-2 py-0.5 rounded text-xs ${isCnn ? 'bg-orange-100 text-orange-700' : 'bg-blue-100 text-blue-700'}">${esc(d.source)}</span>`;
+
+                if (d.rdap) {
+                    // 路径一：RDAP JSON 解析渲染
+                    const rd = d.rdap;
+                    const events = {};
+                    (rd.events || []).forEach(e => { events[e.eventAction] = e.eventDate; });
+                    let registrar = '-', nameServers = [];
+                    const entities = rd.entities || [];
+                    for (const ent of entities) {
+                        const vcard = ent.vcardArray && ent.vcardArray[1];
+                        if (vcard) {
+                            for (const item of vcard) {
+                                if (item[0] === 'fn') registrar = item[3] || '-';
+                            }
                         }
                     }
+                    nameServers = (rd.nameservers || []).map(n => n.ldhName).filter(Boolean);
+                    const rows = [
+                        ['注册域', rd.ldhName || d.registered_domain || host],
+                        ['注册商', registrar],
+                        ['域名状态', (rd.status || []).join('，') || '-'],
+                        ['注册日期', fmtRdapDate(events.registration)],
+                        ['到期日期', fmtRdapDate(events.expiration)],
+                        ['最后更新', fmtRdapDate(events['last changed'])],
+                        ['名称服务器', nameServers.join('，') || '-'],
+                    ];
+                    const notAfter = events.expiration ? new Date(events.expiration) : null;
+                    let expiryBadge = '';
+                    if (notAfter) {
+                        const days = Math.ceil((notAfter - new Date()) / 86400000);
+                        expiryBadge = days < 0 ? '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">已过期 ' + (-days) + ' 天</span>'
+                            : days <= 30 ? '<span class="px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">' + days + ' 天后到期</span>'
+                            : '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">' + days + ' 天后到期</span>';
+                    }
+                    $('#netWhoisResult').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        ${subdomainHint}
+                        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between"><span class="font-medium text-gray-900">注册信息</span><div class="flex items-center gap-2">${sourceBadge}${expiryBadge}</div></div>
+                        <div class="divide-y divide-gray-100">${rows.map(([k, v]) => `<div class="flex px-4 py-2.5 text-sm">
+                            <span class="w-28 text-gray-500 flex-shrink-0">${k}</span><span class="text-gray-900 break-all">${esc(v)}</span></div>`).join('')}
+                        </div></div>`;
+                    return;
                 }
-                const ns = rd.nameservers || [];
-                nameServers = ns.map(n => n.ldhName).filter(Boolean);
-                const rows = [
-                    ['域名', rd.ldhName || host],
-                    ['注册商', registrar],
-                    ['域名状态', (rd.status || []).join('，') || '-'],
-                    ['注册日期', fmtRdapDate(events.registration)],
-                    ['到期日期', fmtRdapDate(events.expiration)],
-                    ['最后更新', fmtRdapDate(events['last changed'])],
-                    ['名称服务器', nameServers.join('，') || '-'],
-                    ['数据来源', d.source || '-'],
-                ];
-                const notAfter = events.expiration ? new Date(events.expiration) : null;
-                let expiryBadge = '';
-                if (notAfter) {
-                    const days = Math.ceil((notAfter - new Date()) / 86400000);
-                    expiryBadge = days < 0 ? '<span class="px-2 py-0.5 rounded text-xs bg-red-100 text-red-700">已过期 ' + (-days) + ' 天</span>'
-                        : days <= 30 ? '<span class="px-2 py-0.5 rounded text-xs bg-yellow-100 text-yellow-700">' + days + ' 天后到期</span>'
-                        : '<span class="px-2 py-0.5 rounded text-xs bg-green-100 text-green-700">' + days + ' 天后到期</span>';
+                if (d.whois_text) {
+                    // 路径二：CNNIC 43 端口 WHOIS 纯文本渲染
+                    const noMatch = /no matching record/i.test(d.whois_text);
+                    const noMatchBadge = noMatch
+                        ? '<span class="px-2 py-0.5 rounded text-xs bg-gray-100 text-gray-600">域名未注册</span>' : '';
+                    const textBlock = `<pre class="px-4 py-3 text-xs text-gray-700 whitespace-pre-wrap break-all leading-relaxed font-mono">${esc(d.whois_text)}</pre>`;
+                    $('#netWhoisResult').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+                        ${subdomainHint}
+                        <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between"><span class="font-medium text-gray-900">注册信息（WHOIS 文本）</span><div class="flex items-center gap-2">${sourceBadge}${noMatchBadge}</div></div>
+                        ${textBlock}</div>`;
+                    return;
                 }
-                $('#netWhoisResult').innerHTML = `<div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-                    <div class="px-4 py-3 border-b border-gray-200 flex items-center justify-between"><span class="font-medium text-gray-900">注册信息</span>${expiryBadge}</div>
-                    <div class="divide-y divide-gray-100">${rows.map(([k, v]) => `<div class="flex px-4 py-2.5 text-sm">
-                        <span class="w-28 text-gray-500 flex-shrink-0">${k}</span><span class="text-gray-900 break-all">${esc(v)}</span></div>`).join('')}
-                    </div></div>`;
+                $('#netWhoisResult').innerHTML = netErrorBox('查询无结果');
             } catch (e) {
                 $('#netWhoisResult').innerHTML = netErrorBox(e.message);
             }
@@ -7318,7 +7339,7 @@
 
     // 强制版本同步：每次更新 JS 后改 VERSION，旧版本 localStorage 自动 reload
     (function() {
-        const VERSION = '2026-08-26-v11';
+        const VERSION = '2026-08-26-v12';
         try {
             if (localStorage.getItem('__code_version') !== VERSION) {
                 localStorage.setItem('__code_version', VERSION);

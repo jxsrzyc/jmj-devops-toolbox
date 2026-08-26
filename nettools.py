@@ -755,22 +755,128 @@ def cdn_lookup(host):
     }}
 
 
-# ==================== 8. Whois 查询（RDAP 公共 API，跨平台统一） ====================
+# ==================== 8. Whois 查询（RDAP 公共 API + CNNIC 43 端口兜底） ====================
 
 RDAP_BOOTSTRAP_URL = "https://rdap.org/domain/{domain}"
 
+# 多段公共后缀（如 .com.cn / .co.uk / .com.au），命中时注册域取最后三段
+MULTI_PART_TLDS = {
+    'com.cn', 'net.cn', 'org.cn', 'ac.cn', 'edu.cn', 'gov.cn',
+    'co.uk', 'org.uk', 'me.uk', 'ac.uk', 'gov.uk',
+    'co.jp', 'ne.jp', 'or.jp', 'ac.jp', 'go.jp', 'ad.jp',
+    'com.au', 'net.au', 'org.au', 'edu.au', 'gov.au',
+    'co.kr', 'ne.kr', 'or.kr', 'go.kr', 're.kr',
+    'com.hk', 'net.hk', 'org.hk', 'edu.hk', 'gov.hk',
+    'com.sg', 'net.sg', 'org.sg', 'edu.sg', 'gov.sg',
+    'com.tw', 'net.tw', 'org.tw', 'edu.tw', 'gov.tw', 'idv.tw',
+}
+
+# 中国国家 TLD 集合（rdap.org 不支持 → 走 CNNIC 43 端口传统 WHOIS）
+CHINESE_TLDS = {
+    'cn', 'com.cn', 'net.cn', 'org.cn', 'ac.cn', 'edu.cn', 'gov.cn',
+    '中国', '公司', '网络', '政务', '公益',
+}
+
+CNNIC_WHOIS_SERVER = "whois.cnnic.cn"
+CNNIC_WHOIS_PORT = 43
+
+
+def extract_registered_domain(host):
+    """提取注册域（eTLD+1）。
+    例：gateway.jmj1995.com → jmj1995.com；srm.jiumaojiu.com.cn → jiumaojiu.com.cn；
+        baidu.cn → baidu.cn；google.com → google.com
+    """
+    host = (host or "").strip().lower().rstrip('.')
+    if not host:
+        return ""
+    parts = host.split('.')
+    if len(parts) <= 1:
+        return host
+    if len(parts) == 2:
+        return host  # 已是 eTLD+1
+    last_two = '.'.join(parts[-2:])
+    if last_two in MULTI_PART_TLDS and len(parts) >= 3:
+        return '.'.join(parts[-3:])
+    return last_two
+
+
+def _tcp_whois_query(server, port, domain, timeout=8):
+    """传统 WHOIS 协议（TCP 43 端口）：发送 domain 换行 → 持续读取直到 EOF/超时"""
+    import socket as _socket
+    s = _socket.socket(_socket.AF_INET, _socket.SOCK_STREAM)
+    s.settimeout(timeout)
+    try:
+        s.connect((server, port))
+        s.sendall((domain + '\r\n').encode('utf-8'))
+        data = b''
+        while True:
+            try:
+                chunk = s.recv(4096)
+            except _socket.timeout:
+                break
+            if not chunk:
+                break
+            data += chunk
+        return data.decode('utf-8', errors='replace')
+    finally:
+        s.close()
+
 
 def whois_query(domain):
-    """域名 Whois 查询（跨平台统一走 RDAP 公共 API，无 key、结构化 JSON）。
-    注：macOS 本地 whois 命令常只返回 IANA referral（无实际数据），故不再依赖本地命令。
+    """域名 Whois 查询：
+    1. 子域名自动提取注册域（eTLD+1）——RDAP/WHOIS 协议只查注册域
+    2. 中国国家 TLD（.cn/.com.cn/.中国 等）→ CNNIC 43 端口传统 WHOIS
+    3. 其他 TLD → rdap.org 公共 bootstrap（自动跟随 302 到各 registry RDAP）
+    统一返回 {code, data: {queried_domain, registered_domain, source, rdap, whois_text}}
     """
     domain = domain.strip().lower().rstrip('.')
+    if not domain:
+        return {"code": 1, "message": "请输入域名"}
+    registered_domain = extract_registered_domain(domain)
+    if not registered_domain:
+        return {"code": 1, "message": "域名格式不合法"}
+
+    # 判定完整 TLD（含多段）
+    parts = registered_domain.split('.')
+    full_tld = parts[-1]
+    if len(parts) >= 2 and '.'.join(parts[-2:]) in MULTI_PART_TLDS:
+        full_tld = '.'.join(parts[-2:])
+
+    # 中国国家 TLD → CNNIC 43 端口
+    if full_tld in CHINESE_TLDS:
+        try:
+            text = _tcp_whois_query(CNNIC_WHOIS_SERVER, CNNIC_WHOIS_PORT, registered_domain, timeout=8)
+            if not text.strip():
+                return {"code": 1, "message": f"CNNIC WHOIS 无响应（{registered_domain}），请稍后重试"}
+            return {
+                "code": 0,
+                "data": {
+                    "queried_domain": domain,
+                    "registered_domain": registered_domain,
+                    "source": "CNNIC WHOIS (43 端口)",
+                    "rdap": None,
+                    "whois_text": text,
+                },
+            }
+        except Exception as e:
+            return {"code": 1, "message": f"CNNIC WHOIS 查询失败: {str(e)[:120]}"}
+
+    # 其他 TLD → rdap.org 公共 bootstrap
     try:
-        url = RDAP_BOOTSTRAP_URL.format(domain=domain)
+        url = RDAP_BOOTSTRAP_URL.format(domain=registered_domain)
         req = Request(url, headers={"User-Agent": "Mozilla/5.0 (ops-toolbox)", "Accept": "application/rdap+json"})
         with urlopen(req, timeout=12) as resp:
             data = json.loads(resp.read().decode())
-        return {"code": 0, "data": {"domain": domain, "source": "RDAP 公共 API", "rdap": data}}
+        return {
+            "code": 0,
+            "data": {
+                "queried_domain": domain,
+                "registered_domain": registered_domain,
+                "source": "RDAP 公共 API",
+                "rdap": data,
+                "whois_text": None,
+            },
+        }
     except Exception as e:
         return {"code": 1, "message": f"Whois 查询失败: {str(e)}"}
 
