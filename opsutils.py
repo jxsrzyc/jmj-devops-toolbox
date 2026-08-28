@@ -114,6 +114,77 @@ def cidr_calc(cidr):
     }}
 
 
+def range_to_cidrs(start_ip, end_ip):
+    """IP 范围 → CIDR 网段集合，同时返回「最小覆盖」和「精确覆盖」两种结果。
+    - cover（最小覆盖）：贪心选最大对齐块，CIDR 数最少（通常 1 个），允许块超出范围；
+      适合运维场景（防火墙/安全组配置：多 1-2 个无关 IP 无所谓）
+      例: 120.236.160.1-120.236.175.254 → [120.236.160.0/20]；58.248.231.217-222 → [58.248.231.216/29]
+    - exact（精确覆盖）：贪心对齐，块严格在 [start, end] 范围内；
+      适合需要严格不超出范围的场景
+      例: 120.236.160.1-120.236.175.254 → 22 个 CIDR
+    """
+    try:
+        start = ipaddress.ip_address((start_ip or "").strip())
+    except ValueError:
+        return {"code": 1, "message": f"起始 IP 格式不合法: {start_ip}"}
+    try:
+        end = ipaddress.ip_address((end_ip or "").strip())
+    except ValueError:
+        return {"code": 1, "message": f"结束 IP 格式不合法: {end_ip}"}
+    if start.version != end.version:
+        return {"code": 1, "message": "起止 IP 版本不一致（IPv4 / IPv6 不能混用）"}
+    s, e = int(start), int(end)
+    if s > e:
+        return {"code": 1, "message": "起始 IP 不能大于结束 IP"}
+    bits = 32 if start.version == 4 else 128
+
+    def _mk(block_s, block_size):
+        return {
+            "cidr": f"{ipaddress.ip_address(block_s)}/{bits - block_size.bit_length() + 1}",
+            "network": str(ipaddress.ip_address(block_s)),
+            "prefix": bits - block_size.bit_length() + 1,
+            "ip_count": block_size,
+        }
+
+    # cover：1 个最大对齐块（贪心）
+    range_size = e - s + 1
+    n = 0
+    while (1 << n) < range_size:
+        n += 1
+    if n > bits:
+        n = bits
+    cover_size = 1 << n
+    cover_block_s = s & ~(cover_size - 1)
+    cover_block_e = cover_block_s + cover_size - 1
+    cover_cidrs = [_mk(cover_block_s, cover_size)]
+    extra_ips = max(0, s - cover_block_s) + max(0, cover_block_e - e)
+
+    # exact：贪心对齐拆分
+    exact_cidrs = []
+    cur = s
+    while cur <= e:
+        size = 1
+        while (cur & ((size << 1) - 1)) == 0 and (cur + (size << 1) - 1) <= e:
+            size <<= 1
+        exact_cidrs.append(_mk(cur, size))
+        cur += size
+
+    return {"code": 0, "data": {
+        "start": str(start),
+        "end": str(end),
+        "total_ips": e - s + 1,
+        "cover": {
+            "cidrs": cover_cidrs,
+            "count": len(cover_cidrs),
+            "extra_ips": extra_ips,
+        },
+        "exact": {
+            "cidrs": exact_cidrs,
+            "count": len(exact_cidrs),
+        },
+    }}
+
+
 # ==================== 2. 时间戳换算 ====================
 
 def timestamp_convert(value, tz_offset=8):

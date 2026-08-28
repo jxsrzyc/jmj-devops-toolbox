@@ -1333,20 +1333,53 @@
         <!-- 运维小工具：CIDR 子网计算器 -->
         <div id="page-utcidr" class="p-6 flex-1 flex flex-col min-h-0 hidden">
             <div class="flex items-center justify-between mb-6">
-                <div><h2 class="text-xl font-bold text-gray-900">CIDR 子网计算器</h2><p class="text-sm text-gray-500">网络地址/可用主机数/广播地址/掩码计算</p></div>
+                <div><h2 class="text-xl font-bold text-gray-900">CIDR 子网计算器</h2><p class="text-sm text-gray-500">网段计算 · IP 范围转网段（含 IPv4 / IPv6）</p></div>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
-                <div class="flex flex-col sm:flex-row gap-3">
-                    <div class="flex-1">
-                        <label class="block text-xs font-medium text-gray-500 mb-1">CIDR 网段</label>
-                        <input id="utCidrInput" type="text" placeholder="如: 10.0.0.0/24 或 192.168.1.0/255.255.255.0" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-                    </div>
-                    <div class="flex items-end gap-2">
-                        <button onclick="utCidrCalc()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">计算</button>
+            <!-- Tab 切换 -->
+            <div class="flex gap-1 mb-4 border-b border-gray-200">
+                <button onclick="utCidrSwitchTab('calc')" id="utCidrTab-calc" class="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 -mb-px">网段计算</button>
+                <button onclick="utCidrSwitchTab('range')" id="utCidrTab-range" class="px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 -mb-px">IP 范围 → 网段</button>
+            </div>
+            <!-- Tab 1: 网段计算 -->
+            <div id="utCidrPanel-calc">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">CIDR 网段</label>
+                            <input id="utCidrInput" type="text" placeholder="如: 10.0.0.0/24 或 192.168.1.0/255.255.255.0" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                        <div class="flex items-end gap-2">
+                            <button onclick="utCidrCalc()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">计算</button>
+                        </div>
                     </div>
                 </div>
+                <div id="utCidrResult" class="flex-1"></div>
             </div>
-            <div id="utCidrResult" class="flex-1"></div>
+            <!-- Tab 2: IP 范围 → 网段 -->
+            <div id="utCidrPanel-range" class="hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 mb-5">
+                    <div class="flex flex-col sm:flex-row gap-3">
+                        <div class="flex-1">
+                            <label class="block text-xs font-medium text-gray-500 mb-1">IP 范围（自动解析，支持 `-` / `~` / `到` 分隔）</label>
+                            <input id="utRangeInput" type="text" placeholder="如: 120.236.160.1 - 120.236.175.254" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">起始 IP</label>
+                            <input id="utRangeStart" type="text" placeholder="如: 120.236.160.1" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-500 mb-1">结束 IP</label>
+                            <input id="utRangeEnd" type="text" placeholder="如: 120.236.175.254" class="w-full px-3 py-2.5 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
+                        </div>
+                    </div>
+                    <div class="flex items-end gap-2 mt-3">
+                        <button onclick="utRangeToCidrCalc()" class="px-4 py-2.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">计算</button>
+                    </div>
+                </div>
+                <div id="utRangeResult" class="flex-1"></div>
+            </div>
         </div>
 
         <!-- 运维小工具：时间戳换算 -->
@@ -5683,6 +5716,88 @@
                 ['可用起始', d.first_host], ['可用结束', d.last_host]];
             $('#utCidrResult').innerHTML = utResultBox(`<div class="divide-y divide-gray-100">${rows.map(([k, v]) => `<div class="flex px-2 py-2 text-sm"><span class="w-28 text-gray-500">${k}</span><span class="text-gray-900 font-mono">${esc(v)}</span></div>`).join('')}</div>`);
         }
+        // CIDR 工具 Tab 切换
+        function utCidrSwitchTab(tab) {
+            const calcBtn = $('#utCidrTab-calc'), rangeBtn = $('#utCidrTab-range');
+            calcBtn.className = 'px-4 py-2 text-sm font-medium -mb-px ' + (tab === 'calc' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 border-b-2 border-transparent hover:text-gray-700');
+            rangeBtn.className = 'px-4 py-2 text-sm font-medium -mb-px ' + (tab === 'range' ? 'text-blue-600 border-b-2 border-blue-600' : 'text-gray-500 border-b-2 border-transparent hover:text-gray-700');
+            $('#utCidrPanel-calc').classList.toggle('hidden', tab !== 'calc');
+            $('#utCidrPanel-range').classList.toggle('hidden', tab !== 'range');
+        }
+        // IP 范围 → CIDR 网段（最小覆盖 + 精确覆盖双结果，默认展示最小覆盖）
+        let _utRangeLastData = null;  // 缓存最后一次结果，供切换显隐使用
+        async function utRangeToCidrCalc() {
+            let start = $('#utRangeStart').value.trim();
+            let end = $('#utRangeEnd').value.trim();
+            // 范围文本自动解析（支持 - / ~ / 到 分隔），有值则优先并回填两个输入框
+            const rangeText = $('#utRangeInput').value.trim();
+            if (rangeText) {
+                const m = rangeText.match(/^([0-9a-fA-F:.]+)\s*(?:-|~|到|～|—|--)\s*([0-9a-fA-F:.]+)$/);
+                if (!m) return showToast('范围格式无法识别（示例: 120.236.160.1 - 120.236.175.254）', 'error');
+                start = m[1].trim(); end = m[2].trim();
+                $('#utRangeStart').value = start;
+                $('#utRangeEnd').value = end;
+            }
+            if (!start || !end) return showToast('请输入起始 IP 和结束 IP', 'error');
+            $('#utRangeResult').innerHTML = netLoading();
+            try {
+                const res = await api('/api/utils/range-to-cidrs', { method: 'POST', body: JSON.stringify({ start, end }) });
+                if (res.code !== 0) { $('#utRangeResult').innerHTML = netErrorBox(res.message); return; }
+                const d = res.data;
+                _utRangeLastData = d;
+                renderUtRangeResult('cover');
+            } catch (e) {
+                $('#utRangeResult').innerHTML = netErrorBox(e.message);
+            }
+        }
+        function renderUtRangeResult(mode) {
+            const d = _utRangeLastData;
+            if (!d) return;
+            const cover = d.cover, exact = d.exact;
+            // 统计卡片
+            const stats = `
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4">
+                    <div class="bg-gray-50 rounded-lg border border-gray-200 px-4 py-3"><p class="text-xs text-gray-500">起始 IP</p><p class="text-sm font-mono font-semibold text-gray-900 mt-0.5">${esc(d.start)}</p></div>
+                    <div class="bg-gray-50 rounded-lg border border-gray-200 px-4 py-3"><p class="text-xs text-gray-500">结束 IP</p><p class="text-sm font-mono font-semibold text-gray-900 mt-0.5">${esc(d.end)}</p></div>
+                    <div class="bg-gray-50 rounded-lg border border-gray-200 px-4 py-3"><p class="text-xs text-gray-500">范围总 IP</p><p class="text-sm font-mono font-semibold text-gray-900 mt-0.5">${d.total_ips.toLocaleString()}</p></div>
+                    <div class="bg-gray-50 rounded-lg border border-gray-200 px-4 py-3"><p class="text-xs text-gray-500">${mode === 'cover' ? '最小覆盖网段' : '精确拆分网段'}</p><p class="text-sm font-mono font-semibold text-gray-900 mt-0.5">${mode === 'cover' ? cover.count : exact.count} 个</p></div>
+                </div>`;
+            let mainHtml = '';
+            if (mode === 'cover') {
+                // 最小覆盖：通常 1 个 CIDR，简洁高亮
+                const coverItems = cover.cidrs.map(c => `<div class="flex items-center justify-between px-4 py-3 hover:bg-green-100">
+                    <span class="font-mono text-green-800 font-medium">${esc(c.cidr)}</span>
+                    <div class="flex items-center gap-3"><span class="text-xs text-green-700">${c.ip_count.toLocaleString()} IP${cover.extra_ips > 0 ? `（含范围外 ${cover.extra_ips} 个）` : ''}</span>
+                    <button onclick="copySingle('${esc(c.cidr)}')" class="px-2 py-1 text-xs text-green-700 hover:bg-green-200 rounded">复制</button></div></div>`).join('');
+                mainHtml = `<div class="border border-green-200 rounded-lg overflow-hidden bg-green-50">
+                    <div class="px-4 py-2.5 bg-green-100 border-b border-green-200 text-xs text-green-800 font-medium">最小覆盖（推荐）</div>
+                    <div class="divide-y divide-green-200">${coverItems}</div>
+                </div>
+                <div class="mt-3 text-xs text-gray-500 px-1">💡 块可超出范围少量 IP（${cover.extra_ips} 个），适合防火墙/安全组配置；如需严格不超出范围，可切换「精确拆分」</div>`;
+            } else {
+                // 精确覆盖：列出所有 CIDR
+                mainHtml = `<div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <div class="px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-xs text-gray-500">精确拆分（范围严格不超出，共 ${exact.count} 个）</div>
+                    <div class="max-h-80 overflow-y-auto divide-y divide-gray-100">${exact.cidrs.map(c => `<div class="flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50">
+                        <span class="font-mono text-gray-900">${esc(c.cidr)}</span>
+                        <div class="flex items-center gap-3"><span class="text-xs text-gray-400">${c.ip_count.toLocaleString()} IP</span>
+                        <button onclick="copySingle('${esc(c.cidr)}')" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">复制</button></div></div>`).join('')}</div>
+                </div>`;
+            }
+            // 切换按钮 + 一键复制
+            const allCover = cover.cidrs.map(c => c.cidr).join('\n');
+            const allExact = exact.cidrs.map(c => c.cidr).join('\n');
+            const copyTarget = mode === 'cover' ? allCover : allExact;
+            const toggleBtn = mode === 'cover'
+                ? `<button onclick="renderUtRangeResult('exact')" class="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">📋 查看精确拆分（${exact.count} 个）</button>`
+                : `<button onclick="renderUtRangeResult('cover')" class="px-3 py-1.5 text-xs border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50">🔙 返回最小覆盖</button>`;
+            $('#utRangeResult').innerHTML = utResultBox(`
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-sm font-medium text-gray-900">范围 <span class="font-mono">${esc(d.start)} ~ ${esc(d.end)}</span></span>
+                        <div class="flex items-center gap-2">${toggleBtn}<button onclick="copySingle('${esc(copyTarget)}')" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700">📋 一键复制全部</button></div>
+                    </div>
+                    ${stats}${mainHtml}`);
+        }
 
         // --- 时间戳 ---
         async function utTsConvert() {
@@ -7339,7 +7454,7 @@
 
     // 强制版本同步：每次更新 JS 后改 VERSION，旧版本 localStorage 自动 reload
     (function() {
-        const VERSION = '2026-08-26-v12';
+        const VERSION = '2026-08-28-v14';
         try {
             if (localStorage.getItem('__code_version') !== VERSION) {
                 localStorage.setItem('__code_version', VERSION);

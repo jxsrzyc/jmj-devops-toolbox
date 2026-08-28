@@ -1208,6 +1208,14 @@ def utils_cidr():
     return jsonify(opsutils.cidr_calc(data.get("cidr", "")))
 
 
+@app.route("/api/utils/range-to-cidrs", methods=["POST"])
+@login_required
+def utils_range_to_cidrs():
+    """IP 范围 → 最少 CIDR 网段集合"""
+    data = request.get_json(silent=True) or {}
+    return jsonify(opsutils.range_to_cidrs(data.get("start", ""), data.get("end", "")))
+
+
 @app.route("/api/utils/timestamp", methods=["POST"])
 @login_required
 def utils_timestamp():
