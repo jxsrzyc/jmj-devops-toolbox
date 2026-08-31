@@ -1830,18 +1830,39 @@
 
         <!-- 用户管理页面 -->
         <div id="page-users" class="p-6 flex-1 flex flex-col min-h-0 hidden">
-            <div class="flex items-center justify-between mb-6">
-                <div><h2 class="text-xl font-bold text-gray-900">用户管理</h2><p class="text-sm text-gray-500">管理用户账号、显示名、密码和权限（仅管理员可见）</p></div>
-                <button onclick="openUserAddModal()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">+ 新增用户</button>
+            <div class="flex items-center justify-between mb-4">
+                <div><h2 class="text-xl font-bold text-gray-900">用户管理</h2><p class="text-sm text-gray-500">管理用户账号、显示名、密码和权限 + 凭证密码审计记录（仅管理员可见）</p></div>
+                <button id="usersAddBtn" onclick="openUserAddModal()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">+ 新增用户</button>
             </div>
-            <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
-                <div class="overflow-y-auto flex-1 min-h-0">
-                    <table class="w-full text-sm text-left">
-                        <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
-                            <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">用户名</th><th class="px-4 py-3 font-medium text-gray-600">显示名</th><th class="px-4 py-3 font-medium text-gray-600">认证方式</th><th class="px-4 py-3 font-medium text-gray-600">权限</th><th class="px-4 py-3 font-medium text-gray-600">状态</th><th class="px-4 py-3 font-medium text-gray-600">创建时间</th><th class="px-4 py-3 font-medium text-gray-600 w-52 whitespace-nowrap">操作</th></tr>
-                    </thead>
-                    <tbody id="usersTableBody"><tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
-                </table>
+            <!-- Tab 切换：用户列表 / 密码审计 -->
+            <div class="flex items-center gap-1 mb-4 border-b border-gray-200">
+                <button onclick="switchUsersTab('list')" id="usersTab-list" class="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 -mb-px">用户列表</button>
+                <button onclick="switchUsersTab('audit')" id="usersTab-audit" class="px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 -mb-px">密码审计</button>
+            </div>
+            <!-- 子视图1：用户列表 -->
+            <div id="usersView-list" class="flex-1 flex flex-col min-h-0">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                    <div class="overflow-y-auto flex-1 min-h-0">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
+                                <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">用户名</th><th class="px-4 py-3 font-medium text-gray-600">显示名</th><th class="px-4 py-3 font-medium text-gray-600">认证方式</th><th class="px-4 py-3 font-medium text-gray-600">权限</th><th class="px-4 py-3 font-medium text-gray-600">状态</th><th class="px-4 py-3 font-medium text-gray-600">创建时间</th><th class="px-4 py-3 font-medium text-gray-600 w-52 whitespace-nowrap">操作</th></tr>
+                        </thead>
+                        <tbody id="usersTableBody"><tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+            <!-- 子视图2：密码审计 -->
+            <div id="usersView-audit" class="flex-1 flex flex-col min-h-0 hidden">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                    <div class="overflow-y-auto flex-1 min-h-0">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
+                                <tr><th class="px-4 py-3 font-medium text-gray-600 w-14">#</th><th class="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">查看时间</th><th class="px-4 py-3 font-medium text-gray-600">用户</th><th class="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">来源 IP</th><th class="px-4 py-3 font-medium text-gray-600">凭证 ID</th><th class="px-4 py-3 font-medium text-gray-600">业务名</th><th class="px-4 py-3 font-medium text-gray-600">环境</th><th class="px-4 py-3 font-medium text-gray-600">User-Agent</th></tr>
+                        </thead>
+                        <tbody id="pwdAuditBody"><tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
+                    </table>
+                    </div>
                 </div>
             </div>
         </div>
@@ -2573,7 +2594,7 @@
             document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
             pageEl.classList.remove('hidden');
             if (page === 'dashboard') loadDashboard();
-            if (page === 'users') loadUsers();
+            if (page === 'users') switchUsersTab('list');
             if (page === 'credentials') { loadCredDatalists(); loadCredentials(); }
             if (page === 'netip') netIpLoadMyip();
             if (page === 'bizlinks') bizLinkLoad();
@@ -6893,6 +6914,74 @@
         scSetMode('deg');
         scHistoryRender();
         // ==================== 用户管理（仅 admin）====================
+        let _usersTab = 'list';
+        function switchUsersTab(tab) {
+            _usersTab = tab;
+            const active = 'px-4 py-2 text-sm font-medium -mb-px text-blue-600 border-b-2 border-blue-600';
+            const idle = 'px-4 py-2 text-sm font-medium -mb-px text-gray-500 border-b-2 border-transparent hover:text-gray-700';
+            const listBtn = document.getElementById('usersTab-list');
+            const auditBtn = document.getElementById('usersTab-audit');
+            if (listBtn) listBtn.className = (tab === 'list' ? active : idle);
+            if (auditBtn) auditBtn.className = (tab === 'audit' ? active : idle);
+            const vList = document.getElementById('usersView-list');
+            const vAudit = document.getElementById('usersView-audit');
+            if (vList) vList.classList.toggle('hidden', tab !== 'list');
+            if (vAudit) vAudit.classList.toggle('hidden', tab !== 'audit');
+            const addBtn = document.getElementById('usersAddBtn');
+            if (addBtn) addBtn.classList.toggle('hidden', tab !== 'list');
+            if (tab === 'list') loadUsers();
+            if (tab === 'audit') loadPasswordAudits();
+        }
+
+        // 时间格式化：ISO/RFC1123/MySQL 字符串 → "YYYY-MM-DD HH:MM:SS"（仅改显示，不动后端）
+        // 修复：Flask 默认把 naive datetime 序列化为 'Mon, 31 Aug 2026 17:16:39 GMT'
+        //       → 浏览器 new Date(str) 解析为 UTC 时间戳，再用本地 getHours() 输出
+        //       → 在 UTC+8 浏览器上把 17:16 翻成次日 01:16，导致审计时间偏移 16h。
+        // 修复策略：fallback 分支按 UTC 输出（与浏览器时区无关），保证数据库存的数值原样显示。
+        function formatDateTime(s) {
+            if (!s) return '-';
+            const str = String(s);
+            // ISO: "2026-08-31T17:16:39" / MySQL: "2026-08-31 17:16:39" — 优先正则直接抽（与时区无关）
+            const m = str.match(/^(\d{4})-(\d{2})-(\d{2})[T ](\d{2}):(\d{2}):(\d{2})/);
+            if (m) return `${m[1]}-${m[2]}-${m[3]} ${m[4]}:${m[5]}:${m[6]}`;
+            // RFC 1123: "Mon, 31 Aug 2026 17:16:39 GMT" — 用 UTC 输出，避免浏览器时区叠加
+            const d = new Date(str);
+            if (!isNaN(d.getTime())) {
+                const pad = n => String(n).padStart(2, '0');
+                return `${d.getUTCFullYear()}-${pad(d.getUTCMonth() + 1)}-${pad(d.getUTCDate())} ${pad(d.getUTCHours())}:${pad(d.getUTCMinutes())}:${pad(d.getUTCSeconds())}`;
+            }
+            return str;
+        }
+
+        // 凭证密码查看审计（谁在何时查看了哪条凭证的密码 — 永久留痕）
+        async function loadPasswordAudits() {
+            const body = document.getElementById('pwdAuditBody');
+            if (!body) return;
+            body.innerHTML = '<tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr>';
+            try {
+                const res = await api('/api/audit/password-reveal?limit=100');
+                if (res.code !== 0) {
+                    body.innerHTML = `<tr><td colspan="8" class="px-4 py-12 text-center text-red-400">${esc(res.message || '加载失败')}</td></tr>`;
+                    return;
+                }
+                const list = res.data || [];
+                body.innerHTML = list.length === 0
+                    ? '<tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">暂无密码查看记录</td></tr>'
+                    : list.map((r, i) => `<tr class="table-row-hover border-b border-gray-100">
+                        <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
+                        <td class="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">${esc(formatDateTime(r.created_at))}</td>
+                        <td class="px-4 py-3 font-medium">${esc(r.username)}</td>
+                        <td class="px-4 py-3 text-xs text-gray-600">${esc(r.client_ip || '-')}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500">#${r.credential_id}</td>
+                        <td class="px-4 py-3">${esc(r.service_name || '-')}</td>
+                        <td class="px-4 py-3 text-xs">${esc(r.env || '-')}</td>
+                        <td class="px-4 py-3 text-xs text-gray-400 max-w-[260px] truncate" title="${esc(r.user_agent || '')}">${esc(r.user_agent || '-')}</td>
+                    </tr>`).join('');
+            } catch (err) {
+                body.innerHTML = `<tr><td colspan="8" class="px-4 py-12 text-center text-red-400">${esc('加载失败: ' + err.message)}</td></tr>`;
+            }
+        }
+
         async function loadUsers() {
             const res = await api('/api/users');
             if (res.code === 0) {
@@ -7454,7 +7543,7 @@
 
     // 强制版本同步：每次更新 JS 后改 VERSION，旧版本 localStorage 自动 reload
     (function() {
-        const VERSION = '2026-08-28-v14';
+        const VERSION = '2026-08-31-v19';
         try {
             if (localStorage.getItem('__code_version') !== VERSION) {
                 localStorage.setItem('__code_version', VERSION);

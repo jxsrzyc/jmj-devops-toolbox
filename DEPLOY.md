@@ -34,10 +34,12 @@ export DB_ENGINE=sqlite
 # 3. 启动（首次自动建表 + 默认 admin 账号）
 python3 app.py
 # → 访问 http://127.0.0.1:5001 → 跳转到登录页
-# → 默认账号: admin / admin123
+# → 默认账号: admin / nvcg6rBc8d#EZww6  （2026-08-31 起强密码，旧 admin123 作废）
 ```
 
 > **依赖安装**：`pip install -r requirements.txt`（含 dnspython）。网络工具模块的 MTR 路由在 macOS 需 `brew install mtr`、Linux 需 `yum/apt install mtr`（Windows 自动降级为 pathping）。
+
+> **v2.10 升级提示**：新增 `password_audit_log`（凭证密码审计）表，`init_db()` 启动时自动创建，**无需手动建表/迁移**；存量库升级只需重启服务。
 
 ### 1.3 常用操作
 
@@ -158,6 +160,8 @@ Dockerfile 已 `apt-get install` 这 3 个包；如本地构建需镜像包含�
 | `SECRET_KEY` | 内置固定值 | Flask session 加密密钥（生产环境建议覆盖） |
 | `PWD_SALT` | 内置固定值 | SHA-256 密码加盐（生产环境建议覆盖） |
 | `CRED_SECRET_KEY` | 内置派生值 | 服务凭证密码加密密钥（44 字符 urlsafe base64，**生产必须自定义**，泄漏=凭证可解密） |
+| `ALLOWED_ORIGINS` | `http://localhost:5001,http://127.0.0.1:5001` | **CORS 白名单（v2.11 新增）**——逗号分隔 origin 列表；只有这些 origin 能带 cookie 跨域调 API；生产内网访问需把对应域加进来 |
+| `SESSION_COOKIE_SECURE` | `false` | **v2.11 新增**——session cookie 是否仅 HTTPS（`true` 强制 HTTPS-only；内网 HTTP 留 false） |
 | `FLASK_ENV` | `production` (Docker) | Flask 运行模式 |
 
 ### LDAP 环境变量（可选，开启后本地+LDAP 双认证）
@@ -241,7 +245,7 @@ python3 migrate.py
 Docker/K8s 部署后数据库是空的，需要：
 
 ```bash
-# 1. 登录 admin / admin123
+# 1. 登录 admin / nvcg6rBc8d#EZww6
 # 2. 各模块右上角「Excel 操作 → 导入」：
 #    - 蓝鲸发版参数管理：~/Downloads/蓝鲸云效服务发版参数列表.xlsx
 #    - 云效创建变更单参数：~/Downloads/云效创建变更单.xlsx

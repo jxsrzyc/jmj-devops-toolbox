@@ -86,7 +86,9 @@ DB_ENGINE=sqlite python3 app.py
 
 | 用户名 | 密码 | 权限 |
 |--------|------|------|
-| `admin` | `admin123` | `*` — 管理员（全部功能 + 用户管理） |
+| `admin` | `nvcg6rBc8d#EZww6` | `*` — 管理员（全部功能 + 用户管理） |
+
+> 🔑 **2026-08-31 起 admin 密码已升级为强密码**（旧密码 `admin123` 已作废）；`database.py` 初始化种子同步更新（仅新库生效）。
 
 ### ⚠️ 数据库安全提示
 
@@ -212,7 +214,7 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 
 ---
 
-## 六、数据库设计（7 张表）
+## 六、数据库设计
 
 ### `service_params`
 发版参数管理：id, business_module, service_name, create_change_params, run_devflow_params, env, created_at, updated_at
@@ -237,6 +239,9 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 
 ### `users`
 用户认证：id, username, password_hash (SHA-256), display_name, permissions, is_active, **auth_source (local/ldap)**, created_at
+
+### `password_audit_log`
+凭证密码查看审计（v2.10 新增，**永久保留不滚动清理**）：id, username(查看人), credential_id, service_name(业务名冗余快照), env, client_ip(来源 IP), user_agent, created_at(查看时间)
 
 ---
 
@@ -291,6 +296,21 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 ---
 
 ## 八、版本记录
+
+### v2.11 (2026-08-31)
+- 🔐 **安全加固 · B+C 项落地**
+  - **B CORS 白名单**：`CORS(app, supports_credentials=True, origins=ALLOWED_ORIGINS)`；从 `.env` 读 `ALLOWED_ORIGINS`（逗号分隔）；默认仅 `http://localhost:5001, http://127.0.0.1:5001`；恶意 origin 不再自动带 session cookie（防 CSRF）
+  - **C session cookie 加固**：`HTTPONLY=True`（防 XSS 读 cookie）、`SAMESITE='Lax'`（防 CSRF）、`PERMANENT_SESSION_LIFETIME=8h`（8 小时过期）；`SESSION_COOKIE_SECURE` 由 `.env` 控制（内网 HTTP 默认 false，生产 HTTPS 建议 true）
+  - **secret_key 升级**：优先 `.env` `SECRET_KEY` → `.env` `CRED_SECRET_KEY` → 硬编码默认值（启动 warn 提醒）
+- 🕒 **审计表时间改 `YYYY-MM-DD HH:MM:SS`**：前端 `formatDateTime()` 函数（兼容 ISO/RFC1123/MySQL 字符串），后端 JSON 序列化零改动（不影响其他模块日期字段）
+  - 🐛 **热修复**：Flask 默认 `DefaultJSONProvider` 把 naive datetime 序列化为 RFC 1123（带 `GMT` 后缀 = 声明 UTC），原 fallback 用本地 `getHours()` 在 UTC+8 浏览器上把 `17:16` 翻成次日 `01:16`（偏差 16 小时、跨日）。改为 `getUTCHours()` 系列后与浏览器时区无关，数据库存的数值原样显示
+
+### v2.10 (2026-08-31)
+- 🔐 **凭证密码查看审计（安全加固 · 方案 A）**：`reveal-password` 接口每次解密返回明文密码时**强制写入审计日志**——记录 用户/凭证ID/业务名/环境/来源IP/User-Agent/时间
+- ✨ 新表 `password_audit_log`（SQLite/MySQL 双模式自动建表；**不设 200 条滚动清理，永久保留**取证）
+- ✨ 用户管理页面改为 **「用户列表 | 密码审计」双 Tab**：密码审计表格倒序展示最近 100 条（时间/用户/来源IP/凭证ID/业务名/环境/UA），仅管理员可见
+- 🔌 新增 `GET /api/audit/password-reveal?limit=N`（`@require_perm("admin")`，最多 500 条）；审计写入端 `db.add_password_audit(...)` 失败静默降级（不影响密码复制主流程）
+- 📌 安全说明：谁在何时查看了哪条凭证密码**从此留痕可查**；该表数据仅通过 admin 审计接口展示，不进入首页最近活动
 
 ### v2.9 (2026-08-28)
 - 🚀 CIDR 子网计算器新增 **「IP 范围 → 网段」** Tab：输入起始/结束 IP（或直接粘贴 `120.236.160.1 - 120.236.175.254`，自动解析 `-`/`~`/`到`/`—` 分隔）→ 同时返回**最小覆盖**（推荐，1 个 CIDR 包住整个范围）和**精确拆分**（范围严格不超出）

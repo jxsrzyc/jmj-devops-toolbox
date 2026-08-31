@@ -313,13 +313,28 @@ def _init_db_sqlite():
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_activity_created ON activity_log(created_at);")
+        # 凭证密码查看审计表（永久保留，不做 200 条滚动清理）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS password_audit_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                username VARCHAR(100) NOT NULL,
+                credential_id INTEGER NOT NULL,
+                service_name VARCHAR(200) DEFAULT '',
+                env VARCHAR(50) DEFAULT '',
+                client_ip VARCHAR(64) DEFAULT '',
+                user_agent VARCHAR(300) DEFAULT '',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_pwd_audit_created ON password_audit_log(created_at);")
+        conn.execute("CREATE INDEX IF NOT EXISTS idx_pwd_audit_user ON password_audit_log(username);")
         conn.commit()
 
         from auth import hash_password
         conn.execute("""
             INSERT OR IGNORE INTO users (username, password_hash, display_name, permissions, is_active)
             VALUES ('admin', ?, '管理员', '*', 1)
-        """, (hash_password("admin123"),))
+        """, (hash_password("nvcg6rBc8d#EZww6"),))
         conn.commit()
         # 兼容旧库：auth_source 列不存在则补充
         cols = [r["name"] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
@@ -579,6 +594,21 @@ def _init_db_mysql():
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
         _mysql_ensure_index(conn, "activity_log", "idx_activity_created", "created_at")
+        # 凭证密码查看审计表（永久保留，不做 200 条滚动清理）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS password_audit_log (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                username VARCHAR(100) NOT NULL,
+                credential_id INT NOT NULL,
+                service_name VARCHAR(200) DEFAULT '',
+                env VARCHAR(50) DEFAULT '',
+                client_ip VARCHAR(64) DEFAULT '',
+                user_agent VARCHAR(300) DEFAULT '',
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
+        _mysql_ensure_index(conn, "password_audit_log", "idx_pwd_audit_created", "created_at")
+        _mysql_ensure_index(conn, "password_audit_log", "idx_pwd_audit_user", "username")
         conn.commit()
 
         # 默认 admin 账号
@@ -586,7 +616,7 @@ def _init_db_mysql():
         conn.execute("""
             INSERT IGNORE INTO users (username, password_hash, display_name, permissions, is_active)
             VALUES ('admin', %s, '管理员', '*', 1)
-        """, (hash_password("admin123"),))
+        """, (hash_password("nvcg6rBc8d#EZww6"),))
         conn.commit()
         # 兼容旧库：auth_source 列不存在则补充
         row = conn.execute(
@@ -1101,6 +1131,35 @@ class Database:
                 (cutoff,)
             ).fetchall()
             return {str(r["day"]): int(r["cnt"]) for r in rows}
+
+    # ---------- password_audit_log（凭证密码审计，永久保留） ----------
+    def add_password_audit(self, username, credential_id, service_name="", env="", client_ip="", user_agent=""):
+        """记录一次凭证密码查看（谁/何时/哪条/来源 IP/UA，不滚动清理）"""
+        try:
+            with get_conn() as conn:
+                conn.execute(
+                    "INSERT INTO password_audit_log (username, credential_id, service_name, env, client_ip, user_agent) "
+                    "VALUES (?, ?, ?, ?, ?, ?)",
+                    (str(username)[:100], int(credential_id), str(service_name)[:200],
+                     str(env)[:50], str(client_ip)[:64], str(user_agent)[:300])
+                )
+                conn.commit()
+        except Exception as e:
+            print(f"[password_audit] 写入失败: {e}")
+
+    def get_password_audits(self, limit=100):
+        """密码查看审计记录（倒序，最近 limit 条）"""
+        try:
+            with get_conn() as conn:
+                rows = conn.execute(
+                    "SELECT id, username, credential_id, service_name, env, client_ip, user_agent, created_at "
+                    "FROM password_audit_log ORDER BY id DESC LIMIT ?",
+                    (limit,)
+                ).fetchall()
+                return [dict(r) for r in rows]
+        except Exception as e:
+            print(f"[password_audit] 查询失败: {e}")
+            return []
 
     def reorder_categories(self, items):
         """批量更新分类顺序 items = [{'name': str, 'sort_order': int}, ...]"""

@@ -3,7 +3,8 @@
 
 import os
 import sys
-from datetime import datetime
+import logging
+from datetime import datetime, timedelta
 from flask import Flask, jsonify, request, render_template, session, redirect, url_for
 from flask_cors import CORS
 from database import db
@@ -13,8 +14,31 @@ from auth import login_required, require_perm, hash_password, get_user_context, 
 from holidays_data import get_builtin_holidays
 
 app = Flask(__name__)
-CORS(app, supports_credentials=True)
-app.secret_key = "lanqi-svc-params-secret-2026"
+
+# ========== 安全配置（CORS 白名单 + session cookie 加固）==========
+# CORS 白名单：仅白名单内 origin 可带 cookie 跨域调 API，避免 CSRF
+# 从 .env 读 ALLOWED_ORIGINS（逗号分隔），未设置则用本地默认值
+_DEFAULT_ORIGINS = "http://localhost:5001,http://127.0.0.1:5001"
+_cors_raw = os.environ.get("ALLOWED_ORIGINS", _DEFAULT_ORIGINS).strip()
+ALLOWED_ORIGINS = [o.strip() for o in _cors_raw.split(",") if o.strip()]
+CORS(app, supports_credentials=True, origins=ALLOWED_ORIGINS)
+
+# session cookie 安全
+# 优先级：.env SECRET_KEY > .env CRED_SECRET_KEY > 硬编码（启动时 warn 提醒）
+_secret_key = os.environ.get("SECRET_KEY") or os.environ.get("CRED_SECRET_KEY") or "lanqi-svc-params-secret-2026"
+if _secret_key == "lanqi-svc-params-secret-2026":
+    logging.warning("[SECURITY] SECRET_KEY 走默认值（仅开发用）— 生产请在 .env 设置 SECRET_KEY=随机长串")
+app.secret_key = _secret_key
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,                # JS 无法读 session cookie（防 XSS）
+    SESSION_COOKIE_SAMESITE='Lax',               # 防 CSRF：跨站 GET 之外请求不自动带 cookie
+    SESSION_COOKIE_SECURE=os.environ.get('SESSION_COOKIE_SECURE', 'false').lower() == 'true',  # HTTPS-only（生产建议 true）
+    PERMANENT_SESSION_LIFETIME=timedelta(hours=8),  # 8 小时过期（强制重登）
+)
+
+logger = logging.getLogger('lanqi-security')
+logger.info(f"[SECURITY] CORS 白名单: {ALLOWED_ORIGINS}")
+logger.info(f"[SECURITY] Session cookie: HTTPONLY=True SAMESITE=Lax SECURE={app.config['SESSION_COOKIE_SECURE']} LIFETIME=8h")
 
 # 防 HTML/API 响应被浏览器缓存（确保 JS / API 修改立即生效）
 @app.after_request
@@ -351,13 +375,22 @@ def get_credential(cid):
 @app.route("/api/credentials/<int:cid>/reveal-password", methods=["GET"])
 @require_perm("admin")
 def reveal_credential_password(cid):
-    """管理员查看密码明文（解密返回，仅供紧急排障）"""
+    """管理员查看密码明文（解密返回，仅供紧急排障）— 每次查看必写审计日志"""
     from crypto import decrypt_password
     item = db.get_credential_by_id(cid)
     if not item:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
     cipher = item.get("password", "") or ""
     plain = decrypt_password(cipher) if cipher else ""
+    # 审计：谁在何时查看了哪条凭证的密码（含来源 IP + UA，永久留痕）
+    db.add_password_audit(
+        session.get("username", ""),
+        cid,
+        service_name=item.get("service_name", ""),
+        env=item.get("env", ""),
+        client_ip=request.remote_addr or "",
+        user_agent=(request.headers.get("User-Agent", "") or "")[:300],
+    )
     return jsonify({"code": 0, "data": {"password": plain}})
 
 
@@ -1804,6 +1837,18 @@ def remove_user(uid):
         return jsonify({"code": 400, "message": "不能删除管理员账号"}), 400
     db.delete_user(uid)
     return jsonify({"code": 0, "message": "删除成功"})
+
+
+@app.route("/api/audit/password-reveal", methods=["GET"])
+@require_perm("admin")
+def list_password_audits():
+    """凭证密码查看审计记录（仅管理员，最多返回 500 条）"""
+    try:
+        limit = min(max(int(request.args.get("limit", 100)), 1), 500)
+    except (TypeError, ValueError):
+        limit = 100
+    records = db.get_password_audits(limit)
+    return jsonify({"code": 0, "data": records})
 
 # ==================== 启动 ====================
 
