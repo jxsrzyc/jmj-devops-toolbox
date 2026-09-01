@@ -197,12 +197,11 @@
 
         // 物理参数（活泼漂浮模式）
         let gravityStrength = 0.14;
-        let friction = 0.985;
-        let windStrength = 0.06;
+        let friction = 0.99;               // 衰减更慢 → 速度更柔和
+        let windStrength = 0.07;           // 柔风扰动：推动力再加大（0.05 → 0.07）
         let gravityEnabled = false;        // ★ 默认关闭
         let gravityAngle = Math.PI / 2;
         let paused = false;                // ★ 暂停标志
-        const minSpeed = 1.0;
 
         // 图标池
         const iconSources = [
@@ -318,12 +317,12 @@
         class Icon {
             constructor(x, y, img) {
                 this.x = x; this.y = y;
-                this.vx = (Math.random() - 0.5) * 4;
-                this.vy = (Math.random() - 0.5) * 4;
+                this.vx = (Math.random() - 0.5) * 3.2;   // 起始速度再加快（2.5 → 3.2）
+                this.vy = (Math.random() - 0.5) * 3.2;
                 this.size = 58 + Math.random() * 20;   // 更大：58 ～ 78px
                 this.img = img;
                 this.rotation = Math.random() * Math.PI * 2;
-                this.rotSpeed = (Math.random() - 0.5) * 0.04;
+                this.rotSpeed = (Math.random() - 0.5) * 0.012;  // 旋转放缓（原 0.04）
                 this.alpha = 0;
                 this.targetAlpha = 0.95;
                 this.dragging = false;
@@ -342,14 +341,6 @@
 
                 this.vx *= friction;
                 this.vy *= friction;
-
-                // 最低速度（防止静止堆积）
-                const speed = Math.sqrt(this.vx * this.vx + this.vy * this.vy);
-                if (speed < minSpeed) {
-                    const angle = Math.random() * Math.PI * 2;
-                    this.vx += Math.cos(angle) * minSpeed * 0.6;
-                    this.vy += Math.sin(angle) * minSpeed * 0.6;
-                }
 
                 this.x += this.vx;
                 this.y += this.vy;
@@ -398,10 +389,10 @@
             if (paused || i.dragging) return;
             const r = i.size / 2;
             let hit = false, hx = i.x, hy = i.y;
-            if (i.x < r) { i.x = r; i.vx = Math.abs(i.vx) * 0.92 + 0.4; hit = true; hx = r; hy = i.y; }
-            if (i.x > W - r) { i.x = W - r; i.vx = -Math.abs(i.vx) * 0.92 - 0.4; hit = true; hx = W - r; hy = i.y; }
-            if (i.y < r) { i.y = r; i.vy = Math.abs(i.vy) * 0.92 + 0.4; hit = true; hx = i.x; hy = r; }
-            if (i.y > H - r) { i.y = H - r; i.vy = -Math.abs(i.vy) * 0.92 - 0.4; hit = true; hx = i.x; hy = H - r; }
+            if (i.x < r) { i.x = r; i.vx = -Math.abs(i.vx) * 0.88; hit = true; hx = r; hy = i.y; }
+            if (i.x > W - r) { i.x = W - r; i.vx = Math.abs(i.vx) * 0.88; hit = true; hx = W - r; hy = i.y; }
+            if (i.y < r) { i.y = r; i.vy = -Math.abs(i.vy) * 0.88; hit = true; hx = i.x; hy = r; }
+            if (i.y > H - r) { i.y = H - r; i.vy = Math.abs(i.vy) * 0.88; hit = true; hx = i.x; hy = H - r; }
 
             // 只在重力开启时撞击四周才喷溅
             if (hit && gravityEnabled) {
@@ -577,7 +568,7 @@
             const t = (Date.now() - t0) / 1000;
 
             // 背景颜色轻微残影
-            ctx.fillStyle = 'rgba(250, 251, 252, 0.25)';
+            ctx.fillStyle = 'rgba(250, 251, 252, 0.08)';
             ctx.fillRect(0, 0, W, H);
 
             // 背景环境小颗粒（始终动，与重力/暂停无关）
