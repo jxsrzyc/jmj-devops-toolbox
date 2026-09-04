@@ -10,7 +10,7 @@ from flask_cors import CORS
 from database import db
 from models import ServiceParam
 from excel_utils import excel_response, format_dt
-from auth import login_required, require_perm, hash_password, get_user_context, ALL_PERMISSIONS, PERMISSIONS
+from auth import login_required, require_perm, hash_password, get_user_context, user_has_perm
 from holidays_data import get_builtin_holidays
 
 app = Flask(__name__)
@@ -102,6 +102,13 @@ def login_page():
             if not ldap_info:
                 return jsonify({"code": 401, "message": "用户名或密码错误"}), 401
             default_perms = os.environ.get("LDAP_DEFAULT_PERMS", "release")
+            # v2.16：JIT 默认挂「发版」角色（LDAP_DEFAULT_ROLE 可自定义角色名，角色不存在则回退 legacy permissions）
+            default_role = os.environ.get("LDAP_DEFAULT_ROLE", "发版").strip()
+            role_ids = ""
+            if default_role:
+                role = next((r for r in db.get_roles() if r["name"] == default_role), None)
+                if role:
+                    role_ids = str(role["id"])
             display_name = ldap_info.get("display_name") or username
             # 本地密码置为随机值（LDAP 用户不走本地密码登录）
             db.create_user(
@@ -109,6 +116,7 @@ def login_page():
                 display_name=display_name,
                 permissions=default_perms,
                 auth_source="ldap",
+                role_ids=role_ids,
             )
             user = db.get_user_by_username(username)
 
@@ -117,6 +125,7 @@ def login_page():
         session["username"] = user["username"]
         session["display_name"] = user["display_name"] or user["username"]
         session["permissions"] = user["permissions"]
+        session["role_ids"] = dict(user).get("role_ids", "") or ""
         session["auth_source"] = dict(user).get("auth_source", "local")
         db.add_activity(user["username"], "login", "系统", "登录了系统")
         return jsonify({"code": 0, "message": "登录成功", "data": {"username": user["username"]}})
@@ -136,12 +145,14 @@ def logout():
 def api_me():
     if "user_id" not in session:
         return jsonify({"code": 401})
+    from auth import _roles_display
     return jsonify({
         "code": 0,
         "data": {
             "username": session.get("username"),
             "display_name": session.get("display_name"),
             "permissions": session.get("permissions"),
+            "roles_display": _roles_display(),
             "auth_source": session.get("auth_source", "local"),
         }
     })
@@ -166,7 +177,7 @@ def get_envs():
 # ==================== 服务参数 CRUD ====================
 
 @app.route("/api/services", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:params")
 def get_services():
     """获取服务列表，支持按业务模块、环境、关键词筛选"""
     module = request.args.get("module", "").strip()
@@ -186,7 +197,7 @@ def get_services():
 
 
 @app.route("/api/services/export", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:params")
 def export_services():
     """导出筛选结果的全部参数（用于批量复制）"""
     module = request.args.get("module", "").strip()
@@ -208,7 +219,7 @@ def export_services():
 
 
 @app.route("/api/services/<int:sid>", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:params")
 def get_service(sid):
     """获取单个服务详情"""
     service = db.get_service_by_id(sid)
@@ -218,7 +229,7 @@ def get_service(sid):
 
 
 @app.route("/api/services", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:params")
 def create_service():
     """新增服务"""
     data = request.get_json()
@@ -238,7 +249,7 @@ def create_service():
 
 
 @app.route("/api/services/<int:sid>", methods=["PUT"])
-@require_perm("release")
+@require_perm("rel:params")
 def update_service(sid):
     """更新服务"""
     data = request.get_json()
@@ -249,7 +260,7 @@ def update_service(sid):
 
 
 @app.route("/api/services/<int:sid>", methods=["DELETE"])
-@require_perm("release")
+@require_perm("rel:params")
 def delete_service(sid):
     """删除服务"""
     ok = db.delete_service(sid)
@@ -261,7 +272,7 @@ def delete_service(sid):
 # ==================== 批量导入 ====================
 
 @app.route("/api/import", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:params")
 def import_excel():
     """从 Excel 导入数据"""
     try:
@@ -291,11 +302,19 @@ def import_excel():
 
 # ==================== 服务凭证 CRUD ====================
 
+def _cred_env_ok(env: str) -> bool:
+    """凭证环境级权限校验（v2.15）：空 env = 业务环境汇总（cred:all），否则 cred:<env>"""
+    env = (env or "").strip()
+    return user_has_perm(f"cred:{env}" if env else "cred:all")
+
+
 @app.route("/api/credentials", methods=["GET"])
 @require_perm("credentials")
 def get_credentials():
     """查询凭证列表（支持 env + 业务名称 name + 关键词 keyword + 业务用途 purpose + 密码脱敏）"""
     env = request.args.get("env", "").strip()
+    if not _cred_env_ok(env):
+        return jsonify({"code": 403, "message": "无此环境访问权限"}), 403
     name = request.args.get("name", "").strip()
     keyword = request.args.get("keyword", "").strip()
     ctype = request.args.get("type", "").strip()
@@ -377,6 +396,8 @@ def get_credential(cid):
     item = db.get_credential_by_id(cid)
     if not item:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
+    if not _cred_env_ok(item.get("env", "")):
+        return jsonify({"code": 403, "message": "无此环境访问权限"}), 403
     if item.get("password"):
         item["password"] = "●●●●●●●●"
     return jsonify({"code": 0, "data": item})
@@ -412,6 +433,8 @@ def create_credential():
     data = request.get_json()
     if not data.get("service_name"):
         return jsonify({"code": 400, "message": "缺少必填字段: service_name"}), 400
+    if not _cred_env_ok(data.get("env", "")):
+        return jsonify({"code": 403, "message": "无此环境写入权限"}), 403
     # 密码加密后再入库
     if data.get("password"):
         data["password"] = encrypt_password(data["password"])
@@ -427,6 +450,12 @@ def update_credential(cid):
     """更新凭证（密码为空不覆盖原密码，非空则加密）"""
     from crypto import encrypt_password
     data = request.get_json()
+    # 环境级权限：原记录环境 + 变更后环境都需有权限
+    old = db.get_credential_by_id(cid)
+    if not old:
+        return jsonify({"code": 404, "message": "记录不存在"}), 404
+    if not _cred_env_ok(old.get("env", "")) or not _cred_env_ok(data.get("env", old.get("env", ""))):
+        return jsonify({"code": 403, "message": "无此环境写入权限"}), 403
     if "password" in data:
         if data["password"] in (None, "", "●●●●●●●●"):
             # 未修改密码：移除字段不更新
@@ -444,6 +473,11 @@ def update_credential(cid):
 @require_perm("credentials")
 def delete_credential(cid):
     """删除凭证"""
+    old = db.get_credential_by_id(cid)
+    if not old:
+        return jsonify({"code": 404, "message": "记录不存在"}), 404
+    if not _cred_env_ok(old.get("env", "")):
+        return jsonify({"code": 403, "message": "无此环境删除权限"}), 403
     ok = db.delete_credential(cid)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -528,11 +562,21 @@ def get_credential_owners():
 
 # ==================== 域名管理 CRUD ====================
 
+def _dom_root_ok(root: str) -> bool:
+    """域名主域级权限校验（v2.15）：dom:<root>；未指定 root 时拥有任一主域权限即可"""
+    root = (root or "").strip()
+    if root:
+        return user_has_perm(f"dom:{root}")
+    return user_has_perm("domains")
+
+
 @app.route("/api/domains", methods=["GET"])
 @require_perm("domains")
 def get_domains():
     """查询域名列表"""
     root = request.args.get("root", "").strip()
+    if not _dom_root_ok(root):
+        return jsonify({"code": 403, "message": "无此主域名访问权限"}), 403
     keyword = request.args.get("keyword", "").strip()
     env = request.args.get("env", "").strip()
     dtype = request.args.get("type", "").strip()
@@ -556,6 +600,8 @@ def get_domain(did):
     item = db.get_domain_by_id(did)
     if not item:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
+    if not _dom_root_ok(item.get("root_domain", "")):
+        return jsonify({"code": 403, "message": "无此主域名访问权限"}), 403
     return jsonify({"code": 0, "data": item})
 
 
@@ -565,6 +611,8 @@ def create_domain():
     data = request.get_json()
     if not data.get("domain_name"):
         return jsonify({"code": 400, "message": "缺少必填字段: domain_name"}), 400
+    if not _dom_root_ok(data.get("root_domain", "")):
+        return jsonify({"code": 403, "message": "无此主域名写入权限"}), 403
     did = db.create_domain(**data)
     db.add_activity(session.get("username", ""), "create", "域名管理",
                     f"新增域名「{data.get('domain_name', '')}」")
@@ -575,6 +623,11 @@ def create_domain():
 @require_perm("domains")
 def update_domain(did):
     data = request.get_json()
+    old = db.get_domain_by_id(did)
+    if not old:
+        return jsonify({"code": 404, "message": "记录不存在"}), 404
+    if not _dom_root_ok(old.get("root_domain", "")) or not _dom_root_ok(data.get("root_domain", old.get("root_domain", ""))):
+        return jsonify({"code": 403, "message": "无此主域名写入权限"}), 403
     ok = db.update_domain(did, **data)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -585,6 +638,11 @@ def update_domain(did):
 @app.route("/api/domains/<int:did>", methods=["DELETE"])
 @require_perm("domains")
 def delete_domain(did):
+    old = db.get_domain_by_id(did)
+    if not old:
+        return jsonify({"code": 404, "message": "记录不存在"}), 404
+    if not _dom_root_ok(old.get("root_domain", "")):
+        return jsonify({"code": 403, "message": "无此主域名删除权限"}), 403
     ok = db.delete_domain(did)
     if not ok:
         return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -1093,7 +1151,7 @@ def import_domains():
 # ---------- 发版参数 ----------
 
 @app.route("/api/services/export-xlsx", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:params")
 def export_services_xlsx():
     """导出当前筛选的发版参数为 xlsx"""
     module = request.args.get("module", "").strip()
@@ -1109,7 +1167,7 @@ def export_services_xlsx():
 
 
 @app.route("/api/services/template", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:params")
 def services_template():
     """下载发版参数导入模板"""
     headers = ["业务模块", "服务名称", "创建变更单参数", "运行研发流程参数", "服务环境"]
@@ -1140,7 +1198,7 @@ def _validate_net_host():
 
 @app.route("/api/nettools/myip", methods=["GET"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:ip")
 def nettools_myip():
     """本机出口 IP 查询（服务端视角）"""
     ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or ""
@@ -1151,7 +1209,7 @@ def nettools_myip():
 
 @app.route("/api/nettools/ip", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:ip")
 def nettools_ip():
     """IP 归属地查询"""
     ok, host, err, code = _validate_net_host()
@@ -1162,7 +1220,7 @@ def nettools_ip():
 
 @app.route("/api/nettools/ping", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:ping")
 def nettools_ping():
     """PING 检测"""
     ok, host, err, code = _validate_net_host()
@@ -1178,7 +1236,7 @@ def nettools_ping():
 
 @app.route("/api/nettools/tcping", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:tcping")
 def nettools_tcping():
     """TCPing 端口连通性测试"""
     ok, host, err, code = _validate_net_host()
@@ -1194,7 +1252,7 @@ def nettools_tcping():
 
 @app.route("/api/nettools/dns", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:dns")
 def nettools_dns():
     """DNS 记录查询"""
     ok, host, err, code = _validate_net_host()
@@ -1208,7 +1266,7 @@ def nettools_dns():
 
 @app.route("/api/nettools/route", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:route")
 def nettools_route():
     """路由查询（Traceroute）"""
     ok, host, err, code = _validate_net_host()
@@ -1222,7 +1280,7 @@ def nettools_route():
 
 @app.route("/api/nettools/mtr", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:mtr")
 def nettools_mtr():
     """MTR 路由去程"""
     ok, host, err, code = _validate_net_host()
@@ -1236,7 +1294,7 @@ def nettools_mtr():
 
 @app.route("/api/nettools/cdn", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:cdn")
 def nettools_cdn():
     """CDN 服务商识别"""
     ok, host, err, code = _validate_net_host()
@@ -1247,7 +1305,7 @@ def nettools_cdn():
 
 @app.route("/api/nettools/whois", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:whois")
 def nettools_whois():
     """Whois 域名注册信息查询（仅格式校验，允许内网/公司私有域名查询公共注册库）"""
     data = request.get_json(silent=True) or {}
@@ -1260,7 +1318,7 @@ def nettools_whois():
 
 @app.route("/api/nettools/ssl", methods=["POST"])
 @login_required
-@require_perm("nettools")
+@require_perm("net:ssl")
 def nettools_ssl():
     """SSL 证书信息 + TLS 协议支持检测（仅格式校验，运维常查公司私有域名证书）"""
     data = request.get_json(silent=True) or {}
@@ -1280,7 +1338,7 @@ import opsutils
 
 @app.route("/api/utils/cidr", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:cidr")
 def utils_cidr():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.cidr_calc(data.get("cidr", "")))
@@ -1288,7 +1346,7 @@ def utils_cidr():
 
 @app.route("/api/utils/range-to-cidrs", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:cidr")
 def utils_range_to_cidrs():
     """IP 范围 → 最少 CIDR 网段集合"""
     data = request.get_json(silent=True) or {}
@@ -1297,7 +1355,7 @@ def utils_range_to_cidrs():
 
 @app.route("/api/utils/timestamp", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:timestamp")
 def utils_timestamp():
     data = request.get_json(silent=True) or {}
     tz = int(data.get("tz", 8))
@@ -1306,7 +1364,7 @@ def utils_timestamp():
 
 @app.route("/api/utils/json", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:json")
 def utils_json():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.json_format(data.get("text", ""), int(data.get("indent", 2))))
@@ -1314,7 +1372,7 @@ def utils_json():
 
 @app.route("/api/utils/encode", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:encode")
 def utils_encode():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.encode_hash(data.get("text", ""), data.get("action", "base64_encode"), data.get("algo", "sha256")))
@@ -1322,7 +1380,7 @@ def utils_encode():
 
 @app.route("/api/utils/webhook", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:webhook")
 def utils_webhook():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.webhook_test(data.get("url", ""), data.get("method", "POST"),
@@ -1331,7 +1389,7 @@ def utils_webhook():
 
 @app.route("/api/utils/batch-tcping", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:batch")
 def utils_batch_tcping():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.batch_tcping(data.get("items", [])))
@@ -1339,7 +1397,7 @@ def utils_batch_tcping():
 
 @app.route("/api/utils/batch-ping", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:pingping")
 def utils_batch_ping():
     """批量 PING 检测（最多 50 条，并发执行）"""
     data = request.get_json(silent=True) or {}
@@ -1356,7 +1414,7 @@ def utils_batch_ping():
 
 @app.route("/api/utils/http-health", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:health")
 def utils_http_health():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.http_health(data.get("url", ""), int(data.get("timeout", 10))))
@@ -1364,7 +1422,7 @@ def utils_http_health():
 
 @app.route("/api/utils/cert-monitor", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:cert")
 def utils_cert_monitor():
     data = request.get_json(silent=True) or {}
     domains = data.get("domains", [])
@@ -1375,7 +1433,7 @@ def utils_cert_monitor():
 
 @app.route("/api/utils/yaml-check", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:yaml")
 def utils_yaml_check():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.yaml_check(data.get("text", "")))
@@ -1383,7 +1441,7 @@ def utils_yaml_check():
 
 @app.route("/api/utils/curl", methods=["POST"])
 @login_required
-@require_perm("utils")
+@require_perm("ut:curl")
 def utils_curl():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.curl_debug(data.get("command", "")))
@@ -1564,7 +1622,7 @@ def domains_template():
 # ---------- 云效创建变更单 ----------
 
 @app.route("/api/ci-orders", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def get_ci_orders():
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 20))
@@ -1577,14 +1635,14 @@ def get_ci_orders():
     return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
 
 @app.route("/api/ci-orders/<int:cid>", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def get_ci_order(cid):
     item = db._ci_get_by_id("ci_orders", cid)
     if not item: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "data": item})
 
 @app.route("/api/ci-orders", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def create_ci_order():
     data = request.get_json()
     if not data.get("delivery_service"): return jsonify({"code": 400, "message": "缺少服务名"}), 400
@@ -1592,25 +1650,25 @@ def create_ci_order():
     return jsonify({"code": 0, "data": {"id": cid}})
 
 @app.route("/api/ci-orders/<int:cid>", methods=["PUT"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def update_ci_order(cid):
     ok = db._ci_update("ci_orders", cid, **request.get_json())
     if not ok: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "更新成功"})
 
 @app.route("/api/ci-orders/<int:cid>", methods=["DELETE"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def delete_ci_order(cid):
     if not db._ci_delete("ci_orders", cid): return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "删除成功"})
 
 @app.route("/api/ci-orders/envs", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def ci_orders_envs():
     return jsonify({"code": 0, "data": db._ci_envs("ci_orders")})
 
 @app.route("/api/ci-orders/import", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def import_ci_orders():
     try:
         import pandas as pd
@@ -1629,7 +1687,7 @@ def import_ci_orders():
         return jsonify({"code": 500, "message": str(e)}), 500
 
 @app.route("/api/ci-orders/export", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def export_ci_orders():
     items, _ = db.get_ci_orders(keyword=request.args.get("keyword","").strip(), env=request.args.get("env","").strip(), page=1, page_size=10000)
     headers = ["应用交付服务", "创建变更单环境", "生产发版分支", "应用代码仓库标识符(appCodeRepoSn)"]
@@ -1637,7 +1695,7 @@ def export_ci_orders():
     return excel_response(headers, rows, f"云效创建变更单_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", sheet_name="创建变更单")
 
 @app.route("/api/ci-orders/template", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:ciorders")
 def ci_orders_template():
     headers = ["应用交付服务", "创建变更单环境", "生产发版分支", "应用代码仓库标识符(appCodeRepoSn)"]
     example = [["minipg-taier", "中国", "master", "67e20e77c3104bd3af699d591e80dd34"], ["aws-member", "北美", "north-america", "xxx"]]
@@ -1647,7 +1705,7 @@ def ci_orders_template():
 # ---------- 云效运行研发流程 ----------
 
 @app.route("/api/ci-devflow", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def get_ci_devflows():
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 20))
@@ -1660,14 +1718,14 @@ def get_ci_devflows():
     return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
 
 @app.route("/api/ci-devflow/<int:cid>", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def get_ci_devflow(cid):
     item = db._ci_get_by_id("ci_devflow", cid)
     if not item: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "data": item})
 
 @app.route("/api/ci-devflow", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def create_ci_devflow():
     data = request.get_json()
     if not data.get("delivery_service"): return jsonify({"code": 400, "message": "缺少服务名"}), 400
@@ -1675,25 +1733,25 @@ def create_ci_devflow():
     return jsonify({"code": 0, "data": {"id": cid}})
 
 @app.route("/api/ci-devflow/<int:cid>", methods=["PUT"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def update_ci_devflow(cid):
     ok = db._ci_update("ci_devflow", cid, **request.get_json())
     if not ok: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "更新成功"})
 
 @app.route("/api/ci-devflow/<int:cid>", methods=["DELETE"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def delete_ci_devflow(cid):
     if not db._ci_delete("ci_devflow", cid): return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "删除成功"})
 
 @app.route("/api/ci-devflow/envs", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def ci_devflow_envs():
     return jsonify({"code": 0, "data": db._ci_envs("ci_devflow")})
 
 @app.route("/api/ci-devflow/import", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def import_ci_devflow():
     try:
         import pandas as pd
@@ -1711,7 +1769,7 @@ def import_ci_devflow():
         return jsonify({"code": 500, "message": str(e)}), 500
 
 @app.route("/api/ci-devflow/export", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def export_ci_devflow():
     items, _ = db.get_ci_devflows(keyword=request.args.get("keyword","").strip(), env=request.args.get("env","").strip(), page=1, page_size=10000)
     headers = ["应用交付服务", "研发流程环境", "发布流程唯一序列号(releaseWorkflowSn)", "发布流程阶段唯一序列号(releaseStageSn)"]
@@ -1719,7 +1777,7 @@ def export_ci_devflow():
     return excel_response(headers, rows, f"云效运行研发流程_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", sheet_name="运行研发流程")
 
 @app.route("/api/ci-devflow/template", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:cidevflow")
 def ci_devflow_template():
     headers = ["应用交付服务", "研发流程环境", "发布流程唯一序列号(releaseWorkflowSn)", "发布流程阶段唯一序列号(releaseStageSn)"]
     example = [["aws-member", "北美", "b77477fc3d8148c9b7c1f8b6cd01649d", "6437ee23dfea478285da9d4d62d3a2e5"], ["member-taier", "中国", "xxx", "xxx"]]
@@ -1729,7 +1787,7 @@ def ci_devflow_template():
 # ==================== 发版修复记录 ====================
 
 @app.route("/api/fix-records", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def get_fix_records():
     """发版修复记录列表（关键词/技术线/类型/星期/日期范围 多条件筛选）"""
     page = int(request.args.get("page", 1))
@@ -1748,14 +1806,14 @@ def get_fix_records():
 
 
 @app.route("/api/fix-records/filters", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def fix_records_filters():
     """发版修复记录筛选下拉选项"""
     return jsonify({"code": 0, "data": db.get_fix_filters()})
 
 
 @app.route("/api/fix-records/<int:rid>", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def get_fix_record(rid):
     item = db.get_fix_record_by_id(rid)
     if not item: return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -1763,7 +1821,7 @@ def get_fix_record(rid):
 
 
 @app.route("/api/fix-records", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def create_fix_record():
     data = request.get_json() or {}
     if not data.get("release_date") and not data.get("work_order") and not data.get("service_name"):
@@ -1774,7 +1832,7 @@ def create_fix_record():
 
 
 @app.route("/api/fix-records/<int:rid>", methods=["PUT"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def update_fix_record(rid):
     ok = db.update_fix_record(rid, **request.get_json())
     if not ok: return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -1783,7 +1841,7 @@ def update_fix_record(rid):
 
 
 @app.route("/api/fix-records/<int:rid>", methods=["DELETE"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def delete_fix_record(rid):
     if not db.delete_fix_record(rid): return jsonify({"code": 404, "message": "记录不存在"}), 404
     db.add_activity(session.get("username", ""), "delete", "发版修复记录", f"删除记录 #{rid}")
@@ -1791,7 +1849,7 @@ def delete_fix_record(rid):
 
 
 @app.route("/api/fix-records/import", methods=["POST"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def import_fix_records():
     """Excel 导入（覆盖式）：读取 ~/Downloads/发版修复记录.xlsx，支持中文表头"""
     try:
@@ -1821,7 +1879,7 @@ def import_fix_records():
 
 
 @app.route("/api/fix-records/export", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def export_fix_records():
     """导出当前筛选结果为 xlsx"""
     items, _ = db.get_fix_records(
@@ -1841,7 +1899,7 @@ def export_fix_records():
 
 
 @app.route("/api/fix-records/template", methods=["GET"])
-@require_perm("release")
+@require_perm("rel:fixrecords")
 def fix_records_template():
     headers = ["序号", "发布时间", "星期", "迭代日重复发版", "技术线", "重复发布工单", "工单链接", "重复发布服务", "重复发布类型", "重复发布原因"]
     example = [[1, "2026-01-08", "周四", "是", "后端", "《【发版】示例工单》",
@@ -1851,10 +1909,144 @@ def fix_records_template():
 
 # ==================== 用户管理 API（仅管理员可访问）====================
 
+# ==================== 角色管理（v2.15 RBAC，仅管理员） ====================
+
+def _normalize_role_perms(perms):
+    """角色权限点归一化：list 或逗号串 → 校验合法性的逗号串；非法返回 None"""
+    if isinstance(perms, str):
+        perms = [p.strip() for p in perms.split(",") if p.strip()]
+    perms = [str(p).strip() for p in (perms or []) if str(p).strip()]
+    from auth import ALL_PERMISSIONS
+    for p in perms:
+        if p != "*" and p not in ALL_PERMISSIONS:
+            return None
+    return ",".join(perms)
+
+
+def _normalize_role_ids(val):
+    """role_ids 归一化：list 或逗号串 → 校验角色存在的逗号串"""
+    if isinstance(val, (list, tuple)):
+        ids = [str(i).strip() for i in val if str(i).strip()]
+    else:
+        ids = [p.strip() for p in str(val or "").split(",") if p.strip()]
+    valid = {str(r["id"]) for r in db.get_roles()}
+    ids = [i for i in ids if i in valid]
+    return ",".join(ids)
+
+
+@app.route("/api/roles", methods=["GET"])
+@require_perm("admin")
+def list_roles():
+    """角色列表（附用户引用数 + 权限中文概览）"""
+    from auth import MODULE_PERMISSIONS, SUB_PERMISSIONS
+    roles = db.get_roles()
+    for r in roles:
+        r["user_count"] = db.count_users_with_role(r["id"])
+        perms = [p.strip() for p in (r["permissions"] or "").split(",") if p.strip()]
+        if perms == ["*"]:
+            r["perm_summary"] = "全部权限"
+        else:
+            labels = [MODULE_PERMISSIONS.get(p) or SUB_PERMISSIONS.get(p) or p for p in perms]
+            r["perm_summary"] = "、".join(labels)
+    return jsonify({"code": 0, "data": roles})
+
+
+@app.route("/api/roles", methods=["POST"])
+@require_perm("admin")
+def add_role():
+    """新增自定义角色"""
+    body = request.get_json(silent=True) or {}
+    name = str(body.get("name", "")).strip()
+    description = str(body.get("description", "")).strip()
+    if not name:
+        return jsonify({"code": 400, "message": "角色名称必填"}), 400
+    if len(name) > 50:
+        return jsonify({"code": 400, "message": "角色名称过长（≤50 字）"}), 400
+    if any(r["name"] == name for r in db.get_roles()):
+        return jsonify({"code": 400, "message": f"角色「{name}」已存在"}), 400
+    perms = _normalize_role_perms(body.get("permissions", []))
+    if perms is None:
+        return jsonify({"code": 400, "message": "存在非法权限点"}), 400
+    if not perms:
+        return jsonify({"code": 400, "message": "请至少勾选一个权限"}), 400
+    rid = db.create_role(name, description, perms, 0)
+    db.add_activity(session.get("username", ""), "create", "角色管理", f"新增角色「{name}」")
+    return jsonify({"code": 0, "message": "角色已新增", "data": {"id": rid}})
+
+
+@app.route("/api/roles/<int:rid>", methods=["PUT"])
+@require_perm("admin")
+def edit_role(rid):
+    """编辑角色。规则：内置「管理员」(*) 角色仅允许改描述；内置角色（运维/开发/测试）允许改权限与描述、不可改名；自定义角色全部可改"""
+    role = db.get_role_by_id(rid)
+    if not role:
+        return jsonify({"code": 404, "message": "角色不存在"}), 404
+    body = request.get_json(silent=True) or {}
+    fields = {}
+    if "description" in body:
+        fields["description"] = str(body.get("description", "")).strip()
+    is_star_role = (role["permissions"] or "").strip() == "*"
+    if not is_star_role:
+        if "name" in body and not role["is_system"]:
+            new_name = str(body.get("name", "")).strip()
+            if not new_name:
+                return jsonify({"code": 400, "message": "角色名称必填"}), 400
+            if new_name != role["name"] and any(r["name"] == new_name for r in db.get_roles()):
+                return jsonify({"code": 400, "message": f"角色「{new_name}」已存在"}), 400
+            fields["name"] = new_name
+        if "permissions" in body:
+            perms = _normalize_role_perms(body.get("permissions"))
+            if perms is None:
+                return jsonify({"code": 400, "message": "存在非法权限点"}), 400
+            if not perms:
+                return jsonify({"code": 400, "message": "请至少勾选一个权限"}), 400
+            fields["permissions"] = perms
+    if not fields:
+        return jsonify({"code": 400, "message": "该角色为内置管理员角色，仅描述可修改"}), 400
+    ok = db.update_role(rid, **fields)
+    if not ok:
+        return jsonify({"code": 404, "message": "角色不存在"}), 404
+    db.add_activity(session.get("username", ""), "update", "角色管理",
+                    f"更新角色「{fields.get('name') or role['name']}」")
+    return jsonify({"code": 0, "message": "角色已更新（受影响用户即时生效）"})
+
+
+@app.route("/api/roles/<int:rid>", methods=["DELETE"])
+@require_perm("admin")
+def remove_role(rid):
+    """删除角色（内置角色不可删）。被用户引用时自动从用户 role_ids 摘除（v2.16），
+    摘除后用户回退到保留的 legacy permissions 快照，权限不变"""
+    role = db.get_role_by_id(rid)
+    if not role:
+        return jsonify({"code": 404, "message": "角色不存在"}), 404
+    if role["is_system"]:
+        return jsonify({"code": 400, "message": f"内置角色「{role['name']}」不可删除"}), 400
+    ok, detached = db.delete_role(rid)
+    if not ok:
+        return jsonify({"code": 404, "message": "角色不存在"}), 404
+    db.add_activity(session.get("username", ""), "delete", "角色管理", f"删除角色「{role['name']}」")
+    msg = f"角色「{role['name']}」已删除"
+    if detached:
+        msg += f"，已从 {detached} 个用户移除该角色"
+    return jsonify({"code": 0, "message": msg})
+
+
+# ==================== 用户管理（仅管理员） ====================
+
 @app.route("/api/users", methods=["GET"])
 @require_perm("admin")
 def list_users():
     users = db.get_users()
+    roles_map = {str(r["id"]): r["name"] for r in db.get_roles()}
+    for u in users:
+        ids = [x.strip() for x in (u.get("role_ids") or "").split(",") if x.strip()]
+        names = [roles_map[i] for i in ids if i in roles_map]
+        if u.get("permissions") == "*":
+            u["roles_display"] = "管理员"
+        elif names:
+            u["roles_display"] = "、".join(names)
+        else:
+            u["roles_display"] = u.get("permissions") or ""
     return jsonify({"code": 0, "data": users})
 
 
@@ -1866,10 +2058,14 @@ def add_user():
     password = data.get("password", "").strip()
     if not username or not password:
         return jsonify({"code": 400, "message": "用户名和密码不能为空"}), 400
+    role_ids = _normalize_role_ids(data.get("role_ids", ""))
+    if data.get("role_ids") and not role_ids:
+        return jsonify({"code": 400, "message": "角色不存在或已失效"}), 400
     try:
         uid = db.create_user(username, password,
                              data.get("display_name", username),
-                             data.get("permissions", "release,credentials,domains"))
+                             data.get("permissions", ""),
+                             role_ids=role_ids)
         return jsonify({"code": 0, "data": {"id": uid}})
     except Exception as e:
         return jsonify({"code": 500, "message": f"创建失败: {e}"}), 500
@@ -1879,6 +2075,11 @@ def add_user():
 @require_perm("admin")
 def edit_user(uid):
     data = request.get_json()
+    if "role_ids" in data:
+        role_ids = _normalize_role_ids(data.get("role_ids"))
+        if data.get("role_ids") and not role_ids:
+            return jsonify({"code": 400, "message": "角色不存在或已失效"}), 400
+        data["role_ids"] = role_ids
     if not db.update_user(uid, **data):
         return jsonify({"code": 404, "message": "用户不存在"}), 404
     return jsonify({"code": 0, "message": "更新成功"})

@@ -109,26 +109,34 @@
                 </svg>
             </a>
             <div id="ciSubmenu" class="ml-9 border-l border-gray-200 hidden">
+                {% if has_perm('rel:params') %}
                 <a href="#" onclick="switchCiTab('params'); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     data-ci-tab="params" id="ciSub-params">
                     蓝鲸发版参数管理
                 </a>
+                {% endif %}
+                {% if has_perm('rel:ciorders') %}
                 <a href="#" onclick="switchCiTab('ciorders'); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     data-ci-tab="ciorders" id="ciSub-ciorders">
                     云效创建变更单参数
                 </a>
+                {% endif %}
+                {% if has_perm('rel:cidevflow') %}
                 <a href="#" onclick="switchCiTab('cidevflow'); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     data-ci-tab="cidevflow" id="ciSub-cidevflow">
                     云效运行研发流程参数
                 </a>
+                {% endif %}
+                {% if has_perm('rel:fixrecords') %}
                 <a href="#" onclick="switchCiTab('fixrecords'); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     data-ci-tab="fixrecords" id="ciSub-fixrecords">
                     发版修复记录
                 </a>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -145,53 +153,71 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </a>
-            <!-- 凭证子菜单 -->
+            <!-- 凭证子菜单（v2.15：环境级权限控制） -->
             <div id="credSubmenu" class="hidden ml-9 border-l border-gray-200">
+                {% if has_perm('cred:all') %}
                 <a href="#" onclick="switchCredEnv('', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-all" data-cred-env="">
                     业务环境汇总
                 </a>
+                {% endif %}
+                {% if has_perm('cred:超融合电信开发环境') %}
                 <a href="#" onclick="switchCredEnv('超融合电信开发环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-超融合电信开发环境" data-cred-env="超融合电信开发环境">
                     超融合电信开发环境
                 </a>
+                {% endif %}
+                {% if has_perm('cred:超融合南沙生产环境') %}
                 <a href="#" onclick="switchCredEnv('超融合南沙生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-超融合南沙生产环境" data-cred-env="超融合南沙生产环境">
                     超融合南沙生产环境
                 </a>
+                {% endif %}
+                {% if has_perm('cred:私有云测试环境') %}
                 <a href="#" onclick="switchCredEnv('私有云测试环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-私有云测试环境" data-cred-env="私有云测试环境">
                     私有云测试环境
                 </a>
+                {% endif %}
+                {% if has_perm('cred:私有云生产环境') %}
                 <a href="#" onclick="switchCredEnv('私有云生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-私有云生产环境" data-cred-env="私有云生产环境">
                     私有云生产环境
                 </a>
+                {% endif %}
+                {% if has_perm('cred:预生产环境') %}
                 <a href="#" onclick="switchCredEnv('预生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-预生产环境" data-cred-env="预生产环境">
                     预生产环境
                 </a>
+                {% endif %}
+                {% if has_perm('cred:国内生产环境') %}
                 <a href="#" onclick="switchCredEnv('国内生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-国内生产环境" data-cred-env="国内生产环境">
                     国内生产环境
                 </a>
+                {% endif %}
+                {% if has_perm('cred:新加坡生产环境') %}
                 <a href="#" onclick="switchCredEnv('新加坡生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-新加坡生产环境" data-cred-env="新加坡生产环境">
                     新加坡生产环境
                 </a>
+                {% endif %}
+                {% if has_perm('cred:北美生产环境') %}
                 <a href="#" onclick="switchCredEnv('北美生产环境', event); return false;"
                     class="sidebar-link sidebar-sub flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     id="credSub-北美生产环境" data-cred-env="北美生产环境">
                     北美生产环境
                 </a>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -208,23 +234,29 @@
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
             </a>
-            <!-- 域名子菜单 -->
+            <!-- 域名子菜单（v2.15：主域级权限控制） -->
             <div id="domainSubmenu" class="hidden ml-9 border-l border-gray-200">
+                {% if has_perm('dom:jmj1995.com') %}
                 <a href="#" onclick="switchDomainRoot('jmj1995.com'); return false;"
                     class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     data-domain="jmj1995.com" id="domainSub-jmj1995.com">
                     jmj1995.com
                 </a>
+                {% endif %}
+                {% if has_perm('dom:jiumaojiu.com') %}
                 <a href="#" onclick="switchDomainRoot('jiumaojiu.com'); return false;"
                     class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     data-domain="jiumaojiu.com" id="domainSub-jiumaojiu.com">
                     jiumaojiu.com
                 </a>
+                {% endif %}
+                {% if has_perm('dom:datousoft.com') %}
                 <a href="#" onclick="switchDomainRoot('datousoft.com'); return false;"
                     class="sidebar-link flex items-center gap-2 px-3 py-2 text-sm text-gray-600 border-l-3 border-transparent"
                     data-domain="datousoft.com" id="domainSub-datousoft.com">
                     datousoft.com
                 </a>
+                {% endif %}
             </div>
             {% endif %}
 
@@ -249,10 +281,18 @@
                         <span>网络诊断</span>
                     </button>
                     <div id="netg-diag" class="hidden">
+                        {% if has_perm('net:ping') %}
                         <a href="#" onclick="switchNetTab('ping'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="ping" id="netSub-ping">PING 检测</a>
+                        {% endif %}
+                        {% if has_perm('net:tcping') %}
                         <a href="#" onclick="switchNetTab('tcping'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="tcping" id="netSub-tcping">TCPing</a>
+                        {% endif %}
+                        {% if has_perm('net:route') %}
                         <a href="#" onclick="switchNetTab('route'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="route" id="netSub-route">路由查询</a>
+                        {% endif %}
+                        {% if has_perm('net:mtr') %}
                         <a href="#" onclick="switchNetTab('mtr'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="mtr" id="netSub-mtr">MTR 路由</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div data-net-group="netg-dns">
@@ -261,9 +301,15 @@
                         <span>DNS 域名</span>
                     </button>
                     <div id="netg-dns" class="hidden">
+                        {% if has_perm('net:dns') %}
                         <a href="#" onclick="switchNetTab('dns'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="dns" id="netSub-dns">DNS 查询</a>
+                        {% endif %}
+                        {% if has_perm('net:whois') %}
                         <a href="#" onclick="switchNetTab('whois'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="whois" id="netSub-whois">Whois 查询</a>
+                        {% endif %}
+                        {% if has_perm('net:ssl') %}
                         <a href="#" onclick="switchNetTab('ssl'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="ssl" id="netSub-ssl">SSL 检测</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div data-net-group="netg-ip">
@@ -272,8 +318,12 @@
                         <span>IP 查询</span>
                     </button>
                     <div id="netg-ip" class="hidden">
+                        {% if has_perm('net:ip') %}
                         <a href="#" onclick="switchNetTab('ip'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="ip" id="netSub-ip">IP 查询</a>
+                        {% endif %}
+                        {% if has_perm('net:cdn') %}
                         <a href="#" onclick="switchNetTab('cdn'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-net-tab="cdn" id="netSub-cdn">CDN 查询</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -300,9 +350,15 @@
                         <span>编码校验</span>
                     </button>
                     <div id="utg-encode" class="hidden">
+                        {% if has_perm('ut:json') %}
                         <a href="#" onclick="switchUtilsTab('json'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="json" id="utilsSub-json">JSON 格式化</a>
+                        {% endif %}
+                        {% if has_perm('ut:encode') %}
                         <a href="#" onclick="switchUtilsTab('encode'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="encode" id="utilsSub-encode">编码解码·哈希</a>
+                        {% endif %}
+                        {% if has_perm('ut:yaml') %}
                         <a href="#" onclick="switchUtilsTab('yaml'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="yaml" id="utilsSub-yaml">K8s YAML 检测</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div data-utils-group="utg-http">
@@ -311,9 +367,15 @@
                         <span>接口调试</span>
                     </button>
                     <div id="utg-http" class="hidden">
+                        {% if has_perm('ut:health') %}
                         <a href="#" onclick="switchUtilsTab('health'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="health" id="utilsSub-health">HTTP 健康检查</a>
+                        {% endif %}
+                        {% if has_perm('ut:curl') %}
                         <a href="#" onclick="switchUtilsTab('curl'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="curl" id="utilsSub-curl">Curl 请求调试</a>
+                        {% endif %}
+                        {% if has_perm('ut:webhook') %}
                         <a href="#" onclick="switchUtilsTab('webhook'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="webhook" id="utilsSub-webhook">Webhook 调试</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div data-utils-group="utg-batch">
@@ -322,9 +384,15 @@
                         <span>批量检测</span>
                     </button>
                     <div id="utg-batch" class="hidden">
+                        {% if has_perm('ut:cert') %}
                         <a href="#" onclick="switchUtilsTab('cert'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="cert" id="utilsSub-cert">证书批量到期检测</a>
+                        {% endif %}
+                        {% if has_perm('ut:batch') %}
                         <a href="#" onclick="switchUtilsTab('batch'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="batch" id="utilsSub-batch">批量端口连通性检测</a>
+                        {% endif %}
+                        {% if has_perm('ut:pingping') %}
                         <a href="#" onclick="switchUtilsTab('pingping'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="pingping" id="utilsSub-pingping">批量PING检测</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div data-utils-group="utg-text">
@@ -333,8 +401,12 @@
                         <span>文本工具</span>
                     </button>
                     <div id="utg-text" class="hidden">
+                        {% if has_perm('ut:diff') %}
                         <a href="#" onclick="switchUtilsTab('diff'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="diff" id="utilsSub-diff">文本比较</a>
+                        {% endif %}
+                        {% if has_perm('ut:dedup') %}
                         <a href="#" onclick="switchUtilsTab('dedup'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="dedup" id="utilsSub-dedup">文本去重</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div data-utils-group="utg-gen">
@@ -343,7 +415,9 @@
                         <span>辅助生成</span>
                     </button>
                     <div id="utg-gen" class="hidden">
+                        {% if has_perm('ut:generator') %}
                         <a href="#" onclick="switchUtilsTab('generator'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="generator" id="utilsSub-generator">生成器</a>
+                        {% endif %}
                     </div>
                 </div>
                 <div data-utils-group="utg-calc">
@@ -352,9 +426,15 @@
                         <span>计算换算</span>
                     </button>
                     <div id="utg-calc" class="hidden">
+                        {% if has_perm('ut:cidr') %}
                         <a href="#" onclick="switchUtilsTab('cidr'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="cidr" id="utilsSub-cidr">CIDR 子网计算器</a>
+                        {% endif %}
+                        {% if has_perm('ut:timestamp') %}
                         <a href="#" onclick="switchUtilsTab('timestamp'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="timestamp" id="utilsSub-timestamp">时间戳换算</a>
+                        {% endif %}
+                        {% if has_perm('ut:scicalc') %}
                         <a href="#" onclick="switchUtilsTab('scicalc'); return false;" class="sidebar-link flex items-center gap-2 px-6 py-1.5 text-sm text-gray-600 border-l-3 border-transparent" data-utils-tab="scicalc" id="utilsSub-scicalc">科学计算器</a>
+                        {% endif %}
                     </div>
                 </div>
             </div>
@@ -427,8 +507,8 @@
                         <span class="text-gray-900" id="infoDisplayName">{{ display_name }}</span>
                     </div>
                     <div class="px-2 py-1.5 flex items-center justify-between text-xs">
-                        <span class="text-gray-500">权限范围</span>
-                        <span class="text-gray-900 font-mono" id="infoPermissions">{{ permissions }}</span>
+                        <span class="text-gray-500">用户角色</span>
+                        <span class="text-gray-900" id="infoRoles" title="{{ roles_display }}">{{ roles_display }}</span>
                     </div>
                 </div>
 
@@ -1835,12 +1915,13 @@
         <!-- 用户管理页面 -->
         <div id="page-users" class="p-6 flex-1 flex flex-col min-h-0 hidden">
             <div class="flex items-center justify-between mb-4">
-                <div><h2 class="text-xl font-bold text-gray-900">用户管理</h2><p class="text-sm text-gray-500">管理用户账号、显示名、密码和权限 + 凭证密码审计记录（仅管理员可见）</p></div>
+                <div><h2 class="text-xl font-bold text-gray-900">用户管理</h2><p class="text-sm text-gray-500">管理用户账号、角色授权、密码 + 角色权限配置 + 凭证密码审计记录（仅管理员可见）</p></div>
                 <button id="usersAddBtn" onclick="openUserAddModal()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm">+ 新增用户</button>
             </div>
-            <!-- Tab 切换：用户列表 / 密码审计 -->
+            <!-- Tab 切换：用户列表 / 角色管理 / 密码审计 -->
             <div class="flex items-center gap-1 mb-4 border-b border-gray-200">
                 <button onclick="switchUsersTab('list')" id="usersTab-list" class="px-4 py-2 text-sm font-medium text-blue-600 border-b-2 border-blue-600 -mb-px">用户列表</button>
+                <button onclick="switchUsersTab('roles')" id="usersTab-roles" class="px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 -mb-px">角色管理</button>
                 <button onclick="switchUsersTab('audit')" id="usersTab-audit" class="px-4 py-2 text-sm font-medium text-gray-500 border-b-2 border-transparent hover:text-gray-700 -mb-px">密码审计</button>
             </div>
             <!-- 子视图1：用户列表 -->
@@ -1849,14 +1930,31 @@
                     <div class="overflow-y-auto flex-1 min-h-0">
                         <table class="w-full text-sm text-left">
                             <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
-                                <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">用户名</th><th class="px-4 py-3 font-medium text-gray-600">显示名</th><th class="px-4 py-3 font-medium text-gray-600">认证方式</th><th class="px-4 py-3 font-medium text-gray-600">权限</th><th class="px-4 py-3 font-medium text-gray-600">状态</th><th class="px-4 py-3 font-medium text-gray-600">创建时间</th><th class="px-4 py-3 font-medium text-gray-600 w-52 whitespace-nowrap">操作</th></tr>
+                                <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">用户名</th><th class="px-4 py-3 font-medium text-gray-600">显示名</th><th class="px-4 py-3 font-medium text-gray-600">认证方式</th><th class="px-4 py-3 font-medium text-gray-600">角色</th><th class="px-4 py-3 font-medium text-gray-600">状态</th><th class="px-4 py-3 font-medium text-gray-600">创建时间</th><th class="px-4 py-3 font-medium text-gray-600 w-52 whitespace-nowrap">操作</th></tr>
                         </thead>
                         <tbody id="usersTableBody"><tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
                     </table>
                     </div>
                 </div>
             </div>
-            <!-- 子视图2：密码审计 -->
+            <!-- 子视图2：角色管理（v2.15 RBAC） -->
+            <div id="usersView-roles" class="flex-1 flex flex-col min-h-0 hidden">
+                <div class="flex items-center justify-between mb-3">
+                    <p class="text-sm text-gray-500">角色 = 权限集合，用户可挂多个角色（有效权限 = 并集）。内置角色不可删除，权限可按需调整，保存后即时生效。</p>
+                    <button onclick="openRoleAddModal()" class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 shadow-sm whitespace-nowrap">+ 新增角色</button>
+                </div>
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
+                    <div class="overflow-y-auto flex-1 min-h-0">
+                        <table class="w-full text-sm text-left">
+                            <thead class="bg-gray-50 border-b border-gray-200 sticky top-0 z-10 bg-gray-50">
+                                <tr><th class="px-4 py-3 font-medium text-gray-600 w-12">#</th><th class="px-4 py-3 font-medium text-gray-600">角色名称</th><th class="px-4 py-3 font-medium text-gray-600">描述</th><th class="px-4 py-3 font-medium text-gray-600">权限概览</th><th class="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">用户数</th><th class="px-4 py-3 font-medium text-gray-600 whitespace-nowrap">操作</th></tr>
+                        </thead>
+                        <tbody id="rolesTableBody"><tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr></tbody>
+                    </table>
+                    </div>
+                </div>
+            </div>
+            <!-- 子视图3：密码审计 -->
             <div id="usersView-audit" class="flex-1 flex flex-col min-h-0 hidden">
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden flex-1 flex flex-col min-h-0">
                     <div class="overflow-y-auto flex-1 min-h-0">
@@ -2070,31 +2168,38 @@
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">用户名 <span class="text-red-500">*</span></label><input id="userFormUsername" type="text" required class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">显示名</label><input id="userFormDisplayName" type="text" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">密码 <span class="text-red-500 text-xs" id="userFormPwdRequired">*</span></label><input id="userFormPassword" type="password" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
-                    <div><label class="block text-sm font-medium text-gray-700 mb-1">权限（逗号分隔，留空 = 仅 release）</label>
-                        <select id="userFormPermissions" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
-                            <option value="*">* 全部权限（管理员）</option>
-                            <option value="release,credentials,domains,nettools,utils">release,credentials,domains,nettools,utils（全部，不含业务跳转）</option>
-                            <option value="release,credentials,domains,nettools,utils,bizlinks">release,credentials,domains,nettools,utils,bizlinks（全部含业务跳转）</option>
-                            <option value="release">release（仅发版管理）</option>
-                            <option value="credentials">credentials（仅服务凭证）</option>
-                            <option value="domains">domains（仅域名）</option>
-                            <option value="nettools">nettools（仅网络工具）</option>
-                            <option value="utils">utils（仅运维小工具）</option>
-                            <option value="bizlinks">bizlinks（仅业务跳转）</option>
-                            <option value="release,credentials">release,credentials</option>
-                            <option value="release,domains">release,domains</option>
-                            <option value="credentials,domains">credentials,domains</option>
-                            <option value="release,nettools">release,nettools</option>
-                            <option value="credentials,nettools">credentials,nettools</option>
-                            <option value="nettools,utils">nettools,utils（运维向）</option>
-                            <option value="release,bizlinks">release,bizlinks</option>
-                            <option value="credentials,bizlinks">credentials,bizlinks</option>
-                            <option value="release,credentials,bizlinks">release,credentials,bizlinks</option>
-                        </select>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">角色（可多选，权限 = 所选角色并集）</label>
+                        <div id="userFormRoles" class="w-full max-h-40 overflow-y-auto border border-gray-300 rounded-lg p-2 space-y-1.5 bg-white">
+                            <label class="flex items-center gap-2 text-sm text-gray-400 px-1">角色加载中...</label>
+                        </div>
                     </div>
                 </div>
                 <div class="flex justify-end gap-3 mt-6">
                     <button type="button" onclick="closeUserForm()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
+                    <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- 角色管理 新增/编辑弹窗（v2.15 RBAC 权限树） -->
+    <div id="roleFormModal" class="fixed inset-0 z-50 hidden items-center justify-center">
+        <div class="absolute inset-0 bg-black/40 modal-overlay" onclick="closeRoleForm()"></div>
+        <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl mx-4 p-6 modal-content max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between mb-4"><h3 class="text-lg font-bold text-gray-900" id="roleModalTitle">新增角色</h3>
+                <button onclick="closeRoleForm()" class="p-1 rounded-lg hover:bg-gray-100"><svg class="w-5 h-5 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg></button></div>
+            <form id="roleForm" onsubmit="saveRole(event)" class="flex flex-col min-h-0 flex-1">
+                <input type="hidden" id="roleFormId">
+                <div class="grid grid-cols-2 gap-3 mb-3">
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">角色名称 <span class="text-red-500">*</span></label><input id="roleFormName" type="text" required maxlength="50" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                    <div><label class="block text-sm font-medium text-gray-700 mb-1">描述</label><input id="roleFormDesc" type="text" maxlength="200" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none"></div>
+                </div>
+                <div class="mb-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-1">标签页权限 <span class="text-xs text-gray-400 font-normal">勾选模块 = 全选该模块子标签；也可单独勾选子标签（如 IP 查询、生成器）</span></label>
+                    <div id="roleFormPermTree" class="overflow-y-auto border border-gray-200 rounded-lg p-3 max-h-[46vh]"></div>
+                </div>
+                <div class="flex justify-end gap-3 mt-4 pt-3 border-t border-gray-100">
+                    <button type="button" onclick="closeRoleForm()" class="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 border border-gray-300">取消</button>
                     <button type="submit" class="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 shadow-sm">保存</button>
                 </div>
             </form>
@@ -2594,15 +2699,15 @@
         }
 
         // ==================== 页面切换 ====================
-        // 页面 → 所需权限（2026-09-04 v2.13 全模块权限闭环；undefined=dashboard 等所有登录用户可见）
+        // 页面 → 所需权限（2026-09-04 v2.15 子标签级权限；undefined=dashboard 等所有登录用户可见）
         const PAGE_PERM = {
-            params: 'release', ciorders: 'release', cidevflow: 'release', cifixrecords: 'release',
+            params: 'rel:params', ciorders: 'rel:ciorders', cidevflow: 'rel:cidevflow', cifixrecords: 'rel:fixrecords',
             credentials: 'credentials', domains: 'domains',
-            netip: 'nettools', netping: 'nettools', nettcping: 'nettools', netdns: 'nettools',
-            netroute: 'nettools', netmtr: 'nettools', netcdn: 'nettools', netwhois: 'nettools', netssl: 'nettools',
-            utcidr: 'utils', uttimestamp: 'utils', utjson: 'utils', utencode: 'utils', utwebhook: 'utils',
-            utbatch: 'utils', utcert: 'utils', uthealth: 'utils', utyaml: 'utils', utcurl: 'utils',
-            utgenerator: 'utils', utdedup: 'utils', utdiff: 'utils', utpingping: 'utils', utscicalc: 'utils',
+            netip: 'net:ip', netping: 'net:ping', nettcping: 'net:tcping', netdns: 'net:dns',
+            netroute: 'net:route', netmtr: 'net:mtr', netcdn: 'net:cdn', netwhois: 'net:whois', netssl: 'net:ssl',
+            utcidr: 'ut:cidr', uttimestamp: 'ut:timestamp', utjson: 'ut:json', utencode: 'ut:encode', utwebhook: 'ut:webhook',
+            utbatch: 'ut:batch', utcert: 'ut:cert', uthealth: 'ut:health', utyaml: 'ut:yaml', utcurl: 'ut:curl',
+            utgenerator: 'ut:generator', utdedup: 'ut:dedup', utdiff: 'ut:diff', utpingping: 'ut:pingping', utscicalc: 'ut:scicalc',
             bizlinks: 'bizlinks', users: 'admin',
         };
         function switchPage(page) {
@@ -2626,16 +2731,10 @@
         }
 
         // ==================== 首页 Dashboard ====================
-        // 权限表（模板注入；2026-09-04 v2.13 全模块权限闭环，替换原单一 CAN_BIZ）
-        const PERM = {
-            release: {{ 'true' if has_perm('release') else 'false' }},
-            credentials: {{ 'true' if has_perm('credentials') else 'false' }},
-            domains: {{ 'true' if has_perm('domains') else 'false' }},
-            nettools: {{ 'true' if has_perm('nettools') else 'false' }},
-            utils: {{ 'true' if has_perm('utils') else 'false' }},
-            bizlinks: {{ 'true' if has_perm('bizlinks') else 'false' }},
-            admin: {{ 'true' if permissions == '*' else 'false' }},
-        };
+        // 权限表（模板注入全集；2026-09-04 v2.15 RBAC 子标签级权限）
+        const PERM = {{ perm_json | safe }};
+        // 权限树（角色编辑弹窗用）
+        const PERM_TREE = {{ perm_tree_json | safe }};
         function canPerm(key) { return key ? !!PERM[key] : true; }
         const DASH_STAT_CARDS = [
             { key: 'services', label: '发版服务', perm: 'release', icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6', grad: 'from-blue-500 to-indigo-600', page: 'params' },
@@ -3471,8 +3570,9 @@
             arrow.classList.toggle('rotate-180');
         }
 
+        const CI_TAB_PERM = { params: 'rel:params', ciorders: 'rel:ciorders', cidevflow: 'rel:cidevflow', fixrecords: 'rel:fixrecords' };
         function switchCiTab(tab) {
-            if (!canPerm('release')) { showToast('无权限访问发版管理，请联系管理员授权', 'error'); return; }  // v2.13 权限闭环
+            if (!canPerm(CI_TAB_PERM[tab])) { showToast('无权限访问该子标签，请联系管理员授权', 'error'); return; }  // v2.15 子标签级权限
             ciActiveTab = tab;
             // ⚠️ 顺序很重要：先清掉所有 .sidebar-link 的 active（包括子标签），
             // 再给当前点击的子标签加 active，否则会被一起清掉
@@ -4393,6 +4493,7 @@
         }
         // 切换环境子标签（侧边栏）
         function switchCredEnv(env, e) {
+            if (!canPerm(env ? `cred:${env}` : 'cred:all')) { showToast('无权限访问该环境，请联系管理员授权', 'error'); return; }  // v2.15 环境级权限
             credEnv = env; credPage = 1;
             // 切到凭证页（switchPage 会清掉所有 sidebar-link.active，所以先切再设）
             switchPage('credentials');
@@ -4875,6 +4976,7 @@
         let filterOptionsLoaded = false; // 避免筛选时重复重建下拉
 
         async function switchDomainRoot(root) {
+            if (!canPerm(`dom:${root}`)) { showToast('无权限访问该主域名，请联系管理员授权', 'error'); return; }  // v2.15 主域级权限
             domRoot = root; domPage = 1; domKeyword = ''; domType = ''; domEnv = ''; domRegion = '';
             $('#domFilterKeyword').value = '';
             ddlReset('domFilterRegion'); ddlReset('domFilterType'); ddlReset('domFilterEnv');
@@ -5168,6 +5270,7 @@
         }
 
         function switchNetTab(tab) {
+            if (!canPerm(`net:${tab}`)) { showToast('无权限访问该工具，请联系管理员授权', 'error'); return; }  // v2.15 子标签级权限
             netActiveTab = tab;
             // 先切页（switchPage 会清 active），再设置高亮
             document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
@@ -5742,7 +5845,7 @@
         }
 
         function switchUtilsTab(tab) {
-            if (!canPerm('utils')) { showToast('无权限访问运维小工具，请联系管理员授权', 'error'); return; }  // v2.13 权限闭环
+            if (!canPerm(`ut:${tab}`)) { showToast('无权限访问该工具，请联系管理员授权', 'error'); return; }  // v2.15 子标签级权限
             utilsActiveTab = tab;
             document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
             const page = document.getElementById(`page-ut${tab}`);
@@ -6961,16 +7064,21 @@
             const active = 'px-4 py-2 text-sm font-medium -mb-px text-blue-600 border-b-2 border-blue-600';
             const idle = 'px-4 py-2 text-sm font-medium -mb-px text-gray-500 border-b-2 border-transparent hover:text-gray-700';
             const listBtn = document.getElementById('usersTab-list');
+            const rolesBtn = document.getElementById('usersTab-roles');
             const auditBtn = document.getElementById('usersTab-audit');
             if (listBtn) listBtn.className = (tab === 'list' ? active : idle);
+            if (rolesBtn) rolesBtn.className = (tab === 'roles' ? active : idle);
             if (auditBtn) auditBtn.className = (tab === 'audit' ? active : idle);
             const vList = document.getElementById('usersView-list');
+            const vRoles = document.getElementById('usersView-roles');
             const vAudit = document.getElementById('usersView-audit');
             if (vList) vList.classList.toggle('hidden', tab !== 'list');
+            if (vRoles) vRoles.classList.toggle('hidden', tab !== 'roles');
             if (vAudit) vAudit.classList.toggle('hidden', tab !== 'audit');
             const addBtn = document.getElementById('usersAddBtn');
             if (addBtn) addBtn.classList.toggle('hidden', tab !== 'list');
-            if (tab === 'list') loadUsers();
+            if (tab === 'list') { loadUsers(); loadRoleOptions(); }
+            if (tab === 'roles') loadRoles();
             if (tab === 'audit') loadPasswordAudits();
         }
 
@@ -7026,14 +7134,200 @@
         async function loadUsers() {
             const res = await api('/api/users');
             if (res.code === 0) {
-                $('#usersTableBody').innerHTML = res.data.length === 0 ? '<tr><td colspan="7" class="px-4 py-12 text-center text-gray-400">暂无用户</td></tr>'
+                $('#usersTableBody').innerHTML = res.data.length === 0 ? '<tr><td colspan="8" class="px-4 py-12 text-center text-gray-400">暂无用户</td></tr>'
                     : res.data.map((u, i) => {
-                        const permLabel = u.permissions === '*' ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">管理员</span>' : u.permissions.split(',').map(p => `<span class="px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-600 mr-1">${p}</span>`).join('');
+                        const roleLabel = u.permissions === '*' && !u.role_ids
+                            ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700">管理员</span>'
+                            : (u.roles_display || '-').split('、').map(r => `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-700 mr-1 mb-0.5 inline-block">${esc(r)}</span>`).join('');
                         const statusLabel = u.is_active ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">启用</span>' : '<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-500">禁用</span>';
                         const authLabel = u.auth_source === 'ldap' ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700">LDAP</span>' : '<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">本地</span>';
-                        return `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td><td class="px-4 py-3 font-medium">${esc(u.username)}${u.username === 'admin' ? ' <span class="text-xs text-red-500 ml-1">(系统)</span>' : ''}</td><td class="px-4 py-3">${esc(u.display_name)}</td><td class="px-4 py-3">${authLabel}</td><td class="px-4 py-3">${permLabel}</td><td class="px-4 py-3">${statusLabel}</td><td class="px-4 py-3 text-xs text-gray-500">${u.created_at || '-'}</td><td class="px-4 py-3 whitespace-nowrap"><div class="flex items-center gap-1"><button onclick="openUserEditModal(${u.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded whitespace-nowrap">编辑</button><button onclick="resetUserPassword(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded whitespace-nowrap">重置密码</button><button onclick="deleteUser(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded whitespace-nowrap ${u.username === 'admin' ? 'opacity-40 cursor-not-allowed' : ''}" ${u.username === 'admin' ? 'disabled' : ''}>删除</button></div></td></tr>`;
+                        return `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td><td class="px-4 py-3 font-medium">${esc(u.username)}${u.username === 'admin' ? ' <span class="text-xs text-red-500 ml-1">(系统)</span>' : ''}</td><td class="px-4 py-3">${esc(u.display_name)}</td><td class="px-4 py-3">${authLabel}</td><td class="px-4 py-3">${roleLabel}</td><td class="px-4 py-3">${statusLabel}</td><td class="px-4 py-3 text-xs text-gray-500">${u.created_at || '-'}</td><td class="px-4 py-3 whitespace-nowrap"><div class="flex items-center gap-1"><button onclick="openUserEditModal(${u.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded whitespace-nowrap">编辑</button><button onclick="resetUserPassword(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded whitespace-nowrap">重置密码</button><button onclick="deleteUser(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded whitespace-nowrap ${u.username === 'admin' ? 'opacity-40 cursor-not-allowed' : ''}" ${u.username === 'admin' ? 'disabled' : ''}>删除</button></div></td></tr>`;
                     }).join('');
             }
+        }
+
+        // ==================== 角色选项（用户表单复选框） ====================
+        let _roleOptions = [];
+        async function loadRoleOptions(force) {
+            if (_roleOptions.length && !force) return _roleOptions;
+            const res = await api('/api/roles');
+            if (res.code === 0) _roleOptions = res.data || [];
+            return _roleOptions;
+        }
+        function renderUserRoleChecks(selectedIds) {
+            const box = document.getElementById('userFormRoles');
+            if (!box) return;
+            if (!_roleOptions.length) {
+                box.innerHTML = '<label class="flex items-center gap-2 text-sm text-gray-400 px-1">暂无角色，请先到「角色管理」新增</label>';
+                return;
+            }
+            const sel = (selectedIds || '').split(',').map(s => s.trim()).filter(Boolean);
+            box.innerHTML = _roleOptions.map(r => `
+                <label class="flex items-center gap-2 text-sm text-gray-700 px-1 py-0.5 rounded hover:bg-gray-50 cursor-pointer">
+                    <input type="checkbox" class="user-role-check rounded border-gray-300 text-blue-600 focus:ring-blue-500" value="${r.id}" ${sel.includes(String(r.id)) ? 'checked' : ''}>
+                    <span class="font-medium">${esc(r.name)}</span>
+                    <span class="text-xs text-gray-400 truncate max-w-[280px]" title="${esc(r.perm_summary || '')}">${esc(r.description || r.perm_summary || '')}</span>
+                </label>`).join('');
+        }
+        function collectUserRoleChecks() {
+            return Array.from(document.querySelectorAll('.user-role-check:checked')).map(c => c.value).join(',');
+        }
+
+        // ==================== 角色管理（v2.15 RBAC） ====================
+        async function loadRoles() {
+            const body = document.getElementById('rolesTableBody');
+            if (!body) return;
+            body.innerHTML = '<tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">正在加载...</td></tr>';
+            const res = await api('/api/roles');
+            if (res.code !== 0) {
+                body.innerHTML = `<tr><td colspan="6" class="px-4 py-12 text-center text-red-400">${esc(res.message || '加载失败')}</td></tr>`;
+                return;
+            }
+            const list = res.data || [];
+            _roleOptions = list;  // 同步用户表单角色选项缓存
+            body.innerHTML = list.length === 0
+                ? '<tr><td colspan="6" class="px-4 py-12 text-center text-gray-400">暂无角色，点击右上角新增</td></tr>'
+                : list.map((r, i) => {
+                    const sysBadge = r.is_system ? '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 ml-1">内置</span>' : '';
+                    const starBadge = (r.permissions || '').trim() === '*' ? '<span class="px-1.5 py-0.5 rounded text-xs font-medium bg-red-100 text-red-700 ml-1">全部权限</span>' : '';
+                    const canDel = !r.is_system;  // v2.16：非内置角色均可删（有用户引用时删除会自动摘除）
+                    return `<tr class="table-row-hover border-b border-gray-100">
+                        <td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td>
+                        <td class="px-4 py-3 font-medium whitespace-nowrap">${esc(r.name)}${sysBadge}${starBadge}</td>
+                        <td class="px-4 py-3 text-xs text-gray-600 max-w-[220px] truncate" title="${esc(r.description || '')}">${esc(r.description || '-')}</td>
+                        <td class="px-4 py-3 text-xs text-gray-500 max-w-[420px]"><div class="truncate" title="${esc(r.perm_summary || '')}">${esc(r.perm_summary || '-')}</div></td>
+                        <td class="px-4 py-3 text-xs text-gray-600 whitespace-nowrap">${r.user_count} 人</td>
+                        <td class="px-4 py-3 whitespace-nowrap"><div class="flex items-center gap-1">
+                            <button onclick="openRoleEditModal(${r.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded">编辑</button>
+                            <button onclick="deleteRole(${r.id}, '${esc(r.name)}', ${r.user_count})" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded ${canDel ? '' : 'opacity-40 cursor-not-allowed'}" ${canDel ? '' : 'disabled'} title="${canDel ? '删除角色' : '内置角色不可删除'}">删除</button>
+                        </div></td></tr>`;
+                }).join('');
+        }
+
+        // 权限树渲染（模块复选框 + 子标签缩进勾选，支持全选/半选）
+        function renderPermTree(containerId, selected) {
+            const box = document.getElementById(containerId);
+            if (!box) return;
+            const sel = new Set(selected || []);
+            box.innerHTML = PERM_TREE.map((m, mi) => {
+                const subKeys = m.children.map(c => c.key);
+                const allOn = subKeys.length > 0 && subKeys.every(k => sel.has(k));
+                const someOn = m.children.length === 0 ? sel.has(m.key) : (sel.has(m.key) || subKeys.some(k => sel.has(k)));
+                const modChecked = m.children.length === 0 ? sel.has(m.key) : allOn;
+                const modIndeterminate = !modChecked && someOn;
+                return `<div class="border border-gray-200 rounded-lg mb-2 overflow-hidden">
+                    <label class="flex items-center gap-2 px-3 py-2 bg-gray-50 cursor-pointer">
+                        <input type="checkbox" class="perm-mod rounded border-gray-300 text-blue-600 focus:ring-blue-500" data-mod="${mi}" ${modChecked ? 'checked' : ''}>
+                        <span class="text-sm font-medium text-gray-800">${esc(m.label)}</span>
+                        ${m.children.length ? `<span class="text-xs text-gray-400">（${m.children.length} 个子标签）</span>` : ''}
+                    </label>
+                    ${m.children.length ? `<div class="px-4 py-2 grid grid-cols-2 md:grid-cols-3 gap-x-4 gap-y-1">
+                        ${m.children.map(c => `
+                            <label class="flex items-center gap-2 text-sm text-gray-600 cursor-pointer py-0.5">
+                                <input type="checkbox" class="perm-sub rounded border-gray-300 text-blue-600 focus:ring-blue-500" data-mod="${mi}" data-key="${esc(c.key)}" ${sel.has(c.key) ? 'checked' : ''}>
+                                ${esc(c.label)}
+                            </label>`).join('')}
+                    </div>` : ''}
+                </div>`;
+            }).join('');
+            // 事件：模块复选框 ↔ 子标签联动（含半选态）
+            box.querySelectorAll('.perm-mod').forEach(mod => {
+                mod.addEventListener('change', () => {
+                    const mi = mod.dataset.mod;
+                    box.querySelectorAll(`.perm-sub[data-mod="${mi}"]`).forEach(sub => { sub.checked = mod.checked; });
+                });
+            });
+            box.querySelectorAll('.perm-sub').forEach(sub => {
+                sub.addEventListener('change', () => {
+                    const mi = sub.dataset.mod;
+                    const subs = Array.from(box.querySelectorAll(`.perm-sub[data-mod="${mi}"]`));
+                    const mod = box.querySelector(`.perm-mod[data-mod="${mi}"]`);
+                    if (!mod) return;
+                    const onCnt = subs.filter(s => s.checked).length;
+                    mod.checked = onCnt === subs.length;
+                    mod.indeterminate = onCnt > 0 && onCnt < subs.length;
+                });
+            });
+        }
+        function collectPermTree(containerId) {
+            const box = document.getElementById(containerId);
+            if (!box) return [];
+            const out = new Set();
+            // bizlinks 等无子项模块：模块复选框即权限点
+            PERM_TREE.forEach((m, mi) => {
+                if (m.children.length === 0) {
+                    const mod = box.querySelector(`.perm-mod[data-mod="${mi}"]`);
+                    if (mod && mod.checked) out.add(m.key);
+                    return;
+                }
+                box.querySelectorAll(`.perm-sub[data-mod="${mi}"]`).forEach(sub => {
+                    if (sub.checked) { out.add(sub.dataset.key); }
+                });
+            });
+            return Array.from(out);
+        }
+
+        async function openRoleAddModal() {
+            closeAllModals();
+            await loadRoleOptions(true);
+            document.getElementById('roleFormId').value = '';
+            document.getElementById('roleModalTitle').textContent = '新增角色';
+            document.getElementById('roleForm').reset();
+            document.getElementById('roleFormName').readOnly = false;  // v2.16 修复：编辑内置角色后残留 readOnly 导致无法填写
+            renderPermTree('roleFormPermTree', []);
+            const m = document.getElementById('roleFormModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        async function openRoleEditModal(rid) {
+            closeAllModals();
+            await loadRoleOptions(true);
+            const res = await api('/api/roles');
+            if (res.code !== 0) return;
+            const r = (res.data || []).find(x => x.id === rid);
+            if (!r) return;
+            document.getElementById('roleFormId').value = r.id;
+            document.getElementById('roleModalTitle').textContent = '编辑角色';
+            document.getElementById('roleFormName').value = r.name;
+            document.getElementById('roleFormName').readOnly = !!(r.is_system);
+            document.getElementById('roleFormDesc').value = r.description || '';
+            const isStar = (r.permissions || '').trim() === '*';
+            renderPermTree('roleFormPermTree', isStar ? [] : (r.permissions || '').split(','));
+            if (isStar) {
+                // 管理员角色权限只读（* 通配）
+                const box = document.getElementById('roleFormPermTree');
+                box.querySelectorAll('input[type="checkbox"]').forEach(c => { c.disabled = true; c.checked = true; });
+            }
+            const m = document.getElementById('roleFormModal');
+            m.classList.remove('hidden'); m.classList.add('flex');
+        }
+        function closeRoleForm() {
+            const m = document.getElementById('roleFormModal');
+            m.classList.add('hidden'); m.classList.remove('flex');
+        }
+        async function saveRole(e) {
+            e.preventDefault();
+            const id = document.getElementById('roleFormId').value;
+            const perms = collectPermTree('roleFormPermTree');
+            if (!perms.length) { showToast('请至少勾选一个权限', 'error'); return; }
+            const body = {
+                name: document.getElementById('roleFormName').value.trim(),
+                description: document.getElementById('roleFormDesc').value.trim(),
+                permissions: perms,
+            };
+            const res = id
+                ? await api(`/api/roles/${id}`, { method: 'PUT', body: JSON.stringify(body) })
+                : await api('/api/roles', { method: 'POST', body: JSON.stringify(body) });
+            if (res.code === 0) { showToast(id ? '角色已更新，受影响用户即时生效' : '角色已新增'); closeRoleForm(); loadRoles(); }
+            else { showToast(res.message || '操作失败', 'error'); }
+        }
+        async function deleteRole(rid, name, userCount) {
+            const tip = userCount > 0
+                ? `确认删除角色「${name}」？该角色正被 ${userCount} 个用户引用，删除后将自动从这些用户移除（用户回退到原有权限）`
+                : `确认删除角色「${name}」？`;
+            if (!confirm(tip)) return;
+            const res = await api(`/api/roles/${rid}`, { method: 'DELETE' });
+            if (res.code === 0) { showToast(res.message || '已删除'); loadRoles(); loadRoleOptions(true); }
+            else { showToast(res.message || '删除失败', 'error'); }
         }
         function openUserAddModal() {
             closeAllModals();
@@ -7042,12 +7336,11 @@
             document.getElementById('userForm').reset();
             document.getElementById('userFormPassword').required = true;
             document.getElementById('userFormPwdRequired').style.display = '';
-            document.getElementById('userFormPermissions').value = 'release,credentials,domains,nettools,utils';
+            loadRoleOptions().then(() => renderUserRoleChecks(''));
             const m = document.getElementById('userFormModal');
             m.classList.remove('hidden'); m.classList.add('flex');
         }
         async function openUserEditModal(uid) {
-            closeAllModals();
             closeAllModals();
             const res = await api('/api/users');
             if (res.code === 0) {
@@ -7061,7 +7354,7 @@
                 document.getElementById('userFormPassword').value = '';
                 document.getElementById('userFormPassword').required = false;
                 document.getElementById('userFormPwdRequired').style.display = 'none';
-                document.getElementById('userFormPermissions').value = u.permissions;
+                loadRoleOptions().then(() => renderUserRoleChecks(u.role_ids || ''));
                 const m = document.getElementById('userFormModal');
                 m.classList.remove('hidden'); m.classList.add('flex');
             }
@@ -7076,7 +7369,7 @@
             const body = {
                 username: document.getElementById('userFormUsername').value.trim(),
                 display_name: document.getElementById('userFormDisplayName').value.trim(),
-                permissions: document.getElementById('userFormPermissions').value,
+                role_ids: collectUserRoleChecks(),
                 is_active: 1,
             };
             const pwd = document.getElementById('userFormPassword').value;

@@ -178,9 +178,16 @@ Dockerfile 已 `apt-get install` 这 3 个包；如本地构建需镜像包含�
 | `LDAP_USER_FILTER` | 同 AUTH_FILTER | 用户信息过滤 |
 | `LDAP_TLS` | `false` | 使用 LDAPS（636） |
 | `LDAP_STARTTLS` | `false` | 使用 STARTTLS |
-| `LDAP_DEFAULT_PERMS` | `release` | LDAP 用户首次登录默认权限（默认仅发版管理） |
+| `LDAP_DEFAULT_PERMS` | `release` | LDAP 用户首次登录默认权限串（legacy 快照，仅在默认角色不存在时兜底生效） |
+| `LDAP_DEFAULT_ROLE` | `发版` | LDAP 用户首次登录 JIT 自动挂载的内置角色名（v2.16，角色不存在则回退 `LDAP_DEFAULT_PERMS`） |
 
-> **LDAP 认证说明**：本地账号（含 admin）走本地 SHA-256 校验；LDAP 账号首次登录自动创建本地记录（默认仅发版管理权限），之后由管理员按需授权。LDAP 密码不落库；LDAP 服务器异常不影响本地账号登录。
+> **LDAP 认证说明**：本地账号（含 admin）走本地 SHA-256 校验；LDAP 账号首次登录自动创建本地记录（默认挂「发版」角色，仅蓝鲸发版参数管理权限），之后由管理员按需授权。LDAP 密码不落库；LDAP 服务器异常不影响本地账号登录。
+
+> **v2.15 RBAC 角色权限说明**：
+> - 新增 `roles` 表（启动自动建表）+ `users.role_ids` 列（自动补列），**无需手工迁移**；首次启动自动 seed 内置角色（v2.16 起 5 个：管理员/发版/运维/开发/测试），并把存量用户的 `permissions` 串自动转换为「迁移-<权限串>」角色挂接
+> - 用户授权入口：「系统管理 → 用户管理 → 用户列表 → 编辑」勾选角色；角色权限配置：「用户管理 → 角色管理」权限树勾选（支持子标签级，如仅 IP 查询、仅生成器）
+> - 权限变更（改角色权限/改用户角色）**即时生效**，受影响用户无需重新登录
+> - `LDAP_DEFAULT_ROLE` 指定的角色不存在时，回退 `LDAP_DEFAULT_PERMS` 权限串（无角色用户兜底）
 
 > 配置通过项目根目录 `.env` 文件加载（优先级低于系统环境变量）。**密码请放 .env，不要提交到代码仓库。**
 

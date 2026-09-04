@@ -285,17 +285,37 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 |------|------|------|
 | GET/POST | `/login` | 登录页 / 提交 |
 | GET | `/logout` | 登出 |
-| GET | `/api/me` | 当前用户信息 |
-| GET/POST | `/api/users` | 用户列表 / 新增 |
-| PUT | `/api/users/<id>` | 编辑权限 |
+| GET | `/api/me` | 当前用户信息（含 roles_display） |
+| GET/POST | `/api/users` | 用户列表（含角色） / 新增（支持 role_ids） |
+| PUT | `/api/users/<id>` | 编辑（角色/显示名/状态） |
 | POST | `/api/users/<id>/reset-pwd` | 重置密码 |
 | DELETE | `/api/users/<id>` | 删除 |
+| GET/POST | `/api/roles` | 角色列表（含权限中文概览+用户数） / 新增（v2.15） |
+| PUT/DELETE | `/api/roles/<id>` | 编辑角色 / 删除角色（内置禁删，v2.15） |
 
 （域名/凭证的 API 端点省略，与上述同模式）
 
 ---
 
 ## 八、版本记录
+
+### v2.16 (2026-09-04)
+
+- 🔧 **角色管理三项优化**（v2.15 RBAC 反馈修复）：
+  - **修复「新增角色」弹窗角色名称无法填写**：编辑内置角色后 `readOnly` 残留，新增弹窗未重置导致输入框只读
+  - **新增内置「发版」角色**（共 5 个内置角色）：仅含「发版管理-蓝鲸发版参数管理」（`rel:params`），seed 幂等自动补种
+  - **角色删除支持自动摘除用户引用**：非内置角色均可删除，删除时自动从引用用户的 `role_ids` 中摘除该角色（用户回退到保留的 legacy `permissions` 快照，权限不变）；前端确认框提示引用用户数，内置角色仍禁删
+- 🔑 **LDAP 用户 JIT 默认挂「发版」角色**：首次登录自动开通时挂载内置「发版」角色（仅蓝鲸发版参数管理），新增环境变量 `LDAP_DEFAULT_ROLE`（默认「发版」）可自定义角色名，角色不存在时回退 `LDAP_DEFAULT_PERMS` 权限串
+
+### v2.15 (2026-09-04)
+- 🔐 **权限体系升级：RBAC 角色 + 子标签级细粒度权限**（替换 v2.13 的 6 项内置模块权限 + 18 个写死组合下拉）
+  - **两级权限点体系（`auth.py`）**：模块级 6 项不变（release/credentials/domains/nettools/utils/bizlinks）+ 新增子标签级 40 项，命名 `父:子`——发版 `rel:params/ciorders/cidevflow/fixrecords`、凭证按环境 `cred:all` + 8 个 `cred:<环境名>`、域名按主域 `dom:jmj1995.com/jiumaojiu.com/datousoft.com`、网络工具 `net:ping/tcping/route/mtr/dns/whois/ssl/ip/cdn`、运维小工具 `ut:json/encode/yaml/health/curl/webhook/cert/batch/pingping/diff/dedup/generator/cidr/timestamp/scicalc`。继承规则：**模块权限 → 解锁全部子权限；仅勾子权限不放大到兄弟子权限**（如只给 `net:ip` 则仅 IP 查询可见可用，PING 等 403）；模块菜单分组可见性 = 有模块权限或任一子权限
+  - **RBAC 角色（新表 `roles`，双模式自动建表）**：`id/name/description/permissions/is_system`；用户表新增 `role_ids`（多角色），**有效权限 = 所挂角色权限并集**，每次请求实时计算（flask.g 缓存），**改角色即时生效、无需重新登录**；`role_ids` 为空的用户回退旧 `permissions` 字段（存量/LDAP JIT 无感兼容）；admin 仍走 `*` 通配
+  - **内置 4 角色（seed 自动创建，不可删除）**：管理员（`*`，仅描述可改）/ 运维（网络工具+运维小工具+业务跳转）/ 开发（发版管理+运维小工具）/ 测试（发版管理+网络工具）——权限可按需调整
+  - **存量自动迁移**：启动时把每个拥有非 `*` 历史权限且未挂角色的用户 → 自动生成「迁移-<权限串>」角色并挂接（is_system=0 可调整），原 `permissions` 保留为快照，升级无感
+  - **后端 `app.py`**：58 处路由装饰器细化到子权限（nettools 10 处 → `net:*`、utils 12 处 → `ut:*`、发版族 36 处 → `rel:*`）；凭证/域名动态资源校验——列表按 `env`/`root` 参数校验 `cred:<env>`/`dom:<root>`，详情/增/改/删按记录归属环境/主域校验（跨环境变更需两个环境都有权限）；新增角色 API：`GET/POST /api/roles`、`PUT/DELETE /api/roles/<id>`（内置角色禁删、管理员角色仅描述可改、删除前校验用户引用、权限点白名单校验、重名校验）；用户 API 支持 `role_ids`，列表返回 `roles_display`；`/api/me` 返回角色显示
+  - **前端 `index.html`**：`PERM` 改为服务端注入全集 JSON（46 键）；侧边栏 40 个子标签独立 `{% if has_perm('net:ip') %}` 显隐；`PAGE_PERM`/`switchCiTab`/`switchNetTab`/`switchUtilsTab`/`switchCredEnv`/`switchDomainRoot` 守卫全部细化到子权限点；**用户管理新增「角色管理」tab**（角色列表：权限中文概览/用户数/编辑删除 + 编辑弹窗两级权限树勾选，模块复选框全选/半选联动）；用户表单权限下拉（18 个写死组合）→ **角色复选框多选**；用户列表「权限」列 → 「角色」列；左下角用户面板「权限范围」→「**用户角色**」（显示角色名，admin 显示"管理员"）
+- ✅ **实测矩阵**（生产 MySQL，临时建用户/角色验证后删除）：「测试」角色用户 → 发版族 API 全 200、utils/json 403、凭证/域名/links/users/roles 403；仅 `net:ip` 角色用户 → `/api/nettools/ip` 通过权限层、`/api/nettools/ping` 403（兄弟不放大）；「测试」角色临时 +`ut:json` 保存后**未重新登录** `/api/utils/json` 403→200→还原 403（即时生效）；`cred:all` 用户 → 凭证汇总 200、`env=预生产环境` 403（环境级隔离）；内置角色删除 400、重名 400
 
 ### v2.13 (2026-09-04)
 - 🔐 **全模块权限闭环（修复"仅 release 用户仍可从首页/URL/API 访问其他模块"）**：v2.12 只控制了侧边栏与入口可见性，本版补齐服务端与前端拦截，形成「菜单不显示 + 入口不可达 + URL 直调拦截 + API 403」四道防线
@@ -491,4 +511,4 @@ A: 改 `.env` 里的 `DB_ENGINE`（`mysql` 或 `sqlite`）重启即可；系统�
 
 ---
 
-_最后更新：2026-09-04（v2.13 全模块权限闭环）_
+_最后更新：2026-09-04（v2.16 角色管理优化：新增内置「发版」角色、角色删除自动摘除用户、修复新增角色框只读）_

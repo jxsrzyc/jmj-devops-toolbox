@@ -295,12 +295,25 @@ def _init_db_sqlite():
                 password_hash TEXT NOT NULL,
                 display_name TEXT DEFAULT '',
                 permissions TEXT DEFAULT '*',
+                role_ids TEXT DEFAULT '',
                 is_active INTEGER DEFAULT 1,
                 auth_source TEXT DEFAULT 'local',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         """)
         conn.execute("CREATE INDEX IF NOT EXISTS idx_users_username ON users(username);")
+        # 角色表（v2.15 RBAC）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS roles (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL UNIQUE,
+                description TEXT DEFAULT '',
+                permissions TEXT DEFAULT '',
+                is_system INTEGER DEFAULT 0,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        """)
         # 操作日志表（首页最近活动）
         conn.execute("""
             CREATE TABLE IF NOT EXISTS activity_log (
@@ -341,6 +354,12 @@ def _init_db_sqlite():
         if "auth_source" not in cols:
             conn.execute("ALTER TABLE users ADD COLUMN auth_source TEXT DEFAULT 'local'")
             conn.commit()
+        # 兼容旧库：role_ids 列不存在则补充（v2.15 RBAC 角色授权）
+        cols = [r["name"] for r in conn.execute("PRAGMA table_info(users)").fetchall()]
+        if "role_ids" not in cols:
+            conn.execute("ALTER TABLE users ADD COLUMN role_ids TEXT DEFAULT ''")
+            conn.commit()
+        _seed_roles_and_migrate(conn, mysql=False)
         # 兼容旧库：service_credentials 补充 env/app_type/version 列
         cred_cols = [r["name"] for r in conn.execute("PRAGMA table_info(service_credentials)").fetchall()]
         for col, ddl in [("env", "TEXT DEFAULT ''"), ("app_type", "TEXT DEFAULT ''"), ("version", "TEXT DEFAULT ''"), ("service_provider", "TEXT DEFAULT ''"), ("business_purpose", "TEXT DEFAULT '通用服务'")]:
@@ -576,12 +595,25 @@ def _init_db_mysql():
                 password_hash VARCHAR(128) NOT NULL,
                 display_name VARCHAR(100) DEFAULT '',
                 permissions VARCHAR(200) DEFAULT '*',
+                role_ids VARCHAR(200) DEFAULT '',
                 is_active TINYINT DEFAULT 1,
                 auth_source VARCHAR(20) DEFAULT 'local',
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
         """)
         _mysql_ensure_index(conn, "users", "idx_users_username", "username")
+        # 角色表（v2.15 RBAC）
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS roles (
+                id INT AUTO_INCREMENT PRIMARY KEY,
+                name VARCHAR(100) NOT NULL UNIQUE,
+                description VARCHAR(500) DEFAULT '',
+                permissions TEXT,
+                is_system TINYINT DEFAULT 0,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+                updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+        """)
         # 操作日志表（首页最近活动）
         conn.execute("""
             CREATE TABLE IF NOT EXISTS activity_log (
@@ -626,6 +658,15 @@ def _init_db_mysql():
         if row and row["cnt"] == 0:
             conn.execute("ALTER TABLE users ADD COLUMN auth_source VARCHAR(20) DEFAULT 'local'")
             conn.commit()
+        # 兼容旧库：role_ids 列不存在则补充（v2.15 RBAC 角色授权）
+        row = conn.execute(
+            "SELECT COUNT(*) AS cnt FROM information_schema.columns WHERE table_schema=%s AND table_name='users' AND column_name='role_ids'",
+            (DB_NAME,)
+        ).fetchone()
+        if row and row["cnt"] == 0:
+            conn.execute("ALTER TABLE users ADD COLUMN role_ids VARCHAR(200) DEFAULT ''")
+            conn.commit()
+        _seed_roles_and_migrate(conn, mysql=True)
         # 兼容旧库：service_credentials 补充 env/app_type/version 列
         for col, ddl in [("env", "VARCHAR(50) DEFAULT ''"), ("app_type", "VARCHAR(50) DEFAULT ''"), ("version", "VARCHAR(50) DEFAULT ''")]:
             row = conn.execute(
@@ -635,6 +676,40 @@ def _init_db_mysql():
             if row and row["cnt"] == 0:
                 conn.execute(f"ALTER TABLE service_credentials ADD COLUMN {col} {ddl}")
                 conn.commit()
+
+
+def _seed_roles_and_migrate(conn, mysql: bool = False):
+    """内置角色 seed + 存量 users.permissions 自动迁移为角色（幂等，v2.15 RBAC）
+    - 4 个内置角色：管理员(*) / 运维 / 开发 / 测试（不可删除，名称唯一）
+    - 迁移：每个拥有非 * 历史权限且未挂角色的用户 → 自动生成「迁移-<权限串>」角色并挂接
+    """
+    ph = "%s" if mysql else "?"
+    ignore = "IGNORE" if mysql else "OR IGNORE"
+    from auth import SYSTEM_ROLES
+    for r in SYSTEM_ROLES:
+        conn.execute(
+            f"INSERT {ignore} INTO roles (name, description, permissions, is_system) VALUES ({ph},{ph},{ph},1)",
+            (r["name"], r["description"], r["permissions"])
+        )
+    conn.commit()
+    # 存量权限迁移（* 通配的管理员不迁移，走原字段）
+    rows = conn.execute(
+        f"SELECT id, permissions FROM users WHERE permissions IS NOT NULL AND permissions != '' "
+        f"AND permissions != '*' AND (role_ids IS NULL OR role_ids = '')"
+    ).fetchall()
+    for row in rows:
+        perms = ",".join(p.strip() for p in str(row["permissions"]).split(",") if p.strip())
+        if not perms:
+            continue
+        role_name = f"迁移-{perms}"
+        conn.execute(
+            f"INSERT {ignore} INTO roles (name, description, permissions, is_system) VALUES ({ph},{ph},{ph},0)",
+            (role_name, f"由历史权限「{perms}」自动迁移（可按需调整）", perms)
+        )
+        r2 = conn.execute(f"SELECT id FROM roles WHERE name={ph}", (role_name,)).fetchone()
+        if r2:
+            conn.execute(f"UPDATE users SET role_ids={ph} WHERE id={ph}", (str(r2["id"]), row["id"]))
+    conn.commit()
 
 
 class Database:
@@ -1490,26 +1565,30 @@ class Database:
 
     def get_users(self):
         with get_conn() as conn:
-            rows = conn.execute("SELECT id, username, display_name, permissions, is_active, auth_source, created_at FROM users ORDER BY id").fetchall()
+            rows = conn.execute("SELECT id, username, display_name, permissions, role_ids, is_active, auth_source, created_at FROM users ORDER BY id").fetchall()
             return [dict(r) for r in rows]
 
     def get_user_by_username(self, username):
         with get_conn() as conn:
             return conn.execute("SELECT * FROM users WHERE username=? AND is_active=1", (username,)).fetchone()
 
-    def create_user(self, username, password, display_name="", permissions="release,credentials,domains", auth_source="local"):
+    def create_user(self, username, password, display_name="", permissions="release,credentials,domains", auth_source="local", role_ids=""):
         from auth import hash_password
+        if isinstance(role_ids, (list, tuple)):
+            role_ids = ",".join(str(i) for i in role_ids)
         with get_conn() as conn:
             cursor = conn.execute(
-                "INSERT INTO users (username, password_hash, display_name, permissions, auth_source) VALUES (?,?,?,?,?)",
-                (username, hash_password(password), display_name, permissions, auth_source)
+                "INSERT INTO users (username, password_hash, display_name, permissions, auth_source, role_ids) VALUES (?,?,?,?,?,?)",
+                (username, hash_password(password), display_name, permissions, auth_source, role_ids or "")
             )
             conn.commit()
             return cursor.lastrowid
 
     def update_user(self, uid, **fields):
-        allowed = {"display_name", "permissions", "is_active"}
+        allowed = {"display_name", "permissions", "is_active", "role_ids"}
         updates = {k: v for k, v in fields.items() if k in allowed}
+        if isinstance(updates.get("role_ids"), (list, tuple)):
+            updates["role_ids"] = ",".join(str(i) for i in updates["role_ids"])
         if not updates: return False
         if "password" in fields and fields["password"]:
             from auth import hash_password
@@ -1532,6 +1611,83 @@ class Database:
             cursor = conn.execute("DELETE FROM users WHERE id=? AND username != 'admin'", (uid,))
             conn.commit()
             return cursor.rowcount > 0
+
+    # ---- 角色管理（v2.15 RBAC）----
+
+    def get_roles(self):
+        with get_conn() as conn:
+            rows = conn.execute("SELECT * FROM roles ORDER BY id").fetchall()
+            return [dict(r) for r in rows]
+
+    def get_roles_by_ids(self, ids):
+        """按 id 列表查角色（ids: 字符串/数字列表，来自 users.role_ids 拆分）"""
+        if not ids:
+            return []
+        try:
+            id_ints = [int(i) for i in ids]
+        except (TypeError, ValueError):
+            return []
+        if not id_ints:
+            return []
+        placeholders = ",".join("?" for _ in id_ints)
+        with get_conn() as conn:
+            rows = conn.execute(f"SELECT * FROM roles WHERE id IN ({placeholders})", id_ints).fetchall()
+            return [dict(r) for r in rows]
+
+    def get_role_by_id(self, rid):
+        with get_conn() as conn:
+            row = conn.execute("SELECT * FROM roles WHERE id=?", (rid,)).fetchone()
+            return dict(row) if row else None
+
+    def create_role(self, name, description="", permissions="", is_system=0):
+        with get_conn() as conn:
+            cursor = conn.execute(
+                "INSERT INTO roles (name, description, permissions, is_system) VALUES (?,?,?,?)",
+                (name, description, permissions, is_system)
+            )
+            conn.commit()
+            return cursor.lastrowid
+
+    def update_role(self, rid, **fields):
+        allowed = {"name", "description", "permissions"}
+        updates = {k: v for k, v in fields.items() if k in allowed}
+        if not updates:
+            return False
+        set_clause = ", ".join(f"{k}=?" for k in updates)
+        with get_conn() as conn:
+            cursor = conn.execute(
+                f"UPDATE roles SET {set_clause}, updated_at=CURRENT_TIMESTAMP WHERE id=?",
+                list(updates.values()) + [rid]
+            )
+            conn.commit()
+            return cursor.rowcount > 0
+
+    def delete_role(self, rid):
+        """删除角色，并自动从所有用户的 role_ids 中摘除该角色（v2.16）。
+        摘除后用户回退到 legacy permissions 快照（若有），返回摘除的用户数"""
+        target = str(rid)
+        detached = 0
+        with get_conn() as conn:
+            rows = conn.execute("SELECT id, role_ids FROM users WHERE role_ids IS NOT NULL AND role_ids != ''").fetchall()
+            for row in rows:
+                ids = [x.strip() for x in (row["role_ids"] or "").split(",") if x.strip()]
+                if target in ids:
+                    new_ids = ",".join(x for x in ids if x != target)
+                    conn.execute("UPDATE users SET role_ids=? WHERE id=?", (new_ids, row["id"]))
+                    detached += 1
+            if detached:
+                conn.commit()
+            cursor = conn.execute("DELETE FROM roles WHERE id=?", (rid,))
+            conn.commit()
+            return cursor.rowcount > 0, detached
+
+    def count_users_with_role(self, rid):
+        """引用某角色的用户数（用户量小，Python 侧统计避免方言差异）"""
+        target = str(rid)
+        return sum(
+            1 for u in self.get_users()
+            if target in [x.strip() for x in (u.get("role_ids") or "").split(",") if x.strip()]
+        )
 
     def get_service_by_id(self, sid):
         """按 ID 获取单条记录"""
