@@ -7131,6 +7131,9 @@
             }
         }
 
+        // 时间格式化统一用上方 formatDateTime()：MySQL naive datetime 经 jsonify 被标成 RFC1123 "GMT" 串，
+        // 但值即数据库原值（北京时间），用 UTC 字段提取 = 取原值，不做时区换算；ISO/SQLite 串正则直接抽
+
         async function loadUsers() {
             const res = await api('/api/users');
             if (res.code === 0) {
@@ -7141,7 +7144,7 @@
                             : (u.roles_display || '-').split('、').map(r => `<span class="px-1.5 py-0.5 rounded text-xs bg-blue-50 text-blue-700 mr-1 mb-0.5 inline-block">${esc(r)}</span>`).join('');
                         const statusLabel = u.is_active ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-green-100 text-green-700">启用</span>' : '<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-200 text-gray-500">禁用</span>';
                         const authLabel = u.auth_source === 'ldap' ? '<span class="px-2 py-0.5 rounded text-xs font-medium bg-indigo-100 text-indigo-700">LDAP</span>' : '<span class="px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500">本地</span>';
-                        return `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td><td class="px-4 py-3 font-medium">${esc(u.username)}${u.username === 'admin' ? ' <span class="text-xs text-red-500 ml-1">(系统)</span>' : ''}</td><td class="px-4 py-3">${esc(u.display_name)}</td><td class="px-4 py-3">${authLabel}</td><td class="px-4 py-3">${roleLabel}</td><td class="px-4 py-3">${statusLabel}</td><td class="px-4 py-3 text-xs text-gray-500">${u.created_at || '-'}</td><td class="px-4 py-3 whitespace-nowrap"><div class="flex items-center gap-1"><button onclick="openUserEditModal(${u.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded whitespace-nowrap">编辑</button><button onclick="resetUserPassword(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded whitespace-nowrap">重置密码</button><button onclick="deleteUser(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded whitespace-nowrap ${u.username === 'admin' ? 'opacity-40 cursor-not-allowed' : ''}" ${u.username === 'admin' ? 'disabled' : ''}>删除</button></div></td></tr>`;
+                        return `<tr class="table-row-hover border-b border-gray-100"><td class="px-4 py-3 text-gray-400 text-xs">${i + 1}</td><td class="px-4 py-3 font-medium">${esc(u.username)}${u.username === 'admin' ? ' <span class="text-xs text-red-500 ml-1">(系统)</span>' : ''}</td><td class="px-4 py-3">${esc(u.display_name)}</td><td class="px-4 py-3">${authLabel}</td><td class="px-4 py-3">${roleLabel}</td><td class="px-4 py-3">${statusLabel}</td><td class="px-4 py-3 text-xs text-gray-500">${formatDateTime(u.created_at)}</td><td class="px-4 py-3 whitespace-nowrap"><div class="flex items-center gap-1"><button onclick="openUserEditModal(${u.id})" class="px-2 py-1 text-xs text-blue-600 hover:bg-blue-50 rounded whitespace-nowrap">编辑</button><button onclick="resetUserPassword(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-yellow-600 hover:bg-yellow-50 rounded whitespace-nowrap">重置密码</button><button onclick="deleteUser(${u.id}, '${esc(u.username)}')" class="px-2 py-1 text-xs text-red-600 hover:bg-red-50 rounded whitespace-nowrap ${u.username === 'admin' ? 'opacity-40 cursor-not-allowed' : ''}" ${u.username === 'admin' ? 'disabled' : ''}>删除</button></div></td></tr>`;
                     }).join('');
             }
         }
