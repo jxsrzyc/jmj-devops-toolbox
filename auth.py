@@ -15,6 +15,7 @@ PERMISSIONS = {
     "domains": "域名管理",
     "nettools": "网络工具",
     "utils": "运维小工具",
+    "bizlinks": "业务跳转",
 }
 
 ALL_PERMISSIONS = list(PERMISSIONS.keys())

@@ -166,6 +166,7 @@ def get_envs():
 # ==================== 服务参数 CRUD ====================
 
 @app.route("/api/services", methods=["GET"])
+@require_perm("release")
 def get_services():
     """获取服务列表，支持按业务模块、环境、关键词筛选"""
     module = request.args.get("module", "").strip()
@@ -185,6 +186,7 @@ def get_services():
 
 
 @app.route("/api/services/export", methods=["GET"])
+@require_perm("release")
 def export_services():
     """导出筛选结果的全部参数（用于批量复制）"""
     module = request.args.get("module", "").strip()
@@ -206,6 +208,7 @@ def export_services():
 
 
 @app.route("/api/services/<int:sid>", methods=["GET"])
+@require_perm("release")
 def get_service(sid):
     """获取单个服务详情"""
     service = db.get_service_by_id(sid)
@@ -215,6 +218,7 @@ def get_service(sid):
 
 
 @app.route("/api/services", methods=["POST"])
+@require_perm("release")
 def create_service():
     """新增服务"""
     data = request.get_json()
@@ -234,6 +238,7 @@ def create_service():
 
 
 @app.route("/api/services/<int:sid>", methods=["PUT"])
+@require_perm("release")
 def update_service(sid):
     """更新服务"""
     data = request.get_json()
@@ -244,6 +249,7 @@ def update_service(sid):
 
 
 @app.route("/api/services/<int:sid>", methods=["DELETE"])
+@require_perm("release")
 def delete_service(sid):
     """删除服务"""
     ok = db.delete_service(sid)
@@ -255,6 +261,7 @@ def delete_service(sid):
 # ==================== 批量导入 ====================
 
 @app.route("/api/import", methods=["POST"])
+@require_perm("release")
 def import_excel():
     """从 Excel 导入数据"""
     try:
@@ -285,6 +292,7 @@ def import_excel():
 # ==================== 服务凭证 CRUD ====================
 
 @app.route("/api/credentials", methods=["GET"])
+@require_perm("credentials")
 def get_credentials():
     """查询凭证列表（支持 env + 业务名称 name + 关键词 keyword + 业务用途 purpose + 密码脱敏）"""
     env = request.args.get("env", "").strip()
@@ -305,6 +313,7 @@ def get_credentials():
 
 
 @app.route("/api/credentials/business-purposes", methods=["GET"])
+@require_perm("credentials")
 def get_credential_business_purposes():
     """业务用途列表 + 颜色映射（供下拉/徽章/颜色配置）"""
     purposes = db.get_credential_purposes()
@@ -362,6 +371,7 @@ def remove_business_purpose(purpose):
 
 
 @app.route("/api/credentials/<int:cid>", methods=["GET"])
+@require_perm("credentials")
 def get_credential(cid):
     """获取单条凭证（密码脱敏返回）"""
     item = db.get_credential_by_id(cid)
@@ -395,6 +405,7 @@ def reveal_credential_password(cid):
 
 
 @app.route("/api/credentials", methods=["POST"])
+@require_perm("credentials")
 def create_credential():
     """新增凭证（密码加密存储）"""
     from crypto import encrypt_password
@@ -411,6 +422,7 @@ def create_credential():
 
 
 @app.route("/api/credentials/<int:cid>", methods=["PUT"])
+@require_perm("credentials")
 def update_credential(cid):
     """更新凭证（密码为空不覆盖原密码，非空则加密）"""
     from crypto import encrypt_password
@@ -429,6 +441,7 @@ def update_credential(cid):
 
 
 @app.route("/api/credentials/<int:cid>", methods=["DELETE"])
+@require_perm("credentials")
 def delete_credential(cid):
     """删除凭证"""
     ok = db.delete_credential(cid)
@@ -439,6 +452,7 @@ def delete_credential(cid):
 
 
 @app.route("/api/credential-envs", methods=["GET"])
+@require_perm("credentials")
 def get_credential_envs():
     """获取凭证环境列表"""
     envs = db.get_credential_envs()
@@ -446,6 +460,7 @@ def get_credential_envs():
 
 
 @app.route("/api/credential-service-names", methods=["GET"])
+@require_perm("credentials")
 def get_credential_service_names():
     """获取凭证业务名称列表（datalist 下拉搜索）"""
     names = db.get_credential_service_names()
@@ -454,6 +469,7 @@ def get_credential_service_names():
 
 @app.route("/api/credential-service-names", methods=["POST"])
 @login_required
+@require_perm("credentials")
 def add_credential_service_name():
     """登记业务名称：写入 cred_service_names 表（不依赖凭证表，让下拉/搜索立刻可见）。
     重名校验：合并 service_credentials 已用的 + cred_service_names 已登记的（忽略大小写）"""
@@ -474,6 +490,7 @@ def add_credential_service_name():
 
 @app.route("/api/credential-service-names/<path:name>", methods=["DELETE"])
 @login_required
+@require_perm("credentials")
 def remove_credential_service_name(name):
     """删除业务名称：将 service_credentials 中匹配项合并到「__archived__」占位符（默认隐藏）"""
     name = (name or "").strip()
@@ -486,6 +503,7 @@ def remove_credential_service_name(name):
 
 
 @app.route("/api/credential-providers", methods=["GET"])
+@require_perm("credentials")
 def get_credential_providers():
     """获取服务供应商列表（datalist 下拉搜索）"""
     providers = db.get_credential_providers()
@@ -493,6 +511,7 @@ def get_credential_providers():
 
 
 @app.route("/api/credential-types", methods=["GET"])
+@require_perm("credentials")
 def get_credential_types():
     """获取凭证类型列表"""
     types = db.get_credential_types()
@@ -500,6 +519,7 @@ def get_credential_types():
 
 
 @app.route("/api/credential-owners", methods=["GET"])
+@require_perm("credentials")
 def get_credential_owners():
     """获取负责人列表"""
     owners = db.get_credential_owners()
@@ -509,6 +529,7 @@ def get_credential_owners():
 # ==================== 域名管理 CRUD ====================
 
 @app.route("/api/domains", methods=["GET"])
+@require_perm("domains")
 def get_domains():
     """查询域名列表"""
     root = request.args.get("root", "").strip()
@@ -530,6 +551,7 @@ def get_domains():
 
 
 @app.route("/api/domains/<int:did>", methods=["GET"])
+@require_perm("domains")
 def get_domain(did):
     item = db.get_domain_by_id(did)
     if not item:
@@ -538,6 +560,7 @@ def get_domain(did):
 
 
 @app.route("/api/domains", methods=["POST"])
+@require_perm("domains")
 def create_domain():
     data = request.get_json()
     if not data.get("domain_name"):
@@ -549,6 +572,7 @@ def create_domain():
 
 
 @app.route("/api/domains/<int:did>", methods=["PUT"])
+@require_perm("domains")
 def update_domain(did):
     data = request.get_json()
     ok = db.update_domain(did, **data)
@@ -559,6 +583,7 @@ def update_domain(did):
 
 
 @app.route("/api/domains/<int:did>", methods=["DELETE"])
+@require_perm("domains")
 def delete_domain(did):
     ok = db.delete_domain(did)
     if not ok:
@@ -568,6 +593,7 @@ def delete_domain(did):
 
 
 @app.route("/api/domain-types", methods=["GET"])
+@require_perm("domains")
 def get_domain_types():
     root = request.args.get("root", "").strip()
     types = db.get_domain_types(root_domain=root)
@@ -575,6 +601,7 @@ def get_domain_types():
 
 
 @app.route("/api/domain-envs", methods=["GET"])
+@require_perm("domains")
 def get_domain_envs():
     root = request.args.get("root", "").strip()
     envs = db.get_domain_envs(root_domain=root)
@@ -582,12 +609,14 @@ def get_domain_envs():
 
 
 @app.route("/api/root-domains", methods=["GET"])
+@require_perm("domains")
 def get_root_domains():
     roots = db.get_root_domains()
     return jsonify({"code": 0, "data": roots})
 
 
 @app.route("/api/regions", methods=["GET"])
+@require_perm("domains")
 def get_regions():
     root = request.args.get("root", "").strip()
     regions = db.get_regions(root_domain=root)
@@ -816,6 +845,7 @@ def _valid_link_color(color):
 
 @app.route("/api/links", methods=["GET"])
 @login_required
+@require_perm("bizlinks")
 def get_links():
     """获取业务跳转链接列表（所有登录用户）"""
     keyword = request.args.get("keyword", "").strip()
@@ -827,6 +857,7 @@ def get_links():
 
 @app.route("/api/links/categories", methods=["GET"])
 @login_required
+@require_perm("bizlinks")
 def get_link_categories():
     return jsonify({"code": 0, "data": db.get_link_categories()})
 
@@ -973,6 +1004,7 @@ def import_preset_links():
 
 
 @app.route("/api/domains/import", methods=["POST"])
+@require_perm("domains")
 def import_domains():
     """从 Excel 导入域名数据（读取全部子表）"""
     try:
@@ -1061,6 +1093,7 @@ def import_domains():
 # ---------- 发版参数 ----------
 
 @app.route("/api/services/export-xlsx", methods=["GET"])
+@require_perm("release")
 def export_services_xlsx():
     """导出当前筛选的发版参数为 xlsx"""
     module = request.args.get("module", "").strip()
@@ -1076,6 +1109,7 @@ def export_services_xlsx():
 
 
 @app.route("/api/services/template", methods=["GET"])
+@require_perm("release")
 def services_template():
     """下载发版参数导入模板"""
     headers = ["业务模块", "服务名称", "创建变更单参数", "运行研发流程参数", "服务环境"]
@@ -1106,6 +1140,7 @@ def _validate_net_host():
 
 @app.route("/api/nettools/myip", methods=["GET"])
 @login_required
+@require_perm("nettools")
 def nettools_myip():
     """本机出口 IP 查询（服务端视角）"""
     ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip() or request.remote_addr or ""
@@ -1116,6 +1151,7 @@ def nettools_myip():
 
 @app.route("/api/nettools/ip", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_ip():
     """IP 归属地查询"""
     ok, host, err, code = _validate_net_host()
@@ -1126,6 +1162,7 @@ def nettools_ip():
 
 @app.route("/api/nettools/ping", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_ping():
     """PING 检测"""
     ok, host, err, code = _validate_net_host()
@@ -1141,6 +1178,7 @@ def nettools_ping():
 
 @app.route("/api/nettools/tcping", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_tcping():
     """TCPing 端口连通性测试"""
     ok, host, err, code = _validate_net_host()
@@ -1156,6 +1194,7 @@ def nettools_tcping():
 
 @app.route("/api/nettools/dns", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_dns():
     """DNS 记录查询"""
     ok, host, err, code = _validate_net_host()
@@ -1169,6 +1208,7 @@ def nettools_dns():
 
 @app.route("/api/nettools/route", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_route():
     """路由查询（Traceroute）"""
     ok, host, err, code = _validate_net_host()
@@ -1182,6 +1222,7 @@ def nettools_route():
 
 @app.route("/api/nettools/mtr", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_mtr():
     """MTR 路由去程"""
     ok, host, err, code = _validate_net_host()
@@ -1195,6 +1236,7 @@ def nettools_mtr():
 
 @app.route("/api/nettools/cdn", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_cdn():
     """CDN 服务商识别"""
     ok, host, err, code = _validate_net_host()
@@ -1205,6 +1247,7 @@ def nettools_cdn():
 
 @app.route("/api/nettools/whois", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_whois():
     """Whois 域名注册信息查询（仅格式校验，允许内网/公司私有域名查询公共注册库）"""
     data = request.get_json(silent=True) or {}
@@ -1217,6 +1260,7 @@ def nettools_whois():
 
 @app.route("/api/nettools/ssl", methods=["POST"])
 @login_required
+@require_perm("nettools")
 def nettools_ssl():
     """SSL 证书信息 + TLS 协议支持检测（仅格式校验，运维常查公司私有域名证书）"""
     data = request.get_json(silent=True) or {}
@@ -1236,6 +1280,7 @@ import opsutils
 
 @app.route("/api/utils/cidr", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_cidr():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.cidr_calc(data.get("cidr", "")))
@@ -1243,6 +1288,7 @@ def utils_cidr():
 
 @app.route("/api/utils/range-to-cidrs", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_range_to_cidrs():
     """IP 范围 → 最少 CIDR 网段集合"""
     data = request.get_json(silent=True) or {}
@@ -1251,6 +1297,7 @@ def utils_range_to_cidrs():
 
 @app.route("/api/utils/timestamp", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_timestamp():
     data = request.get_json(silent=True) or {}
     tz = int(data.get("tz", 8))
@@ -1259,6 +1306,7 @@ def utils_timestamp():
 
 @app.route("/api/utils/json", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_json():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.json_format(data.get("text", ""), int(data.get("indent", 2))))
@@ -1266,6 +1314,7 @@ def utils_json():
 
 @app.route("/api/utils/encode", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_encode():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.encode_hash(data.get("text", ""), data.get("action", "base64_encode"), data.get("algo", "sha256")))
@@ -1273,6 +1322,7 @@ def utils_encode():
 
 @app.route("/api/utils/webhook", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_webhook():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.webhook_test(data.get("url", ""), data.get("method", "POST"),
@@ -1281,6 +1331,7 @@ def utils_webhook():
 
 @app.route("/api/utils/batch-tcping", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_batch_tcping():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.batch_tcping(data.get("items", [])))
@@ -1288,6 +1339,7 @@ def utils_batch_tcping():
 
 @app.route("/api/utils/batch-ping", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_batch_ping():
     """批量 PING 检测（最多 50 条，并发执行）"""
     data = request.get_json(silent=True) or {}
@@ -1304,6 +1356,7 @@ def utils_batch_ping():
 
 @app.route("/api/utils/http-health", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_http_health():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.http_health(data.get("url", ""), int(data.get("timeout", 10))))
@@ -1311,6 +1364,7 @@ def utils_http_health():
 
 @app.route("/api/utils/cert-monitor", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_cert_monitor():
     data = request.get_json(silent=True) or {}
     domains = data.get("domains", [])
@@ -1321,6 +1375,7 @@ def utils_cert_monitor():
 
 @app.route("/api/utils/yaml-check", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_yaml_check():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.yaml_check(data.get("text", "")))
@@ -1328,6 +1383,7 @@ def utils_yaml_check():
 
 @app.route("/api/utils/curl", methods=["POST"])
 @login_required
+@require_perm("utils")
 def utils_curl():
     data = request.get_json(silent=True) or {}
     return jsonify(opsutils.curl_debug(data.get("command", "")))
@@ -1336,6 +1392,7 @@ def utils_curl():
 # ---------- 服务凭证 ----------
 
 @app.route("/api/credentials/import", methods=["POST"])
+@require_perm("credentials")
 def import_credentials_xlsx():
     """从 开发生产服务器信息.xlsx 导入服务凭证（6 个子表 = 6 个环境）
 
@@ -1423,6 +1480,7 @@ def import_credentials_xlsx():
 
 
 @app.route("/api/credentials/export", methods=["GET"])
+@require_perm("credentials")
 def export_credentials_xlsx():
     """导出当前筛选的凭证为 xlsx（密码列导出为 ●●●●，不含明文）"""
     env = request.args.get("env", "").strip()
@@ -1444,6 +1502,7 @@ def export_credentials_xlsx():
 
 
 @app.route("/api/credentials/template", methods=["GET"])
+@require_perm("credentials")
 def credentials_template():
     """下载服务凭证导入模板"""
     headers = ["业务用途", "服务名", "凭证类型", "访问链接", "用户名", "密码",
@@ -1468,6 +1527,7 @@ def credentials_template():
 # ---------- 域名 ----------
 
 @app.route("/api/domains/export", methods=["GET"])
+@require_perm("domains")
 def export_domains_xlsx():
     """导出当前筛选的域名为 xlsx"""
     root = request.args.get("root", "").strip()
@@ -1486,6 +1546,7 @@ def export_domains_xlsx():
 
 
 @app.route("/api/domains/template", methods=["GET"])
+@require_perm("domains")
 def domains_template():
     """下载域名导入模板"""
     headers = ["大区", "服务", "域名", "域名类型", "域名环境", "证书更新进度", "新证书到期时间", "备注"]
@@ -1503,6 +1564,7 @@ def domains_template():
 # ---------- 云效创建变更单 ----------
 
 @app.route("/api/ci-orders", methods=["GET"])
+@require_perm("release")
 def get_ci_orders():
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 20))
@@ -1515,12 +1577,14 @@ def get_ci_orders():
     return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
 
 @app.route("/api/ci-orders/<int:cid>", methods=["GET"])
+@require_perm("release")
 def get_ci_order(cid):
     item = db._ci_get_by_id("ci_orders", cid)
     if not item: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "data": item})
 
 @app.route("/api/ci-orders", methods=["POST"])
+@require_perm("release")
 def create_ci_order():
     data = request.get_json()
     if not data.get("delivery_service"): return jsonify({"code": 400, "message": "缺少服务名"}), 400
@@ -1528,21 +1592,25 @@ def create_ci_order():
     return jsonify({"code": 0, "data": {"id": cid}})
 
 @app.route("/api/ci-orders/<int:cid>", methods=["PUT"])
+@require_perm("release")
 def update_ci_order(cid):
     ok = db._ci_update("ci_orders", cid, **request.get_json())
     if not ok: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "更新成功"})
 
 @app.route("/api/ci-orders/<int:cid>", methods=["DELETE"])
+@require_perm("release")
 def delete_ci_order(cid):
     if not db._ci_delete("ci_orders", cid): return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "删除成功"})
 
 @app.route("/api/ci-orders/envs", methods=["GET"])
+@require_perm("release")
 def ci_orders_envs():
     return jsonify({"code": 0, "data": db._ci_envs("ci_orders")})
 
 @app.route("/api/ci-orders/import", methods=["POST"])
+@require_perm("release")
 def import_ci_orders():
     try:
         import pandas as pd
@@ -1561,6 +1629,7 @@ def import_ci_orders():
         return jsonify({"code": 500, "message": str(e)}), 500
 
 @app.route("/api/ci-orders/export", methods=["GET"])
+@require_perm("release")
 def export_ci_orders():
     items, _ = db.get_ci_orders(keyword=request.args.get("keyword","").strip(), env=request.args.get("env","").strip(), page=1, page_size=10000)
     headers = ["应用交付服务", "创建变更单环境", "生产发版分支", "应用代码仓库标识符(appCodeRepoSn)"]
@@ -1568,6 +1637,7 @@ def export_ci_orders():
     return excel_response(headers, rows, f"云效创建变更单_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", sheet_name="创建变更单")
 
 @app.route("/api/ci-orders/template", methods=["GET"])
+@require_perm("release")
 def ci_orders_template():
     headers = ["应用交付服务", "创建变更单环境", "生产发版分支", "应用代码仓库标识符(appCodeRepoSn)"]
     example = [["minipg-taier", "中国", "master", "67e20e77c3104bd3af699d591e80dd34"], ["aws-member", "北美", "north-america", "xxx"]]
@@ -1577,6 +1647,7 @@ def ci_orders_template():
 # ---------- 云效运行研发流程 ----------
 
 @app.route("/api/ci-devflow", methods=["GET"])
+@require_perm("release")
 def get_ci_devflows():
     page = int(request.args.get("page", 1))
     page_size = int(request.args.get("page_size", 20))
@@ -1589,12 +1660,14 @@ def get_ci_devflows():
     return jsonify({"code": 0, "data": items, "total": total, "page": page, "page_size": page_size})
 
 @app.route("/api/ci-devflow/<int:cid>", methods=["GET"])
+@require_perm("release")
 def get_ci_devflow(cid):
     item = db._ci_get_by_id("ci_devflow", cid)
     if not item: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "data": item})
 
 @app.route("/api/ci-devflow", methods=["POST"])
+@require_perm("release")
 def create_ci_devflow():
     data = request.get_json()
     if not data.get("delivery_service"): return jsonify({"code": 400, "message": "缺少服务名"}), 400
@@ -1602,21 +1675,25 @@ def create_ci_devflow():
     return jsonify({"code": 0, "data": {"id": cid}})
 
 @app.route("/api/ci-devflow/<int:cid>", methods=["PUT"])
+@require_perm("release")
 def update_ci_devflow(cid):
     ok = db._ci_update("ci_devflow", cid, **request.get_json())
     if not ok: return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "更新成功"})
 
 @app.route("/api/ci-devflow/<int:cid>", methods=["DELETE"])
+@require_perm("release")
 def delete_ci_devflow(cid):
     if not db._ci_delete("ci_devflow", cid): return jsonify({"code": 404, "message": "记录不存在"}), 404
     return jsonify({"code": 0, "message": "删除成功"})
 
 @app.route("/api/ci-devflow/envs", methods=["GET"])
+@require_perm("release")
 def ci_devflow_envs():
     return jsonify({"code": 0, "data": db._ci_envs("ci_devflow")})
 
 @app.route("/api/ci-devflow/import", methods=["POST"])
+@require_perm("release")
 def import_ci_devflow():
     try:
         import pandas as pd
@@ -1634,6 +1711,7 @@ def import_ci_devflow():
         return jsonify({"code": 500, "message": str(e)}), 500
 
 @app.route("/api/ci-devflow/export", methods=["GET"])
+@require_perm("release")
 def export_ci_devflow():
     items, _ = db.get_ci_devflows(keyword=request.args.get("keyword","").strip(), env=request.args.get("env","").strip(), page=1, page_size=10000)
     headers = ["应用交付服务", "研发流程环境", "发布流程唯一序列号(releaseWorkflowSn)", "发布流程阶段唯一序列号(releaseStageSn)"]
@@ -1641,6 +1719,7 @@ def export_ci_devflow():
     return excel_response(headers, rows, f"云效运行研发流程_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx", sheet_name="运行研发流程")
 
 @app.route("/api/ci-devflow/template", methods=["GET"])
+@require_perm("release")
 def ci_devflow_template():
     headers = ["应用交付服务", "研发流程环境", "发布流程唯一序列号(releaseWorkflowSn)", "发布流程阶段唯一序列号(releaseStageSn)"]
     example = [["aws-member", "北美", "b77477fc3d8148c9b7c1f8b6cd01649d", "6437ee23dfea478285da9d4d62d3a2e5"], ["member-taier", "中国", "xxx", "xxx"]]
@@ -1650,6 +1729,7 @@ def ci_devflow_template():
 # ==================== 发版修复记录 ====================
 
 @app.route("/api/fix-records", methods=["GET"])
+@require_perm("release")
 def get_fix_records():
     """发版修复记录列表（关键词/技术线/类型/星期/日期范围 多条件筛选）"""
     page = int(request.args.get("page", 1))
@@ -1668,12 +1748,14 @@ def get_fix_records():
 
 
 @app.route("/api/fix-records/filters", methods=["GET"])
+@require_perm("release")
 def fix_records_filters():
     """发版修复记录筛选下拉选项"""
     return jsonify({"code": 0, "data": db.get_fix_filters()})
 
 
 @app.route("/api/fix-records/<int:rid>", methods=["GET"])
+@require_perm("release")
 def get_fix_record(rid):
     item = db.get_fix_record_by_id(rid)
     if not item: return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -1681,6 +1763,7 @@ def get_fix_record(rid):
 
 
 @app.route("/api/fix-records", methods=["POST"])
+@require_perm("release")
 def create_fix_record():
     data = request.get_json() or {}
     if not data.get("release_date") and not data.get("work_order") and not data.get("service_name"):
@@ -1691,6 +1774,7 @@ def create_fix_record():
 
 
 @app.route("/api/fix-records/<int:rid>", methods=["PUT"])
+@require_perm("release")
 def update_fix_record(rid):
     ok = db.update_fix_record(rid, **request.get_json())
     if not ok: return jsonify({"code": 404, "message": "记录不存在"}), 404
@@ -1699,6 +1783,7 @@ def update_fix_record(rid):
 
 
 @app.route("/api/fix-records/<int:rid>", methods=["DELETE"])
+@require_perm("release")
 def delete_fix_record(rid):
     if not db.delete_fix_record(rid): return jsonify({"code": 404, "message": "记录不存在"}), 404
     db.add_activity(session.get("username", ""), "delete", "发版修复记录", f"删除记录 #{rid}")
@@ -1706,6 +1791,7 @@ def delete_fix_record(rid):
 
 
 @app.route("/api/fix-records/import", methods=["POST"])
+@require_perm("release")
 def import_fix_records():
     """Excel 导入（覆盖式）：读取 ~/Downloads/发版修复记录.xlsx，支持中文表头"""
     try:
@@ -1735,6 +1821,7 @@ def import_fix_records():
 
 
 @app.route("/api/fix-records/export", methods=["GET"])
+@require_perm("release")
 def export_fix_records():
     """导出当前筛选结果为 xlsx"""
     items, _ = db.get_fix_records(
@@ -1754,6 +1841,7 @@ def export_fix_records():
 
 
 @app.route("/api/fix-records/template", methods=["GET"])
+@require_perm("release")
 def fix_records_template():
     headers = ["序号", "发布时间", "星期", "迭代日重复发版", "技术线", "重复发布工单", "工单链接", "重复发布服务", "重复发布类型", "重复发布原因"]
     example = [[1, "2026-01-08", "周四", "是", "后端", "《【发版】示例工单》",

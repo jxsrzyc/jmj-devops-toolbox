@@ -297,6 +297,23 @@ jmj1995.com 的子域名管理（129 条/5 个大区），5 种类型（apisix/h
 
 ## 八、版本记录
 
+### v2.13 (2026-09-04)
+- 🔐 **全模块权限闭环（修复"仅 release 用户仍可从首页/URL/API 访问其他模块"）**：v2.12 只控制了侧边栏与入口可见性，本版补齐服务端与前端拦截，形成「菜单不显示 + 入口不可达 + URL 直调拦截 + API 403」四道防线
+  - **后端 `app.py`**：为全部业务 API 批量加 `@require_perm()` 装饰器（88 处）——`/api/services*` + `/api/ci-orders*` + `/api/ci-devflow*` + `/api/fix-records*` + `/api/import` → `release`；`/api/credentials*`（含 datalist：envs/service-names/providers/types/owners、import/export/template）→ `credentials`；`/api/domains*`（含 datalist、import/export/template）→ `domains`；`/api/links` + `/api/links/categories` 读 → `bizlinks`；`/api/nettools/*` → `nettools`；`/api/utils/*` → `utils`。原 `admin` 装饰器（用户管理/审计/reveal-password/links 写/business-purposes 写）保持不变
+  - **前端 `index.html`**：单一 `CAN_BIZ` 常量升级为 `PERM` 权限表 + `canPerm()`（模板注入 7 项含 admin）；Dashboard 统计卡（发版/域名/凭证/业务跳转）与快捷入口（6 项）按 `perm` 字段过滤；`switchPage()` 加 `PAGE_PERM` 白名单拦截（33 个页面 → 权限映射，无权限 toast 提示并 return）；`switchCiTab/switchNetTab/switchUtilsTab` 各加权限守卫防 DevTools 直调
+  - 首页证书到期预警卡改为 `{% if has_perm('domains') %}` 包裹（无 domains 权限整卡隐藏，日历自动占满整行），`loadDashboard` 相应加存在性守卫防 null 报错
+  - `VERSION` → `2026-09-04-v21`
+- ✅ **实测矩阵**（临时建 release/credentials 用户验证后删除）：release → `/api/services` 200、`/api/domains|credentials|links|credential-envs|nettools/ping|utils/cidr` 全 403；credentials → `credentials|credential-envs` 200、其余 403；admin → 全 200
+
+### v2.12 (2026-09-04)
+- 🔐 **业务跳转纳入权限控制（第 6 项权限 `bizlinks`）**：此前业务跳转对所有登录用户可见，现改为需管理员授权
+  - `auth.PERMISSIONS` 新增 `"bizlinks": "业务跳转"`（权限体系 5 项 → 6 项）
+  - 侧边栏「业务跳转」标签改为 `{% if has_perm('bizlinks') %}` 控制 —— **默认不可见**，管理员在「用户管理 → 编辑权限」中勾选 `bizlinks` 才可见
+  - LDAP 账号首次登录 JIT 默认权限保持 `release`（`LDAP_DEFAULT_PERMS=release`），**业务跳转默认看不到**
+  - 首页 Dashboard 的统计卡 / 快捷入口同步权限过滤（`CAN_BIZ` JS 常量），无权限用户首页也不显示「业务跳转」入口（避免"侧边栏隐藏但从首页进入"的破口）
+  - 用户管理新增/编辑弹窗的权限下拉新增 `bizlinks` 授权档（仅业务跳转 / release,bizlinks / …全部含业务跳转 / …全部不含业务跳转）
+- 🐛 **修复业务跳转页对非 admin 用户的报错**：「加载失败：Cannot set properties of null (setting 'textContent')」根因是 `renderBizLinkCats()` 无差别访问 `#bizLinkCatEditLabel/#bizLinkCatEditIcon`，而这两个元素被 `{% if permissions == '*' %}` 包裹、仅 admin 渲染 → 非 admin（如 LDAP `release` 用户）访问时 `null.textContent` 抛错被 catch 显示。修复为存在性守卫（`if (el)`），非 admin 访问不再报错、正常浏览
+
 ### v2.11.1 (2026-09-01)
 - 🎨 **登录页图标飘动动画优化（柔和漂浮模式）**：修复飘动"笨重顿挫 + 偏快"问题
   - 移除 `minSpeed` 低俗度踹脚脉冲逻辑（原速度 <1.0 时每帧强制踢一脚 → "慢→踢→快→慢"节律性抖动，肉眼明显）
@@ -474,4 +491,4 @@ A: 改 `.env` 里的 `DB_ENGINE`（`mysql` 或 `sqlite`）重启即可；系统�
 
 ---
 
-_最后更新：2026-09-01（v2.11.1 登录页飘动动画优化）_
+_最后更新：2026-09-04（v2.13 全模块权限闭环）_

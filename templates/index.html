@@ -360,7 +360,8 @@
             </div>
             {% endif %}
 
-            <!-- 业务跳转（所有登录用户可见） -->
+            {% if has_perm('bizlinks') %}
+            <!-- 业务跳转（需 bizlinks 权限，管理员在用户管理中授权） -->
             <a href="#" onclick="switchPage('bizlinks'); return false;"
                 class="sidebar-link flex items-center gap-3 px-5 py-2.5 text-base text-gray-700 border-l-3 border-transparent"
                 data-page="bizlinks">
@@ -369,6 +370,7 @@
                 </svg>
                 业务跳转
             </a>
+            {% endif %}
 
             <p class="px-5 py-1.5 mt-4 text-[11px] font-medium text-gray-400 uppercase tracking-wider">系统管理</p>
 
@@ -483,7 +485,8 @@
             </div>
             <!-- 第二行：证书预警 + 大日历（去掉运维速查） -->
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 mt-4">
-                <!-- 证书到期预警 -->
+                {% if has_perm('domains') %}
+                <!-- 证书到期预警（仅 domains 权限可见，2026-09-04 v2.13） -->
                 <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5">
                     <div class="flex items-center justify-between mb-4">
                         <h3 class="text-sm font-semibold text-gray-800 flex items-center gap-1.5">
@@ -494,8 +497,9 @@
                     </div>
                     <div id="dashCertAlerts" class="space-y-2 max-h-[260px] overflow-y-auto"></div>
                 </div>
+                {% endif %}
                 <!-- 当月日历（含农历 +节日） -->
-                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 lg:col-span-2">
+                <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-5 lg:col-span-{{ '3' if not has_perm('domains') else '2' }}">
                     <div class="flex items-center justify-between mb-4">
                         <div class="flex items-center gap-2">
                             <button onclick="dashCalPrev()" class="w-7 h-7 rounded-md hover:bg-gray-100 flex items-center justify-center text-gray-500">
@@ -2069,18 +2073,23 @@
                     <div><label class="block text-sm font-medium text-gray-700 mb-1">权限（逗号分隔，留空 = 仅 release）</label>
                         <select id="userFormPermissions" class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none bg-white">
                             <option value="*">* 全部权限（管理员）</option>
-                            <option value="release,credentials,domains,nettools,utils">release,credentials,domains,nettools,utils（全部）</option>
+                            <option value="release,credentials,domains,nettools,utils">release,credentials,domains,nettools,utils（全部，不含业务跳转）</option>
+                            <option value="release,credentials,domains,nettools,utils,bizlinks">release,credentials,domains,nettools,utils,bizlinks（全部含业务跳转）</option>
                             <option value="release">release（仅发版管理）</option>
                             <option value="credentials">credentials（仅服务凭证）</option>
                             <option value="domains">domains（仅域名）</option>
                             <option value="nettools">nettools（仅网络工具）</option>
                             <option value="utils">utils（仅运维小工具）</option>
+                            <option value="bizlinks">bizlinks（仅业务跳转）</option>
                             <option value="release,credentials">release,credentials</option>
                             <option value="release,domains">release,domains</option>
                             <option value="credentials,domains">credentials,domains</option>
                             <option value="release,nettools">release,nettools</option>
                             <option value="credentials,nettools">credentials,nettools</option>
                             <option value="nettools,utils">nettools,utils（运维向）</option>
+                            <option value="release,bizlinks">release,bizlinks</option>
+                            <option value="credentials,bizlinks">credentials,bizlinks</option>
+                            <option value="release,credentials,bizlinks">release,credentials,bizlinks</option>
                         </select>
                     </div>
                 </div>
@@ -2585,7 +2594,23 @@
         }
 
         // ==================== 页面切换 ====================
+        // 页面 → 所需权限（2026-09-04 v2.13 全模块权限闭环；undefined=dashboard 等所有登录用户可见）
+        const PAGE_PERM = {
+            params: 'release', ciorders: 'release', cidevflow: 'release', cifixrecords: 'release',
+            credentials: 'credentials', domains: 'domains',
+            netip: 'nettools', netping: 'nettools', nettcping: 'nettools', netdns: 'nettools',
+            netroute: 'nettools', netmtr: 'nettools', netcdn: 'nettools', netwhois: 'nettools', netssl: 'nettools',
+            utcidr: 'utils', uttimestamp: 'utils', utjson: 'utils', utencode: 'utils', utwebhook: 'utils',
+            utbatch: 'utils', utcert: 'utils', uthealth: 'utils', utyaml: 'utils', utcurl: 'utils',
+            utgenerator: 'utils', utdedup: 'utils', utdiff: 'utils', utpingping: 'utils', utscicalc: 'utils',
+            bizlinks: 'bizlinks', users: 'admin',
+        };
         function switchPage(page) {
+            const need = PAGE_PERM[page];
+            if (need && !canPerm(need)) {
+                showToast('无权限访问该模块，请联系管理员授权', 'error');
+                return;  // 无权限：拦截跳转（防 URL/收藏夹/DevTools 直调绕过）
+            }
             const pageEl = document.getElementById(`page-${page}`);
             if (!pageEl) return;  // 页面不存在时跳过（避免白屏）
             document.querySelectorAll('.sidebar-link').forEach(l => l.classList.remove('active'));
@@ -2601,19 +2626,30 @@
         }
 
         // ==================== 首页 Dashboard ====================
+        // 权限表（模板注入；2026-09-04 v2.13 全模块权限闭环，替换原单一 CAN_BIZ）
+        const PERM = {
+            release: {{ 'true' if has_perm('release') else 'false' }},
+            credentials: {{ 'true' if has_perm('credentials') else 'false' }},
+            domains: {{ 'true' if has_perm('domains') else 'false' }},
+            nettools: {{ 'true' if has_perm('nettools') else 'false' }},
+            utils: {{ 'true' if has_perm('utils') else 'false' }},
+            bizlinks: {{ 'true' if has_perm('bizlinks') else 'false' }},
+            admin: {{ 'true' if permissions == '*' else 'false' }},
+        };
+        function canPerm(key) { return key ? !!PERM[key] : true; }
         const DASH_STAT_CARDS = [
-            { key: 'services', label: '发版服务', icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6', grad: 'from-blue-500 to-indigo-600', page: 'params' },
-            { key: 'domains', label: '域名总数', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', grad: 'from-emerald-500 to-teal-600', page: 'domains' },
-            { key: 'credentials', label: '凭证总数', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', grad: 'from-amber-500 to-orange-600', page: 'credentials' },
-            { key: 'links', label: '业务跳转', icon: 'M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5', grad: 'from-violet-500 to-purple-600', page: 'bizlinks' },
+            { key: 'services', label: '发版服务', perm: 'release', icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6', grad: 'from-blue-500 to-indigo-600', page: 'params' },
+            { key: 'domains', label: '域名总数', perm: 'domains', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', grad: 'from-emerald-500 to-teal-600', page: 'domains' },
+            { key: 'credentials', label: '凭证总数', perm: 'credentials', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', grad: 'from-amber-500 to-orange-600', page: 'credentials' },
+            { key: 'links', label: '业务跳转', perm: 'bizlinks', icon: 'M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5', grad: 'from-violet-500 to-purple-600', page: 'bizlinks' },
         ];
         const DASH_QUICK = [
-            { label: '业务跳转', icon: 'M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5', color: 'text-blue-600 bg-blue-50', page: 'bizlinks' },
-            { label: '域名管理', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', color: 'text-emerald-600 bg-emerald-50', page: 'domains' },
-            { label: '凭证管理', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', color: 'text-amber-600 bg-amber-50', page: 'credentials' },
-            { label: '发版管理', icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6', color: 'text-indigo-600 bg-indigo-50', page: 'params' },
-            { label: '网络工具', icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-sky-600 bg-sky-50', page: 'netping' },
-            { label: '运维小工具', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', color: 'text-rose-600 bg-rose-50', page: 'utgenerator' },
+            { label: '业务跳转', perm: 'bizlinks', icon: 'M13.828 10.172a4 4 0 010 5.656l-3 3a4 4 0 01-5.656-5.656l1.5-1.5M10.172 13.828a4 4 0 010-5.656l3-3a4 4 0 115.656 5.656l-1.5 1.5', color: 'text-blue-600 bg-blue-50', page: 'bizlinks' },
+            { label: '域名管理', perm: 'domains', icon: 'M21 12a9 9 0 01-9 9m9-9a9 9 0 00-9-9m9 9H3m9 9a9 9 0 01-9-9m9 9c1.657 0 3-4.03 3-9s-1.343-9-3-9m0 18c-1.657 0-3-4.03-3-9s1.343-9 3-9m-9 9a9 9 0 019-9', color: 'text-emerald-600 bg-emerald-50', page: 'domains' },
+            { label: '凭证管理', perm: 'credentials', icon: 'M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z', color: 'text-amber-600 bg-amber-50', page: 'credentials' },
+            { label: '发版管理', perm: 'release', icon: 'M4 7v10c0 2 1 3 3 3h10c2 0 3-1 3-3V7M4 7c0-2 1-3 3-3h10c2 0 3 1 3 3M4 7h16M9 11h6', color: 'text-indigo-600 bg-indigo-50', page: 'params' },
+            { label: '网络工具', perm: 'nettools', icon: 'M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z', color: 'text-sky-600 bg-sky-50', page: 'netping' },
+            { label: '运维小工具', perm: 'utils', icon: 'M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z', color: 'text-rose-600 bg-rose-50', page: 'utgenerator' },
         ];
         const ACT_COLOR = { create: 'bg-emerald-500', update: 'bg-blue-500', delete: 'bg-red-500', login: 'bg-violet-500' };
         const ACT_LABEL = { create: '新增', update: '更新', delete: '删除', login: '登录' };
@@ -2627,8 +2663,8 @@
             $('#dashAvatar').textContent = initial;
             $('#dashGreeting').textContent = `${d.greeting}，${d.username}`;
             $('#dashSub').textContent = `今天又是充满希望的一天 · ${d.weekday} ${d.date}`;
-            // 统计卡片
-            $('#dashStats').innerHTML = DASH_STAT_CARDS.map(c => {
+            // 统计卡片（按权限过滤，无权限模块不展示入口）
+            $('#dashStats').innerHTML = DASH_STAT_CARDS.filter(c => canPerm(c.perm)).map(c => {
                 const v = d.stats[c.key] ?? 0;
                 return `<div onclick="switchPage('${c.page}')" class="group bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition-all cursor-pointer">
                     <div class="flex items-center justify-between">
@@ -2641,8 +2677,8 @@
                     <p class="text-xs text-gray-500 mt-0.5">${c.label} · 点击进入</p>
                 </div>`;
             }).join('');
-            // 快捷入口
-            $('#dashQuick').innerHTML = DASH_QUICK.map(q => {
+            // 快捷入口（无 bizlinks 权限时隐藏"业务跳转"入口）
+            $('#dashQuick').innerHTML = DASH_QUICK.filter(q => canPerm(q.perm)).map(q => {
                 // page 以 'ut' 开头表示调 switchUtilsTab（如 'utgenerator' → switchUtilsTab('generator')）
                 const onclick = q.page.startsWith('ut') ? `switchUtilsTab('${q.page.slice(2)}')` : `switchPage('${q.page}')`;
                 return `<div onclick="${onclick}" class="flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-blue-50 hover:border-blue-200 border border-transparent transition-all cursor-pointer">
@@ -2668,21 +2704,24 @@
                 </div>`;
             }).join('') : '<p class="text-sm text-gray-400 py-6 text-center">暂无操作记录</p>';
 
-            // 证书到期预警
-            const certs = d.cert_alerts || [];
-            $('#dashCertCount').textContent = `30 天内 ${certs.length} 条`;
-            $('#dashCertAlerts').innerHTML = certs.length ? certs.map(c => {
-                const color = c.days_left < 0 ? 'bg-red-100 text-red-700 border-red-300' :
-                    c.days_left <= 7 ? 'bg-red-50 text-red-700 border-red-200' :
-                        c.days_left <= 30 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-600';
-                const tag = c.days_left < 0 ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${color}">已过期 ${-c.days_left} 天</span>` :
-                    `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${color}">${c.days_left} 天后</span>`;
-                return `<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-gray-50 cursor-pointer" onclick="switchPage('domains')">
-                    <span class="flex-1 text-[12.5px] text-gray-700 truncate">${esc(c.domain_name)}</span>
-                    <span class="text-[10px] text-gray-400">${esc(c.env || '')}</span>
-                    ${tag}
-                </div>`;
-            }).join('') : '<p class="text-sm text-gray-400 py-6 text-center">近期无到期证书 ✓</p>';
+            // 证书到期预警（仅 domains 权限渲染该卡；元素不存在时跳过，防 null 报错中断日历）
+            const _certCountEl = $('#dashCertCount'), _certListEl = $('#dashCertAlerts');
+            if (_certCountEl && _certListEl) {
+                const certs = d.cert_alerts || [];
+                _certCountEl.textContent = `30 天内 ${certs.length} 条`;
+                _certListEl.innerHTML = certs.length ? certs.map(c => {
+                    const color = c.days_left < 0 ? 'bg-red-100 text-red-700 border-red-300' :
+                        c.days_left <= 7 ? 'bg-red-50 text-red-700 border-red-200' :
+                            c.days_left <= 30 ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-600';
+                    const tag = c.days_left < 0 ? `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${color}">已过期 ${-c.days_left} 天</span>` :
+                        `<span class="px-1.5 py-0.5 rounded text-[10px] font-medium ${color}">${c.days_left} 天后</span>`;
+                    return `<div class="flex items-center gap-2 py-1.5 px-2 rounded-lg hover:bg-gray-50 cursor-pointer" onclick="switchPage('domains')">
+                        <span class="flex-1 text-[12.5px] text-gray-700 truncate">${esc(c.domain_name)}</span>
+                        <span class="text-[10px] text-gray-400">${esc(c.env || '')}</span>
+                        ${tag}
+                    </div>`;
+                }).join('') : '<p class="text-sm text-gray-400 py-6 text-center">近期无到期证书 ✓</p>';
+            }
 
             // 当月日历（含农历 +节日）：缓存到全局供上下月导航用
             const cal = d.calendar || {};
@@ -3433,6 +3472,7 @@
         }
 
         function switchCiTab(tab) {
+            if (!canPerm('release')) { showToast('无权限访问发版管理，请联系管理员授权', 'error'); return; }  // v2.13 权限闭环
             ciActiveTab = tab;
             // ⚠️ 顺序很重要：先清掉所有 .sidebar-link 的 active（包括子标签），
             // 再给当前点击的子标签加 active，否则会被一起清掉
@@ -5702,6 +5742,7 @@
         }
 
         function switchUtilsTab(tab) {
+            if (!canPerm('utils')) { showToast('无权限访问运维小工具，请联系管理员授权', 'error'); return; }  // v2.13 权限闭环
             utilsActiveTab = tab;
             document.querySelectorAll('[id^="page-"]').forEach(p => p.classList.add('hidden'));
             const page = document.getElementById(`page-ut${tab}`);
@@ -7141,8 +7182,11 @@
         }
 
         // 类目按钮渲染（独立函数，filter/编辑模式都要重渲）
+        // 注意：编辑按钮(#bizLinkCatEditLabel/Icon)仅 admin 模板渲染，非 admin 访问时做空值守卫，避免 null.textContent 报错
         function renderBizLinkCats() {
             const all = ['全部'].concat(bizLinkCats);
+            const catLbl = $('#bizLinkCatEditLabel');
+            const catIco = $('#bizLinkCatEditIcon');
             // 编辑模式：可拖拽列表
             if (bizLinkCatEditing && window.__isAdmin) {
                 const editor = all.filter(c => c !== '全部');
@@ -7152,12 +7196,12 @@
                         ${esc(c)}
                     </div>`
                 ).join('');
-                $('#bizLinkCatEditLabel').textContent = '完成';
-                $('#bizLinkCatEditIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
+                if (catLbl) catLbl.textContent = '完成';
+                if (catIco) catIco.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>';
                 return;
             }
-            $('#bizLinkCatEditLabel').textContent = '编辑';
-            $('#bizLinkCatEditIcon').innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>';
+            if (catLbl) catLbl.textContent = '编辑';
+            if (catIco) catIco.innerHTML = '<path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>';
             $('#bizLinkCats').innerHTML = all.map(c =>
                 `<button data-cat="${esc(c)}" onclick="bizLinkFilter('${esc(c)}')" class="px-3 py-1.5 rounded-full text-xs font-medium border transition-colors ${bizLinkFilterCat === c ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-600 border-gray-200 hover:border-blue-300'}">${esc(c)}</button>`
             ).join('');
@@ -7543,7 +7587,7 @@
 
     // 强制版本同步：每次更新 JS 后改 VERSION，旧版本 localStorage 自动 reload
     (function() {
-        const VERSION = '2026-08-31-v19';
+        const VERSION = '2026-09-04-v21';
         try {
             if (localStorage.getItem('__code_version') !== VERSION) {
                 localStorage.setItem('__code_version', VERSION);
